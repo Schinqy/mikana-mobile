@@ -7,7 +7,6 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -21,13 +20,13 @@ import {
   Radio,
   ExternalLink,
   ShieldCheck,
-  Server,
   Zap,
 } from 'lucide-react-native';
 import { Card } from '../../src/components/ui/Card';
 import { Button } from '../../src/components/ui/Button';
 import { Badge } from '../../src/components/ui/Badge';
 import { Input } from '../../src/components/ui/Input';
+import { colors } from '../../src/theme/colors';
 import { useSettingsStore } from '../../src/store/useSettingsStore';
 import { openWhatsAppDM } from '../../src/services/dispatcher/whatsappDeepLink';
 
@@ -43,7 +42,6 @@ export default function WhatsAppPairModal() {
 
   const [relayUrl, setRelayUrl] = useState(whatsappRelayUrl || 'http://localhost:3005');
   const [isLoading, setIsLoading] = useState(false);
-  const [isPolling, setIsPolling] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [pairingCode, setPairingCode] = useState<string>('8391-7294');
   const [activeTab, setActiveTab] = useState<'qr' | 'code'>('qr');
@@ -55,34 +53,9 @@ export default function WhatsAppPairModal() {
     phone: string;
   } | null>(
     isWhatsAppConnected
-      ? { name: 'Mikana Business Line', phone: whatsappLinkedPhone || '+1 (415) 908-2214' }
+      ? { name: 'Mikana Business Line', phone: whatsappLinkedPhone || '+27 82 194 8831' }
       : null
   );
-
-  const pollIntervalRef = useRef<any>(null);
-
-  useEffect(() => {
-    fetchStatus();
-    startPolling();
-
-    return () => {
-      stopPolling();
-    };
-  }, [relayUrl]);
-
-  const startPolling = () => {
-    stopPolling();
-    pollIntervalRef.current = setInterval(() => {
-      fetchStatus(true);
-    }, 2500);
-  };
-
-  const stopPolling = () => {
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = null;
-    }
-  };
 
   const fetchStatus = async (isBackground = false) => {
     if (!isBackground) setIsLoading(true);
@@ -99,85 +72,47 @@ export default function WhatsAppPairModal() {
           if (data.qrDataUrl) {
             setQrDataUrl(data.qrDataUrl);
           }
-          if (data.account) {
-            setConnectedAccount(data.account);
-            setWhatsAppConnected(true, data.account.phone);
-          } else if (data.status === 'connected') {
-            setWhatsAppConnected(true, '+1 (415) 908-2214');
+          if (data.user) {
+            setConnectedAccount(data.user);
+            setWhatsAppConnected(true, data.user.phone || '');
           }
         }
       }
-    } catch {
-      // Offline / Relay Server not running locally
+    } catch (e) {
+      // Offline fallback
     } finally {
       if (!isBackground) setIsLoading(false);
     }
   };
 
-  const handleRequestPairing = async (forceRestart = true) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setIsLoading(true);
-    setConnectionStatus('connecting');
-
-    try {
-      const response = await fetch(`${relayUrl.replace(/\/$/, '')}/api/whatsapp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ forceRestart }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.state?.qrDataUrl) {
-          setQrDataUrl(data.state.qrDataUrl);
-          setConnectionStatus('qr_ready');
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }
-      } else {
-        fallbackToSimulatedQR();
-      }
-    } catch {
-      fallbackToSimulatedQR();
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fallbackToSimulatedQR = () => {
-    // Generate fallback pairing data for offline demo
-    setConnectionStatus('qr_ready');
-    const randomCode = `${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`;
-    setPairingCode(randomCode);
-  };
-
-  const handleSimulateInstantPair = () => {
+  const handleSimulatePair = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setConnectionStatus('connected');
-    const mockAccount = { name: 'WhatsApp Business Operator', phone: '+1 (415) 908-2214' };
-    setConnectedAccount(mockAccount);
-    setWhatsAppConnected(true, mockAccount.phone);
+    setIsLoading(true);
+    setTimeout(() => {
+      setConnectionStatus('connected');
+      const mockUser = {
+        name: 'Apex Commercial Line',
+        phone: '+27 82 194 8831',
+      };
+      setConnectedAccount(mockUser);
+      setWhatsAppConnected(true, mockUser.phone);
+      setIsLoading(false);
+    }, 800);
   };
 
   const handleDisconnect = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     setConnectionStatus('disconnected');
     setConnectedAccount(null);
     setQrDataUrl(null);
     setWhatsAppConnected(false, '');
   };
 
-  const handleSaveRelayUrl = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setWhatsappRelayUrl(relayUrl);
-    Alert.alert('Relay Server Updated', `Relay URL set to ${relayUrl}`);
-    fetchStatus();
-  };
-
-  const handleTestDispatch = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  const handleTestWhatsAppDM = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await openWhatsAppDM(
-      whatsappLinkedPhone || '+1 (415) 908-2214',
-      '*Mikana Opportunity Radar* — WhatsApp Link Verification Test.\nYour channel monitoring and instant DM dispatch engine is active.'
+      connectedAccount?.phone || '+27821948831',
+      'Hello from Mikana! Your WhatsApp Business channel is successfully synced.'
     );
   };
 
@@ -185,212 +120,145 @@ export default function WhatsAppPairModal() {
     <SafeAreaView style={styles.safeArea}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Smartphone size={20} color="#10b981" />
-          <Text style={styles.headerTitle}>WhatsApp Multi-Device Link</Text>
+        <View>
+          <Text style={styles.headerTitle}>WhatsApp Web Pairing</Text>
+          <Text style={styles.headerSub}>Baileys Multi-Device Synchronization</Text>
         </View>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.closeBtn}
-          activeOpacity={0.7}
-        >
-          <X size={20} color="#71717a" />
+        <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
+          <X size={20} color={colors.textPrimary} />
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Status Card */}
-        <Card elevated style={styles.statusCard}>
-          <View style={styles.statusHeader}>
-            <View style={styles.statusTitleRow}>
-              <Radio
-                size={16}
-                color={connectionStatus === 'connected' ? '#10b981' : '#f59e0b'}
+        <Card style={styles.statusCard}>
+          <View style={styles.statusRow}>
+            <View style={styles.statusLeft}>
+              <View
+                style={[
+                  styles.statusIndicator,
+                  connectionStatus === 'connected' && styles.statusIndicatorActive,
+                ]}
               />
-              <Text style={styles.statusTitle}>Connection Status</Text>
+              <View>
+                <Text style={styles.statusTitle}>
+                  {connectionStatus === 'connected' ? 'WhatsApp Connected' : 'Waiting for Device Pair'}
+                </Text>
+                <Text style={styles.statusSub}>
+                  {connectionStatus === 'connected'
+                    ? `Active Session • ${connectedAccount?.phone}`
+                    : 'Scan QR with WhatsApp on your phone'}
+                </Text>
+              </View>
             </View>
-            <Badge
-              variant={connectionStatus === 'connected' ? 'emerald' : 'amber'}
-              showDot
-            >
-              {connectionStatus === 'connected'
-                ? 'CONNECTED & ACTIVE'
-                : connectionStatus === 'qr_ready'
-                ? 'QR CODE READY'
-                : connectionStatus === 'connecting'
-                ? 'CONNECTING...'
-                : 'DISCONNECTED'}
+            <Badge variant={connectionStatus === 'connected' ? 'emerald' : 'amber'}>
+              {connectionStatus === 'connected' ? 'Live' : 'Standby'}
             </Badge>
           </View>
+        </Card>
 
-          {connectionStatus === 'connected' ? (
-            <View style={styles.connectedBox}>
-              <View style={styles.connectedIcon}>
-                <CheckCircle2 size={32} color="#10b981" />
-              </View>
-              <Text style={styles.connectedName}>
-                {connectedAccount?.name || 'WhatsApp Business Line'}
-              </Text>
-              <Text style={styles.connectedPhone}>
-                {connectedAccount?.phone || whatsappLinkedPhone || '+1 (415) 908-2214'}
-              </Text>
+        {connectionStatus === 'connected' ? (
+          <View style={styles.connectedSection}>
+            <Card style={styles.connectedCard}>
+              <CheckCircle2 size={36} color={colors.emerald} style={{ marginBottom: 12 }} />
+              <Text style={styles.connectedTitle}>WhatsApp Channel Synced</Text>
               <Text style={styles.connectedDesc}>
-                Monitoring WhatsApp Business groups, community RFQs, and auto-dispatching proposals in real time.
+                Mikana is listening to incoming group RFQs. Quotes will be sent directly via your linked WhatsApp account.
               </Text>
 
-              <View style={styles.connectedActionsRow}>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  icon={<ExternalLink size={14} color="#f4f4f5" />}
-                  onPress={handleTestDispatch}
-                  style={styles.connectedBtn}
-                >
-                  Test WhatsApp DM
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onPress={handleDisconnect}
-                  style={styles.connectedBtn}
-                >
-                  Unlink Device
-                </Button>
+              <View style={styles.accountInfoBox}>
+                <Text style={styles.accountLabel}>CONNECTED ACCOUNT</Text>
+                <Text style={styles.accountName}>{connectedAccount?.name}</Text>
+                <Text style={styles.accountPhone}>{connectedAccount?.phone}</Text>
               </View>
+
+              <Button
+                size="md"
+                variant="primary"
+                iconRight={<ExternalLink size={14} color={colors.textInverse} />}
+                onPress={handleTestWhatsAppDM}
+                style={styles.testDmBtn}
+              >
+                Send Test WhatsApp DM
+              </Button>
+
+              <Button
+                size="sm"
+                variant="destructive"
+                onPress={handleDisconnect}
+                style={styles.disconnectBtn}
+              >
+                Disconnect WhatsApp Session
+              </Button>
+            </Card>
+          </View>
+        ) : (
+          <View style={styles.pairingSection}>
+            {/* Tab Selection */}
+            <View style={styles.tabSelector}>
+              <TouchableOpacity
+                onPress={() => setActiveTab('qr')}
+                style={[styles.tabBtn, activeTab === 'qr' && styles.activeTabBtn]}
+              >
+                <QrCode size={14} color={activeTab === 'qr' ? colors.textInverse : colors.textSecondary} />
+                <Text style={[styles.tabBtnText, activeTab === 'qr' && styles.activeTabBtnText]}>
+                  Scan QR Code
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => setActiveTab('code')}
+                style={[styles.tabBtn, activeTab === 'code' && styles.activeTabBtn]}
+              >
+                <Smartphone size={14} color={activeTab === 'code' ? colors.textInverse : colors.textSecondary} />
+                <Text style={[styles.tabBtnText, activeTab === 'code' && styles.activeTabBtnText]}>
+                  8-Digit Code
+                </Text>
+              </TouchableOpacity>
             </View>
-          ) : (
-            <View style={styles.pairingContainer}>
-              {/* Tab Selector */}
-              <View style={styles.tabRow}>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setActiveTab('qr');
-                  }}
-                  style={[styles.tabBtn, activeTab === 'qr' && styles.activeTabBtn]}
-                >
-                  <QrCode size={14} color={activeTab === 'qr' ? '#10b981' : '#71717a'} />
-                  <Text style={[styles.tabText, activeTab === 'qr' && styles.activeTabText]}>
-                    QR Code Scan
-                  </Text>
-                </TouchableOpacity>
 
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setActiveTab('code');
-                  }}
-                  style={[styles.tabBtn, activeTab === 'code' && styles.activeTabBtn]}
-                >
-                  <Smartphone size={14} color={activeTab === 'code' ? '#10b981' : '#71717a'} />
-                  <Text style={[styles.tabText, activeTab === 'code' && styles.activeTabText]}>
-                    8-Digit Pairing Code
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* QR Code Tab */}
+            {/* QR / Code Display */}
+            <Card style={styles.qrContainerCard}>
               {activeTab === 'qr' ? (
-                <View style={styles.qrDisplayBox}>
+                <View style={styles.qrInner}>
                   {qrDataUrl ? (
-                    <Image
-                      source={{ uri: qrDataUrl }}
-                      style={styles.qrImage}
-                      resizeMode="contain"
-                    />
+                    <Image source={{ uri: qrDataUrl }} style={styles.qrImage} resizeMode="contain" />
                   ) : (
-                    <View style={styles.mockQrPlaceholder}>
-                      <QrCode size={140} color="#3b82f6" />
-                      <Text style={styles.qrPlaceholderText}>
-                        Interactive WhatsApp QR Matrix
-                      </Text>
+                    <View style={styles.mockQrBox}>
+                      <QrCode size={120} color={colors.brandNavy} />
+                      <Text style={styles.qrHint}>Ready for WhatsApp Link</Text>
                     </View>
                   )}
-
-                  <Text style={styles.qrInstructions}>
+                  <Text style={styles.instructionsText}>
                     1. Open WhatsApp on your phone{'\n'}
-                    2. Go to Settings / Menu → Linked Devices{'\n'}
-                    3. Tap "Link a Device" and scan this QR code
+                    2. Go to Settings &gt; Linked Devices &gt; Link a Device{'\n'}
+                    3. Point your camera at this QR code
                   </Text>
                 </View>
               ) : (
-                <View style={styles.codeDisplayBox}>
-                  <Text style={styles.codeLabel}>Your 8-Digit Pairing Code:</Text>
-                  <View style={styles.codePill}>
-                    <Text style={styles.codeText}>{pairingCode}</Text>
-                  </View>
-                  <Text style={styles.qrInstructions}>
-                    1. Open WhatsApp → Linked Devices → Link with Phone Number{'\n'}
-                    2. Enter this 8-digit code to complete pairing
+                <View style={styles.codeInner}>
+                  <Text style={styles.codeLabel}>8-DIGIT PAIRING CODE</Text>
+                  <Text style={styles.codeValue}>{pairingCode}</Text>
+                  <Text style={styles.instructionsText}>
+                    1. Open WhatsApp &gt; Linked Devices &gt; Link with phone number{'\n'}
+                    2. Enter this 8-digit verification code
                   </Text>
                 </View>
               )}
 
-              {/* Action Buttons */}
-              <View style={styles.actionBtnsCol}>
-                <Button
-                  size="md"
-                  variant="primary"
-                  icon={
-                    isLoading ? (
-                      <ActivityIndicator size="small" color="#09090b" />
-                    ) : (
-                      <RefreshCw size={16} color="#09090b" />
-                    )
-                  }
-                  onPress={() => handleRequestPairing(true)}
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Generating Session...' : 'Refresh Live QR Session'}
-                </Button>
-
-                <Button
-                  size="md"
-                  variant="secondary"
-                  icon={<Zap size={16} color="#10b981" />}
-                  onPress={handleSimulateInstantPair}
-                >
-                  Simulate Instant Link (Demo Mode)
-                </Button>
-              </View>
-            </View>
-          )}
-        </Card>
-
-        {/* Relay Server Configuration */}
-        <Card style={styles.relayCard}>
-          <View style={styles.relayHeader}>
-            <Server size={16} color="#71717a" />
-            <Text style={styles.relayTitle}>Mikana Baileys Relay Server</Text>
+              <Button
+                size="sm"
+                variant="primary"
+                icon={<Zap size={14} color={colors.textInverse} />}
+                onPress={handleSimulatePair}
+                loading={isLoading}
+                style={styles.instantSimBtn}
+              >
+                Simulate Successful WhatsApp Link
+              </Button>
+            </Card>
           </View>
-          <Text style={styles.relayDesc}>
-            Connects to your local or cloud Baileys multi-device engine instance.
-          </Text>
-
-          <Input
-            placeholder="http://localhost:3005"
-            value={relayUrl}
-            onChangeText={setRelayUrl}
-            label="Relay Server URL"
-          />
-
-          <Button size="sm" variant="outline" onPress={handleSaveRelayUrl}>
-            Save Server Endpoint
-          </Button>
-        </Card>
-
-        {/* Security & Privacy Card */}
-        <Card style={styles.securityCard}>
-          <View style={styles.securityHeader}>
-            <ShieldCheck size={16} color="#10b981" />
-            <Text style={styles.securityTitle}>End-to-End Encrypted WhatsApp Protocol</Text>
-          </View>
-          <Text style={styles.securityText}>
-            Mikana communicates through the official WhatsApp Multi-Device protocol. Credentials and session tokens remain securely on your local engine.
-          </Text>
-        </Card>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -399,99 +267,133 @@ export default function WhatsAppPairModal() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#09090b',
+    backgroundColor: colors.canvas,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 14,
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#27272a',
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    borderBottomColor: colors.border,
   },
   headerTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#f4f4f5',
+    color: colors.textPrimary,
+  },
+  headerSub: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 2,
   },
   closeBtn: {
     padding: 6,
+    borderRadius: 6,
+    backgroundColor: colors.surfaceElevated,
   },
   content: {
     padding: 16,
-    gap: 16,
+    paddingBottom: 40,
   },
   statusCard: {
-    padding: 16,
-    gap: 16,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    marginBottom: 16,
   },
-  statusHeader: {
+  statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  statusTitleRow: {
+  statusLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
+    flex: 1,
+  },
+  statusIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.amber,
+  },
+  statusIndicatorActive: {
+    backgroundColor: colors.emerald,
   },
   statusTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#f4f4f5',
-  },
-  connectedBox: {
-    alignItems: 'center',
-    paddingVertical: 16,
-    gap: 8,
-  },
-  connectedIcon: {
-    marginBottom: 4,
-  },
-  connectedName: {
-    fontSize: 18,
     fontWeight: '700',
-    color: '#f4f4f5',
+    color: colors.textPrimary,
   },
-  connectedPhone: {
-    fontSize: 14,
-    fontFamily: 'Courier',
-    color: '#10b981',
-    fontWeight: '600',
+  statusSub: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  connectedSection: {
+    marginTop: 8,
+  },
+  connectedCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    alignItems: 'center',
+    padding: 20,
+  },
+  connectedTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: 6,
   },
   connectedDesc: {
     fontSize: 13,
-    color: '#a1a1aa',
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 18,
-    marginTop: 4,
-    paddingHorizontal: 12,
+    marginBottom: 16,
   },
-  connectedActionsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 16,
+  accountInfoBox: {
+    width: '100%',
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceElevated,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  accountLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.textMuted,
+    letterSpacing: 0.5,
+  },
+  accountName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginTop: 4,
+  },
+  accountPhone: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  testDmBtn: {
+    width: '100%',
+    marginBottom: 10,
+  },
+  disconnectBtn: {
     width: '100%',
   },
-  connectedBtn: {
-    flex: 1,
+  pairingSection: {
+    marginTop: 4,
   },
-  pairingContainer: {
-    gap: 16,
-  },
-  tabRow: {
+  tabSelector: {
     flexDirection: 'row',
-    backgroundColor: '#121215',
-    borderRadius: 8,
-    padding: 3,
-    borderWidth: 1,
-    borderColor: '#27272a',
+    gap: 8,
+    marginBottom: 12,
   },
   tabBtn: {
     flex: 1,
@@ -501,127 +403,79 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 8,
     borderRadius: 6,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   activeTabBtn: {
-    backgroundColor: '#18181b',
-    borderWidth: 1,
-    borderColor: '#3f3f46',
+    backgroundColor: colors.brandNavy,
+    borderColor: colors.brandNavy,
   },
-  tabText: {
+  tabBtnText: {
     fontSize: 12,
-    fontWeight: '500',
-    color: '#71717a',
-  },
-  activeTabText: {
-    color: '#f4f4f5',
     fontWeight: '600',
+    color: colors.textSecondary,
   },
-  qrDisplayBox: {
-    alignItems: 'center',
-    backgroundColor: '#121215',
-    borderRadius: 12,
+  activeTabBtnText: {
+    color: colors.textInverse,
+  },
+  qrContainerCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     padding: 20,
-    borderWidth: 1,
-    borderColor: '#27272a',
-    gap: 12,
+    alignItems: 'center',
+  },
+  qrInner: {
+    alignItems: 'center',
+    width: '100%',
   },
   qrImage: {
     width: 200,
     height: 200,
-    borderRadius: 8,
-    backgroundColor: '#ffffff',
+    marginBottom: 16,
   },
-  mockQrPlaceholder: {
-    width: 200,
-    height: 200,
-    backgroundColor: '#18181b',
-    borderRadius: 8,
+  mockQrBox: {
+    width: 180,
+    height: 180,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceElevated,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#27272a',
-    gap: 8,
+    marginBottom: 16,
   },
-  qrPlaceholderText: {
+  qrHint: {
     fontSize: 11,
-    color: '#71717a',
-    fontWeight: '500',
+    color: colors.textMuted,
+    marginTop: 8,
   },
-  qrInstructions: {
-    fontSize: 12,
-    color: '#a1a1aa',
-    lineHeight: 18,
-    textAlign: 'center',
-  },
-  codeDisplayBox: {
+  codeInner: {
     alignItems: 'center',
-    backgroundColor: '#121215',
-    borderRadius: 12,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: '#27272a',
-    gap: 12,
+    width: '100%',
+    paddingVertical: 20,
   },
   codeLabel: {
-    fontSize: 13,
-    color: '#a1a1aa',
-  },
-  codePill: {
-    backgroundColor: '#18181b',
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#3b82f6',
-  },
-  codeText: {
-    fontSize: 24,
-    fontWeight: '800',
-    fontFamily: 'Courier',
-    color: '#60a5fa',
-    letterSpacing: 2,
-  },
-  actionBtnsCol: {
-    gap: 10,
-  },
-  relayCard: {
-    padding: 16,
-    gap: 12,
-  },
-  relayHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  relayTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#f4f4f5',
-  },
-  relayDesc: {
-    fontSize: 12,
-    color: '#71717a',
-    lineHeight: 16,
-  },
-  securityCard: {
-    padding: 14,
-    gap: 8,
-    backgroundColor: '#0c1612',
-    borderColor: '#064e3b',
-  },
-  securityHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  securityTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#34d399',
-  },
-  securityText: {
     fontSize: 11,
-    color: '#a1a1aa',
-    lineHeight: 16,
+    fontWeight: '700',
+    color: colors.textMuted,
+    letterSpacing: 0.5,
+  },
+  codeValue: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: colors.brandNavy,
+    letterSpacing: 4,
+    marginVertical: 12,
+  },
+  instructionsText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    lineHeight: 18,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  instantSimBtn: {
+    width: '100%',
   },
 });

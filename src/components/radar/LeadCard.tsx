@@ -1,16 +1,14 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Lead } from '../../types/lead';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
+import { colors } from '../../theme/colors';
 import {
-  Sparkles,
-  MapPin,
-  DollarSign,
-  Clock,
-  Radio,
   ArrowRight,
+  DollarSign,
+  MapPin,
   MessageSquare,
   CheckCircle,
 } from 'lucide-react-native';
@@ -26,28 +24,13 @@ export const LeadCard: React.FC<LeadCardProps> = ({
   onPress,
   onPitchPress,
 }) => {
-  const getUrgencyBadge = () => {
-    switch (lead.urgency) {
-      case 'urgent':
-        return <Badge variant="rose" showDot>Urgent Lead</Badge>;
-      case 'medium':
-        return <Badge variant="amber" showDot>Medium Priority</Badge>;
-      default:
-        return <Badge variant="default">Standard</Badge>;
-    }
-  };
-
-  const getStageBadge = () => {
-    switch (lead.stage) {
-      case 'won':
-        return <Badge variant="emerald">Deal Won</Badge>;
-      case 'negotiating':
-        return <Badge variant="violet">Negotiating</Badge>;
-      case 'quoted':
-        return <Badge variant="blue">Quoted</Badge>;
-      default:
-        return null;
-    }
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
   };
 
   const timeAgo = (dateStr: string) => {
@@ -61,84 +44,72 @@ export const LeadCard: React.FC<LeadCardProps> = ({
   };
 
   return (
-    <Card
-      onPress={onPress}
-      style={styles.card}
-      highlightBorder={lead.matchScore >= 90}
-    >
-      {/* Top Header Row */}
-      <View style={styles.topRow}>
-        <View style={styles.badgeGroup}>
-          <Badge
-            variant={lead.matchScore >= 90 ? 'emerald' : 'blue'}
-            icon={<Sparkles size={10} color={lead.matchScore >= 90 ? '#10b981' : '#3b82f6'} />}
-          >
-            {lead.matchScore}% Match
-          </Badge>
-          {getUrgencyBadge()}
-          {getStageBadge()}
+    <Card onPress={onPress} style={styles.card}>
+      {/* Top Header: Sender & Channel */}
+      <View style={styles.headerRow}>
+        <View style={styles.senderGroup}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{getInitials(lead.senderName)}</Text>
+          </View>
+          <View style={styles.nameColumn}>
+            <Text style={styles.senderName} numberOfLines={1}>
+              {lead.senderName}
+            </Text>
+            <View style={styles.sourceRow}>
+              <Badge variant="blue">WhatsApp</Badge>
+              <Text style={styles.channelName} numberOfLines={1}>
+                {lead.channelName}
+              </Text>
+            </View>
+          </View>
         </View>
-        <Text style={styles.timeText}>{timeAgo(lead.createdAt)}</Text>
+        <Text style={styles.timeAgoText}>{timeAgo(lead.createdAt)}</Text>
       </View>
 
-      {/* Channel Source & Sender */}
-      <View style={styles.channelRow}>
-        <Radio size={12} color="#71717a" style={styles.channelIcon} />
-        <Text style={styles.channelText} numberOfLines={1}>
-          {lead.channelName} • {lead.senderName}
-        </Text>
-      </View>
-
-      {/* AI Summary / Headline */}
-      <Text style={styles.summaryTitle} numberOfLines={2}>
+      {/* Main Request Headline */}
+      <Text style={styles.requestText} numberOfLines={3}>
         {lead.aiSummary || lead.rawText}
       </Text>
 
-      {/* Meta Specs Grid */}
+      {/* Structured Details: Budget & Location */}
       <View style={styles.metaRow}>
         {lead.budgetEstimate ? (
-          <View style={styles.metaItem}>
-            <DollarSign size={13} color="#10b981" />
-            <Text style={styles.metaText}>{lead.budgetEstimate}</Text>
+          <View style={styles.budgetPill}>
+            <Text style={styles.budgetText}>{lead.budgetEstimate}</Text>
           </View>
         ) : null}
 
         {lead.location ? (
-          <View style={styles.metaItem}>
-            <MapPin size={13} color="#a1a1aa" />
-            <Text style={styles.metaText}>{lead.location}</Text>
+          <View style={styles.locationPill}>
+            <MapPin size={11} color={colors.textSecondary} style={{ marginRight: 3 }} />
+            <Text style={styles.locationText} numberOfLines={1}>{lead.location}</Text>
           </View>
         ) : null}
 
-        <View style={styles.metaItem}>
-          <Clock size={13} color="#a1a1aa" />
-          <Text style={styles.metaText}>{lead.category}</Text>
-        </View>
-      </View>
-
-      {/* Action Footer */}
-      <View style={styles.footerRow}>
-        {lead.stage === 'quoted' || lead.stage === 'negotiating' || lead.stage === 'won' ? (
-          <View style={styles.quotedStatusRow}>
-            <CheckCircle size={14} color="#10b981" />
-            <Text style={styles.quotedStatusText}>
-              {lead.quotedAmount ? `Quoted $${lead.quotedAmount.toLocaleString()}` : 'Proposal Dispatched'}
-            </Text>
+        {lead.urgency === 'urgent' && (
+          <View style={styles.urgentPill}>
+            <Text style={styles.urgentText}>Urgent</Text>
           </View>
-        ) : (
-          <Text style={styles.rawPreview} numberOfLines={1}>
-            "{lead.rawText.slice(0, 45)}..."
-          </Text>
         )}
 
+        {lead.stage === 'quoted' && (
+          <View style={styles.quotedPill}>
+            <CheckCircle size={11} color={colors.emerald} style={{ marginRight: 3 }} />
+            <Text style={styles.quotedText}>Quoted</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Action Divider & Button */}
+      <View style={styles.footerRow}>
         <Button
           size="sm"
-          variant={lead.stage === 'captured' ? 'primary' : 'secondary'}
-          icon={<MessageSquare size={13} color={lead.stage === 'captured' ? '#09090b' : '#f4f4f5'} />}
-          iconRight={<ArrowRight size={13} color={lead.stage === 'captured' ? '#09090b' : '#f4f4f5'} />}
+          variant="primary"
           onPress={onPitchPress}
+          iconRight={<ArrowRight size={13} color={colors.textInverse} />}
+          style={styles.actionButton}
         >
-          {lead.generatedPitch ? 'View Pitch' : 'AI Pitch'}
+          {lead.stage === 'quoted' ? 'View Sent Proposal' : 'Draft Quote'}
         </Button>
       </View>
     </Card>
@@ -147,88 +118,144 @@ export const LeadCard: React.FC<LeadCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 12,
   },
-  topRow: {
+  headerRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    alignItems: 'flex-start',
+    marginBottom: 10,
   },
-  badgeGroup: {
+  senderGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    flexWrap: 'wrap',
+    flex: 1,
+    marginRight: 8,
   },
-  timeText: {
-    fontSize: 11,
-    color: '#71717a',
-  },
-  channelRow: {
-    flexDirection: 'row',
+  avatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: colors.accentBlueTint,
+    borderWidth: 1,
+    borderColor: colors.accentBlueBorder,
     alignItems: 'center',
-    marginBottom: 6,
+    justifyContent: 'center',
+    marginRight: 10,
   },
-  channelIcon: {
-    marginRight: 5,
+  avatarText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.brandNavy,
   },
-  channelText: {
-    fontSize: 11,
-    color: '#71717a',
-    fontWeight: '500',
+  nameColumn: {
     flex: 1,
   },
-  summaryTitle: {
+  senderName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    letterSpacing: -0.2,
+  },
+  sourceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  channelName: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginLeft: 6,
+    flex: 1,
+  },
+  timeAgoText: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontWeight: '500',
+  },
+  requestText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#f4f4f5',
-    lineHeight: 20,
-    marginBottom: 10,
+    color: colors.textPrimary,
+    lineHeight: 21,
     letterSpacing: -0.2,
+    marginBottom: 12,
   },
   metaRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 12,
-    paddingVertical: 8,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#18181b',
-    marginBottom: 10,
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 14,
   },
-  metaItem: {
+  budgetPill: {
+    backgroundColor: colors.emeraldBg,
+    borderColor: colors.emeraldBorder,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  budgetText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.emerald,
+  },
+  locationPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    backgroundColor: colors.surfaceElevated,
+    borderColor: colors.border,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
-  metaText: {
-    fontSize: 12,
-    color: '#a1a1aa',
+  locationText: {
+    fontSize: 11,
+    color: colors.textSecondary,
     fontWeight: '500',
   },
-  footerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  urgentPill: {
+    backgroundColor: colors.roseBg,
+    borderColor: colors.roseBorder,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
-  rawPreview: {
-    fontSize: 12,
-    color: '#71717a',
-    flex: 1,
-    marginRight: 10,
-    fontStyle: 'italic',
-  },
-  quotedStatusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    flex: 1,
-  },
-  quotedStatusText: {
-    fontSize: 12,
-    color: '#10b981',
+  urgentText: {
+    fontSize: 11,
+    color: colors.rose,
     fontWeight: '600',
+  },
+  quotedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.emeraldBg,
+    borderColor: colors.emeraldBorder,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  quotedText: {
+    fontSize: 11,
+    color: colors.emerald,
+    fontWeight: '600',
+  },
+  footerRow: {
+    borderTopWidth: 1,
+    borderTopColor: colors.surfaceElevated,
+    paddingTop: 12,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  actionButton: {
+    width: '100%',
   },
 });

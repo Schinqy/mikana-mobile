@@ -7,6 +7,7 @@ import {
   TextInputProps,
   ViewStyle,
 } from 'react-native';
+import { colors } from '../../theme/colors';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -43,7 +44,7 @@ export const Input: React.FC<InputProps> = ({
       >
         {iconLeft && <View style={styles.iconLeft}>{iconLeft}</View>}
         <TextInput
-          placeholderTextColor="#71717a"
+          placeholderTextColor={colors.textMuted}
           style={[styles.input, style]}
           onFocus={(e) => {
             setIsFocused(true);
@@ -68,30 +69,30 @@ export const Input: React.FC<InputProps> = ({
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 14,
+    marginBottom: 12,
   },
   label: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#a1a1aa',
+    color: colors.textSecondary,
     marginBottom: 6,
     letterSpacing: -0.1,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#09090b',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#27272a',
+    borderColor: colors.borderStrong,
     borderRadius: 8,
     paddingHorizontal: 12,
     minHeight: 42,
   },
   focusedBorder: {
-    borderColor: '#3b82f6',
+    borderColor: colors.brandNavy,
   },
   errorBorder: {
-    borderColor: '#f43f5e',
+    borderColor: colors.rose,
   },
   iconLeft: {
     marginRight: 8,
@@ -101,18 +102,18 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    color: '#f4f4f5',
+    color: colors.textHeading,
     fontSize: 14,
     paddingVertical: 10,
   },
   errorText: {
     fontSize: 11,
-    color: '#f43f5e',
+    color: colors.rose,
     marginTop: 4,
   },
   hintText: {
     fontSize: 11,
-    color: '#71717a',
+    color: colors.textMuted,
     marginTop: 4,
   },
 });

@@ -19,15 +19,11 @@ import {
 import { PaywallPackage } from '../../src/types/subscription';
 import { PricingCard } from '../../src/components/paywall/PricingCard';
 import { Button } from '../../src/components/ui/Button';
-import { Badge } from '../../src/components/ui/Badge';
+import { colors } from '../../src/theme/colors';
 import {
   X,
-  Sparkles,
-  Zap,
   ShieldCheck,
-  CheckCircle,
   Crown,
-  Lock,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
@@ -68,7 +64,7 @@ export default function PaywallModal() {
         Alert.alert(
           'Welcome to Mikana Pro',
           'Your Pro entitlements are active. You now have unlimited lead radar sweeps and 24/7 offline Autopilot.',
-          [{ text: 'Start Winning Deals', onPress: () => router.back() }]
+          [{ text: 'Start Closing Deals', onPress: () => router.back() }]
         );
       } else if (result.error) {
         Alert.alert('Subscription Notice', result.error);
@@ -104,97 +100,65 @@ export default function PaywallModal() {
     <SafeAreaView style={styles.safeArea}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => router.back()}
-          style={styles.closeBtn}
-        >
-          <X size={18} color="#f4f4f5" />
-        </TouchableOpacity>
-
-        <View style={styles.headerBadge}>
-          <Crown size={13} color="#f59e0b" />
-          <Text style={styles.headerBadgeText}>PRO SUBSCRIPTION</Text>
+        <View>
+          <Text style={styles.headerTitle}>Mikana Pro</Text>
+          <Text style={styles.headerSub}>RevenueCat Subscriptions</Text>
         </View>
-
-        <View style={styles.spacer} />
+        <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
+          <X size={20} color={colors.textPrimary} />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        {/* Hero Title */}
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Value Prop Banner */}
         <View style={styles.heroSection}>
-          <Text style={styles.heroTitle}>Win Deals Before Competitors Notice</Text>
+          <View style={styles.crownCircle}>
+            <Crown size={28} color={colors.brandNavy} />
+          </View>
+          <Text style={styles.heroTitle}>Close High-Ticket WhatsApp Deals</Text>
           <Text style={styles.heroSubtitle}>
-            Unlock 24/7 autonomous WhatsApp lead interception, Gemini AI sales proposals, and offline Autopilot.
+            Unlock 24/7 Autopilot dispatching, unlimited AI proposals, and automated deal pipeline tracking.
           </Text>
         </View>
 
-        {/* Value Proposition Bullets */}
-        <View style={styles.valueBox}>
-          <View style={styles.valueItem}>
-            <CheckCircle size={15} color="#10b981" />
-            <Text style={styles.valueText}>
-              <Text style={styles.bold}>Unlimited Lead Interception:</Text> Monitor unlimited WhatsApp & Telegram business groups.
-            </Text>
-          </View>
-          <View style={styles.valueItem}>
-            <CheckCircle size={15} color="#10b981" />
-            <Text style={styles.valueText}>
-              <Text style={styles.bold}>24/7 Offline Autopilot:</Text> Auto-dispatches tailored pitches even when your phone is asleep.
-            </Text>
-          </View>
-          <View style={styles.valueItem}>
-            <CheckCircle size={15} color="#10b981" />
-            <Text style={styles.valueText}>
-              <Text style={styles.bold}>Gemini Flash Pitch Engine:</Text> Custom-grounded quotes with deliverables & portfolio links.
-            </Text>
-          </View>
-          <View style={styles.valueItem}>
-            <CheckCircle size={15} color="#10b981" />
-            <Text style={styles.valueText}>
-              <Text style={styles.bold}>Instant Push Radar:</Text> High-priority haptic alerts the second 90%+ matching deals drop.
-            </Text>
-          </View>
+        {/* Pricing Cards */}
+        <View style={styles.packagesContainer}>
+          {packages.map((pkg) => (
+            <PricingCard
+              key={pkg.identifier}
+              pkg={pkg}
+              isSelected={selectedPackageId === pkg.identifier}
+              onSelect={() => setSelectedPackageId(pkg.identifier)}
+              isPopular={pkg.packageType === 'ANNUAL'}
+            />
+          ))}
         </View>
 
-        {/* Pricing Packages */}
-        <Text style={styles.packagesHeader}>Select Plan</Text>
+        {/* Purchase CTA */}
+        <Button
+          size="lg"
+          variant="primary"
+          onPress={handlePurchase}
+          loading={isPurchasing}
+          style={styles.subscribeBtn}
+        >
+          {status.isSandboxMode ? 'Activate Pro Access (Sandbox Mode)' : 'Subscribe via App Store'}
+        </Button>
 
-        {packages.map((pkg) => (
-          <PricingCard
-            key={pkg.identifier}
-            pkg={pkg}
-            isSelected={selectedPackageId === pkg.identifier}
-            onSelect={() => setSelectedPackageId(pkg.identifier)}
-            isPopular={pkg.packageType === 'ANNUAL'}
-          />
-        ))}
-
-        {/* Action Button */}
-        <View style={styles.actionWrapper}>
-          <Button
-            size="lg"
-            variant="primary"
-            loading={isPurchasing}
-            icon={<Sparkles size={16} color="#09090b" />}
-            onPress={handlePurchase}
-          >
-            {status.isSandboxMode ? 'Unlock Now (Demo / Sandbox)' : 'Continue to Subscribe'}
-          </Button>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={handleRestore}
-            style={styles.restoreBtn}
-          >
-            <Text style={styles.restoreText}>
-              {isRestoring ? 'Restoring...' : 'Restore Purchases'}
-            </Text>
+        {/* Restore & Terms */}
+        <View style={styles.footerRow}>
+          <TouchableOpacity onPress={handleRestore} disabled={isRestoring}>
+            <Text style={styles.restoreText}>Restore Purchases</Text>
           </TouchableOpacity>
+          <Text style={styles.footerDot}>•</Text>
+          <TouchableOpacity onPress={() => {}}>
+            <Text style={styles.restoreText}>Terms & Privacy</Text>
+          </TouchableOpacity>
+        </View>
 
-          <Text style={styles.termsText}>
-            Recurring billing. Cancel anytime in App Store or Google Play. Powered by RevenueCat.
-          </Text>
+        <View style={styles.trustBadge}>
+          <ShieldCheck size={14} color={colors.emerald} />
+          <Text style={styles.trustText}>Secured by RevenueCat • Cancel anytime</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -204,7 +168,7 @@ export default function PaywallModal() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#09090b',
+    backgroundColor: colors.canvas,
     paddingTop: Platform.OS === 'android' ? 30 : 0,
   },
   header: {
@@ -212,31 +176,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  headerSub: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 2,
   },
   closeBtn: {
     padding: 6,
     borderRadius: 6,
-    backgroundColor: '#18181b',
-  },
-  headerBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: 'rgba(245, 158, 11, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.3)',
-  },
-  headerBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#f59e0b',
-  },
-  spacer: {
-    width: 32,
+    backgroundColor: colors.surfaceElevated,
   },
   content: {
     padding: 16,
@@ -244,73 +202,66 @@ const styles = StyleSheet.create({
   },
   heroSection: {
     alignItems: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 10,
+    paddingVertical: 16,
+    marginBottom: 12,
+  },
+  crownCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
   },
   heroTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
-    color: '#f4f4f5',
+    color: colors.textPrimary,
     textAlign: 'center',
     letterSpacing: -0.5,
-    lineHeight: 28,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   heroSubtitle: {
     fontSize: 13,
-    color: '#a1a1aa',
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 18,
+    paddingHorizontal: 12,
   },
-  valueBox: {
-    padding: 14,
-    borderRadius: 10,
-    backgroundColor: '#121215',
-    borderWidth: 1,
-    borderColor: '#18181b',
-    gap: 10,
-    marginBottom: 20,
+  packagesContainer: {
+    marginBottom: 16,
   },
-  valueItem: {
+  subscribeBtn: {
+    width: '100%',
+    marginBottom: 14,
+  },
+  footerRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-  },
-  valueText: {
-    fontSize: 12,
-    color: '#d4d4d8',
-    flex: 1,
-    lineHeight: 17,
-  },
-  bold: {
-    fontWeight: '700',
-    color: '#f4f4f5',
-  },
-  packagesHeader: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#f4f4f5',
-    marginBottom: 10,
-    letterSpacing: -0.2,
-  },
-  actionWrapper: {
-    marginTop: 10,
-    gap: 10,
     alignItems: 'center',
-  },
-  restoreBtn: {
-    paddingVertical: 6,
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 12,
   },
   restoreText: {
     fontSize: 12,
-    color: '#71717a',
-    fontWeight: '500',
+    color: colors.textMuted,
+    fontWeight: '600',
   },
-  termsText: {
+  footerDot: {
+    color: colors.borderStrong,
+  },
+  trustBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingTop: 6,
+  },
+  trustText: {
     fontSize: 11,
-    color: '#52525b',
-    textAlign: 'center',
-    marginTop: 4,
-    paddingHorizontal: 20,
+    color: colors.textMuted,
   },
 });

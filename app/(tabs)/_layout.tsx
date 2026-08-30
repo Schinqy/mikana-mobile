@@ -1,7 +1,8 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { View, StyleSheet, Platform } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 import { Radio, BarChart3, Zap, Briefcase, Settings } from 'lucide-react-native';
+import { colors } from '../../src/theme/colors';
 
 export default function TabLayout() {
   return (
@@ -9,8 +10,8 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: '#f4f4f5',
-        tabBarInactiveTintColor: '#71717a',
+        tabBarActiveTintColor: colors.brandNavy,
+        tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: styles.tabLabel,
       }}
     >
@@ -18,35 +19,35 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Radar',
-          tabBarIcon: ({ color, size }) => <Radio size={size - 2} color={color} />,
+          tabBarIcon: ({ color, size }) => <Radio size={size - 2} color={color} strokeWidth={2} />,
         }}
       />
       <Tabs.Screen
         name="pipeline"
         options={{
           title: 'Pipeline',
-          tabBarIcon: ({ color, size }) => <BarChart3 size={size - 2} color={color} />,
+          tabBarIcon: ({ color, size }) => <BarChart3 size={size - 2} color={color} strokeWidth={2} />,
         }}
       />
       <Tabs.Screen
         name="autopilot"
         options={{
           title: 'Autopilot',
-          tabBarIcon: ({ color, size }) => <Zap size={size - 2} color={color} />,
+          tabBarIcon: ({ color, size }) => <Zap size={size - 2} color={color} strokeWidth={2} />,
         }}
       />
       <Tabs.Screen
         name="catalog"
         options={{
           title: 'Catalog',
-          tabBarIcon: ({ color, size }) => <Briefcase size={size - 2} color={color} />,
+          tabBarIcon: ({ color, size }) => <Briefcase size={size - 2} color={color} strokeWidth={2} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',
-          tabBarIcon: ({ color, size }) => <Settings size={size - 2} color={color} />,
+          tabBarIcon: ({ color, size }) => <Settings size={size - 2} color={color} strokeWidth={2} />,
         }}
       />
     </Tabs>
@@ -55,12 +56,14 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: '#09090b',
+    backgroundColor: colors.surface,
     borderTopWidth: 1,
-    borderTopColor: '#18181b',
+    borderTopColor: colors.border,
     height: Platform.OS === 'ios' ? 88 : 64,
     paddingTop: 6,
     paddingBottom: Platform.OS === 'ios' ? 28 : 10,
+    elevation: 0,
+    shadowOpacity: 0,
   },
   tabLabel: {
     fontSize: 11,

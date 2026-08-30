@@ -14,6 +14,7 @@ import { DealStage } from '../../src/types/lead';
 import { DealCard } from '../../src/components/pipeline/DealCard';
 import { Badge } from '../../src/components/ui/Badge';
 import { Card } from '../../src/components/ui/Card';
+import { colors } from '../../src/theme/colors';
 import {
   DollarSign,
   TrendingUp,
@@ -25,19 +26,17 @@ import {
 } from 'lucide-react-native';
 
 const STAGES: Array<{ id: DealStage; label: string; icon: any; color: string }> = [
-  { id: 'captured', label: 'Captured Leads', icon: Inbox, color: '#3b82f6' },
-  { id: 'quoted', label: 'Proposals Quoted', icon: Send, color: '#3b82f6' },
-  { id: 'negotiating', label: 'In Negotiation', icon: MessageSquare, color: '#a78bfa' },
-  { id: 'won', label: 'Deals Won', icon: CheckCircle, color: '#10b981' },
-  { id: 'lost', label: 'Archived / Lost', icon: XCircle, color: '#f43f5e' },
+  { id: 'captured', label: 'Captured Leads', icon: Inbox, color: colors.brandNavy },
+  { id: 'quoted', label: 'Proposals Quoted', icon: Send, color: colors.accentBlue },
+  { id: 'negotiating', label: 'In Negotiation', icon: MessageSquare, color: colors.amber },
+  { id: 'won', label: 'Deals Won', icon: CheckCircle, color: colors.emerald },
+  { id: 'lost', label: 'Archived / Lost', icon: XCircle, color: colors.rose },
 ];
 
 export default function PipelineScreen() {
   const router = useRouter();
   const { leads, updateStage, setSelectedLeadId } = useLeadStore();
-  const [selectedStageTab, setSelectedStageTab] = useState<DealStage | 'all'>('all');
 
-  // Compute metrics
   const activeDeals = leads.filter((l) => l.stage !== 'lost');
   const wonDeals = leads.filter((l) => l.stage === 'won');
 
@@ -58,7 +57,7 @@ export default function PipelineScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Deal Pipeline CRM</Text>
-          <Text style={styles.subtitle}>Track leads from radar interception to closed revenue</Text>
+          <Text style={styles.subtitle}>Track leads from WhatsApp interception to closed revenue</Text>
         </View>
       </View>
 
@@ -67,7 +66,7 @@ export default function PipelineScreen() {
         <View style={styles.metricsRow}>
           <Card style={styles.metricCard}>
             <View style={styles.metricHeader}>
-              <TrendingUp size={14} color="#3b82f6" />
+              <TrendingUp size={14} color={colors.accentBlue} />
               <Text style={styles.metricLabel}>Active Pipeline</Text>
             </View>
             <Text style={styles.metricValue}>
@@ -78,7 +77,7 @@ export default function PipelineScreen() {
 
           <Card style={styles.metricCard}>
             <View style={styles.metricHeader}>
-              <CheckCircle size={14} color="#10b981" />
+              <CheckCircle size={14} color={colors.emerald} />
               <Text style={styles.metricLabel}>Closed Won</Text>
             </View>
             <Text style={[styles.metricValue, styles.wonValue]}>
@@ -99,25 +98,25 @@ export default function PipelineScreen() {
                 <View style={styles.stageTitleRow}>
                   <StageIcon size={14} color={stage.color} />
                   <Text style={styles.stageTitle}>{stage.label}</Text>
-                  <View style={styles.countPill}>
-                    <Text style={styles.countPillText}>{stageLeads.length}</Text>
+                  <View style={styles.stageCount}>
+                    <Text style={styles.stageCountText}>{stageLeads.length}</Text>
                   </View>
                 </View>
               </View>
 
-              {stageLeads.length === 0 ? (
-                <View style={styles.emptyStage}>
-                  <Text style={styles.emptyStageText}>No deals in this stage</Text>
-                </View>
-              ) : (
+              {stageLeads.length > 0 ? (
                 stageLeads.map((lead) => (
                   <DealCard
                     key={lead.id}
                     lead={lead}
                     onPress={() => handleLeadPress(lead.id)}
-                    onMoveStage={(next) => updateStage(lead.id, next)}
+                    onMoveStage={(nextStage) => updateStage(lead.id, nextStage)}
                   />
                 ))
+              ) : (
+                <View style={styles.emptyStage}>
+                  <Text style={styles.emptyStageText}>No deals in this stage</Text>
+                </View>
               )}
             </View>
           );
@@ -130,24 +129,25 @@ export default function PipelineScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#09090b',
+    backgroundColor: colors.canvas,
     paddingTop: Platform.OS === 'android' ? 30 : 0,
   },
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#18181b',
+    borderBottomColor: colors.border,
   },
   title: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#f4f4f5',
+    color: colors.textPrimary,
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 12,
-    color: '#71717a',
+    fontSize: 11,
+    color: colors.textMuted,
     marginTop: 2,
   },
   content: {
@@ -162,6 +162,8 @@ const styles = StyleSheet.create({
   metricCard: {
     flex: 1,
     padding: 14,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
   },
   metricHeader: {
     flexDirection: 'row',
@@ -172,24 +174,24 @@ const styles = StyleSheet.create({
   metricLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#a1a1aa',
+    color: colors.textSecondary,
   },
   metricValue: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#f4f4f5',
-    letterSpacing: -0.4,
+    color: colors.textPrimary,
+    letterSpacing: -0.5,
   },
   wonValue: {
-    color: '#10b981',
+    color: colors.emerald,
   },
   metricMeta: {
     fontSize: 11,
-    color: '#71717a',
+    color: colors.textMuted,
     marginTop: 4,
   },
   stageSection: {
-    marginBottom: 20,
+    marginBottom: 18,
   },
   stageHeader: {
     flexDirection: 'row',
@@ -200,37 +202,36 @@ const styles = StyleSheet.create({
   stageTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   stageTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
-    color: '#f4f4f5',
-    letterSpacing: -0.2,
+    color: colors.textPrimary,
   },
-  countPill: {
+  stageCount: {
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
-    backgroundColor: '#18181b',
+    backgroundColor: colors.surfaceElevated,
   },
-  countPillText: {
+  stageCountText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#a1a1aa',
+    fontWeight: '700',
+    color: colors.textSecondary,
   },
   emptyStage: {
     paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     borderRadius: 8,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#18181b',
+    borderColor: colors.border,
     borderStyle: 'dashed',
     alignItems: 'center',
-    justifyContent: 'center',
   },
   emptyStageText: {
     fontSize: 12,
-    color: '#52525b',
+    color: colors.textMuted,
   },
 });

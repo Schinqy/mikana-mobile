@@ -6,6 +6,7 @@ import {
   ViewProps,
   TouchableOpacityProps,
 } from 'react-native';
+import { colors } from '../../theme/colors';
 
 interface CardProps extends ViewProps {
   children: React.ReactNode;
@@ -53,19 +54,19 @@ export const Card: React.FC<CardProps> = ({
 
 const styles = StyleSheet.create({
   baseCard: {
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
-    padding: 16,
+    padding: 14,
   },
   surfaceCard: {
-    backgroundColor: '#121215',
-    borderColor: '#27272a',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
   },
   elevatedCard: {
-    backgroundColor: '#18181b',
-    borderColor: '#3f3f46',
+    backgroundColor: colors.surfaceSubtle,
+    borderColor: colors.borderStrong,
   },
   highlightBorder: {
-    borderColor: 'rgba(59, 130, 246, 0.4)',
+    borderColor: colors.accentBlue,
   },
 });

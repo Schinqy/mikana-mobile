@@ -17,12 +17,11 @@ import { LeadFilterBar } from '../../src/components/radar/LeadFilterBar';
 import { Input } from '../../src/components/ui/Input';
 import { Badge } from '../../src/components/ui/Badge';
 import { Button } from '../../src/components/ui/Button';
+import { colors } from '../../src/theme/colors';
 import {
   Radio,
   Search,
   Plus,
-  Zap,
-  Sparkles,
   RefreshCw,
   Crown,
   Lock,
@@ -78,17 +77,17 @@ export default function RadarScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Top App Header */}
+      {/* Top Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.titleRow}>
             <Text style={styles.appTitle}>Mikana</Text>
             <Badge variant="emerald" showDot>
-              Radar Active
+              Radar Live
             </Badge>
           </View>
           <Text style={styles.headerSub}>
-            Monitoring {radarChannels.length} business channels
+            Scanning {radarChannels.length} active WhatsApp groups
           </Text>
         </View>
 
@@ -99,7 +98,7 @@ export default function RadarScreen() {
               onPress={() => router.push('/modal/paywall')}
               style={styles.proBadge}
             >
-              <Crown size={12} color="#f59e0b" />
+              <Crown size={12} color={colors.amber} />
               <Text style={styles.proBadgeText}>PRO</Text>
             </TouchableOpacity>
           ) : (
@@ -108,7 +107,7 @@ export default function RadarScreen() {
               onPress={() => setPaywallVisible(true)}
               style={styles.upgradeBtn}
             >
-              <Sparkles size={12} color="#3b82f6" />
+              <Crown size={12} color={colors.brandNavy} />
               <Text style={styles.upgradeBtnText}>Upgrade</Text>
             </TouchableOpacity>
           )}
@@ -119,8 +118,8 @@ export default function RadarScreen() {
             style={styles.actionIconBtn}
           >
             <RefreshCw
-              size={16}
-              color="#f4f4f5"
+              size={15}
+              color={colors.textSecondary}
               style={isSimulating ? styles.rotating : undefined}
             />
           </TouchableOpacity>
@@ -130,12 +129,12 @@ export default function RadarScreen() {
             onPress={() => router.push('/modal/new-lead')}
             style={[styles.actionIconBtn, styles.addBtn]}
           >
-            <Plus size={18} color="#09090b" />
+            <Plus size={16} color={colors.textInverse} />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Free Tier Lead Counter Warning if not Pro */}
+      {/* Free Tier Lead Counter Banner */}
       {!status.isPro && (
         <TouchableOpacity
           activeOpacity={0.8}
@@ -143,34 +142,34 @@ export default function RadarScreen() {
           style={styles.freeTierBanner}
         >
           <View style={styles.freeTierLeft}>
-            <Lock size={13} color="#f59e0b" />
+            <Lock size={12} color={colors.amber} />
             <Text style={styles.freeTierText}>
-              Free Plan: <Text style={styles.boldText}>{status.leadsRemainingThisWeek} / 5 leads left</Text> this week
+              Free Plan: <Text style={styles.boldText}>{status.leadsRemainingThisWeek} / 5 leads</Text> left this week
             </Text>
           </View>
-          <Text style={styles.unlockProLink}>Get Unlimited Pro →</Text>
+          <Text style={styles.unlockProLink}>Unlock Pro →</Text>
         </TouchableOpacity>
       )}
 
-      {/* Search Input */}
+      {/* Search Bar */}
       <View style={styles.searchWrapper}>
         <Input
-          placeholder="Search leads, keywords, locations, buyers..."
+          placeholder="Search buyer requests, services, locations..."
           value={searchQuery}
           onChangeText={setSearchQuery}
-          iconLeft={<Search size={16} color="#71717a" />}
+          iconLeft={<Search size={15} color={colors.textMuted} />}
           containerStyle={styles.searchInputContainer}
         />
       </View>
 
-      {/* Horizontal Filter Bar */}
+      {/* Filter Tabs */}
       <LeadFilterBar
         activeFilter={filter}
         onSelectFilter={setFilter}
         counts={counts}
       />
 
-      {/* Leads Stream */}
+      {/* Leads Feed */}
       <FlatList
         data={filteredLeads}
         keyExtractor={(item) => item.id}
@@ -185,19 +184,19 @@ export default function RadarScreen() {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Radio size={36} color="#27272a" style={styles.emptyIcon} />
+            <Radio size={32} color={colors.textMuted} style={styles.emptyIcon} />
             <Text style={styles.emptyTitle}>No matching opportunities</Text>
             <Text style={styles.emptySubtitle}>
-              Try adjusting your filter or tap "Simulate Lead" to intercept incoming channel inquiries.
+              Try adjusting your filter or tap "Simulate Inquiry" to intercept real-time channel leads.
             </Text>
             <Button
               size="sm"
               variant="secondary"
-              icon={<Plus size={14} color="#f4f4f5" />}
+              icon={<Plus size={13} color={colors.brandNavy} />}
               onPress={handleSimulateDrop}
               style={styles.emptyBtn}
             >
-              Simulate Incoming Lead
+              Simulate Channel Lead
             </Button>
           </View>
         }
@@ -209,7 +208,7 @@ export default function RadarScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#09090b',
+    backgroundColor: colors.canvas,
     paddingTop: Platform.OS === 'android' ? 30 : 0,
   },
   header: {
@@ -218,8 +217,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#18181b',
+    borderBottomColor: colors.border,
   },
   headerLeft: {
     flex: 1,
@@ -232,18 +232,18 @@ const styles = StyleSheet.create({
   appTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#f4f4f5',
+    color: colors.textPrimary,
     letterSpacing: -0.5,
   },
   headerSub: {
     fontSize: 11,
-    color: '#71717a',
+    color: colors.textMuted,
     marginTop: 2,
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   proBadge: {
     flexDirection: 'row',
@@ -252,14 +252,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
-    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+    backgroundColor: colors.amberBg,
     borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.28)',
+    borderColor: colors.amberBorder,
   },
   proBadgeText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#f59e0b',
+    color: colors.amber,
   },
   upgradeBtn: {
     flexDirection: 'row',
@@ -268,35 +268,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    backgroundColor: colors.surfaceElevated,
     borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.25)',
+    borderColor: colors.border,
   },
   upgradeBtnText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#3b82f6',
+    color: colors.brandNavy,
   },
   actionIconBtn: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#18181b',
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    backgroundColor: colors.surfaceElevated,
     borderWidth: 1,
-    borderColor: '#27272a',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   addBtn: {
-    backgroundColor: '#f4f4f5',
-    borderColor: '#f4f4f5',
+    backgroundColor: colors.brandNavy,
+    borderColor: colors.brandNavy,
   },
   freeTierBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(245, 158, 11, 0.08)',
+    backgroundColor: colors.amberBg,
     borderBottomWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.2)',
+    borderColor: colors.amberBorder,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
@@ -307,46 +308,48 @@ const styles = StyleSheet.create({
   },
   freeTierText: {
     fontSize: 12,
-    color: '#d4d4d8',
+    color: colors.textSecondary,
   },
   boldText: {
     fontWeight: '700',
-    color: '#f59e0b',
+    color: colors.brandNavy,
   },
   unlockProLink: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#f59e0b',
+    color: colors.brandNavy,
   },
   searchWrapper: {
     paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingTop: 12,
+    backgroundColor: colors.canvas,
   },
   searchInputContainer: {
     marginBottom: 0,
   },
   listContent: {
     paddingHorizontal: 16,
+    paddingTop: 6,
     paddingBottom: 24,
   },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 60,
+    paddingVertical: 48,
     paddingHorizontal: 20,
   },
   emptyIcon: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   emptyTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#f4f4f5',
-    marginBottom: 6,
+    color: colors.textPrimary,
+    marginBottom: 4,
   },
   emptySubtitle: {
     fontSize: 12,
-    color: '#71717a',
+    color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 18,
     marginBottom: 16,

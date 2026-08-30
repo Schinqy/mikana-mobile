@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Lead, DealStage } from '../../types/lead';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
-import { DollarSign, ArrowRight, MessageSquare, Check, X } from 'lucide-react-native';
+import { colors } from '../../theme/colors';
+import { DollarSign, ArrowRight, Check, X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
 interface DealCardProps {
@@ -32,7 +33,7 @@ export const DealCard: React.FC<DealCardProps> = ({
             style={styles.actionPill}
           >
             <Text style={styles.actionPillText}>Quote Deal</Text>
-            <ArrowRight size={12} color="#3b82f6" />
+            <ArrowRight size={12} color={colors.brandNavy} />
           </TouchableOpacity>
         );
       case 'quoted':
@@ -44,14 +45,14 @@ export const DealCard: React.FC<DealCardProps> = ({
               style={styles.actionPill}
             >
               <Text style={styles.actionPillText}>Negotiate</Text>
-              <ArrowRight size={12} color="#a78bfa" />
+              <ArrowRight size={12} color={colors.accentBlue} />
             </TouchableOpacity>
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => handleStageChange('won')}
               style={[styles.actionPill, styles.wonPill]}
             >
-              <Check size={12} color="#10b981" />
+              <Check size={12} color={colors.emerald} />
               <Text style={[styles.actionPillText, styles.wonText]}>Won</Text>
             </TouchableOpacity>
           </View>
@@ -64,28 +65,28 @@ export const DealCard: React.FC<DealCardProps> = ({
               onPress={() => handleStageChange('won')}
               style={[styles.actionPill, styles.wonPill]}
             >
-              <Check size={12} color="#10b981" />
-              <Text style={[styles.actionPillText, styles.wonText]}>Close Deal (Won)</Text>
+              <Check size={12} color={colors.emerald} />
+              <Text style={[styles.actionPillText, styles.wonText]}>Close (Won)</Text>
             </TouchableOpacity>
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => handleStageChange('lost')}
               style={[styles.actionPill, styles.lostPill]}
             >
-              <X size={12} color="#f43f5e" />
+              <X size={12} color={colors.rose} />
             </TouchableOpacity>
           </View>
         );
       case 'won':
         return (
-          <Badge variant="emerald" icon={<Check size={12} color="#10b981" />}>
+          <Badge variant="emerald" icon={<Check size={12} color={colors.emerald} />}>
             Closed & Won
           </Badge>
         );
       case 'lost':
         return (
-          <Badge variant="rose" icon={<X size={12} color="#f43f5e" />}>
-            Lost / Archived
+          <Badge variant="rose" icon={<X size={12} color={colors.rose} />}>
+            Lost
           </Badge>
         );
     }
@@ -108,7 +109,7 @@ export const DealCard: React.FC<DealCardProps> = ({
 
       <View style={styles.valueRow}>
         <View style={styles.valueItem}>
-          <DollarSign size={13} color="#10b981" />
+          <DollarSign size={13} color={colors.emerald} />
           <Text style={styles.valueText}>
             {lead.quotedAmount
               ? `$${lead.quotedAmount.toLocaleString()}`
@@ -129,6 +130,8 @@ const styles = StyleSheet.create({
   card: {
     marginBottom: 10,
     padding: 12,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
   },
   headerRow: {
     flexDirection: 'row',
@@ -139,16 +142,16 @@ const styles = StyleSheet.create({
   senderText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#f4f4f5',
+    color: colors.textPrimary,
     flex: 1,
   },
   channelText: {
     fontSize: 11,
-    color: '#71717a',
+    color: colors.textMuted,
   },
   summaryText: {
     fontSize: 12,
-    color: '#a1a1aa',
+    color: colors.textSecondary,
     lineHeight: 16,
     marginBottom: 8,
   },
@@ -159,7 +162,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#18181b',
+    borderColor: colors.surfaceElevated,
     marginBottom: 8,
   },
   valueItem: {
@@ -169,8 +172,8 @@ const styles = StyleSheet.create({
   },
   valueText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#f4f4f5',
+    fontWeight: '700',
+    color: colors.textHeading,
   },
   footerRow: {
     flexDirection: 'row',
@@ -188,25 +191,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
-    backgroundColor: '#18181b',
+    backgroundColor: colors.surfaceElevated,
     borderWidth: 1,
-    borderColor: '#27272a',
+    borderColor: colors.border,
     gap: 4,
   },
   actionPillText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#f4f4f5',
+    color: colors.brandNavy,
   },
   wonPill: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    borderColor: 'rgba(16, 185, 129, 0.25)',
+    backgroundColor: colors.emeraldBg,
+    borderColor: colors.emeraldBorder,
   },
   wonText: {
-    color: '#10b981',
+    color: colors.emerald,
   },
   lostPill: {
-    backgroundColor: 'rgba(244, 63, 94, 0.1)',
-    borderColor: 'rgba(244, 63, 94, 0.25)',
+    backgroundColor: colors.roseBg,
+    borderColor: colors.roseBorder,
   },
 });

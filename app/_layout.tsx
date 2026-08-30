@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { initializeRevenueCat } from '../src/services/purchases/revenueCat';
 import { useSettingsStore } from '../src/store/useSettingsStore';
+import { colors } from '../src/theme/colors';
 
 export default function RootLayout() {
   const { revenueCatApiKey } = useSettingsStore();
@@ -21,11 +22,11 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <KeyboardProvider>
           <View style={styles.container}>
-            <StatusBar style="light" />
+            <StatusBar style="dark" />
             <Stack
               screenOptions={{
                 headerShown: false,
-                contentStyle: { backgroundColor: '#09090b' },
+                contentStyle: { backgroundColor: colors.canvas },
                 animation: 'slide_from_right',
               }}
             >
@@ -73,6 +74,6 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#09090b',
+    backgroundColor: colors.canvas,
   },
 });

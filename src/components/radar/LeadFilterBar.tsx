@@ -1,6 +1,7 @@
 import React from 'react';
 import { ScrollView, TouchableOpacity, Text, StyleSheet, View } from 'react-native';
 import { LeadFilter } from '../../types/lead';
+import { colors } from '../../theme/colors';
 import * as Haptics from 'expo-haptics';
 
 interface FilterItem {
@@ -22,9 +23,9 @@ export const LeadFilterBar: React.FC<LeadFilterBarProps> = ({
 }) => {
   const filterTabs: FilterItem[] = [
     { id: 'all', label: 'All Leads', count: counts.all },
-    { id: 'hot', label: 'Hot Deals (90%+)', count: counts.hot },
+    { id: 'hot', label: 'High Priority', count: counts.hot },
     { id: 'urgent', label: 'Urgent', count: counts.urgent },
-    { id: 'captured', label: 'Captured', count: counts.captured },
+    { id: 'captured', label: 'New', count: counts.captured },
     { id: 'quoted', label: 'Quoted', count: counts.quoted },
     { id: 'won', label: 'Won', count: counts.won },
   ];
@@ -70,7 +71,8 @@ export const LeadFilterBar: React.FC<LeadFilterBarProps> = ({
 
 const styles = StyleSheet.create({
   wrapper: {
-    paddingVertical: 8,
+    paddingVertical: 10,
+    backgroundColor: colors.canvas,
   },
   container: {
     paddingHorizontal: 16,
@@ -82,38 +84,38 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 8,
-    backgroundColor: '#121215',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#27272a',
+    borderColor: colors.border,
     gap: 6,
   },
   activePill: {
-    backgroundColor: '#f4f4f5',
-    borderColor: '#f4f4f5',
+    backgroundColor: colors.brandNavy,
+    borderColor: colors.brandNavy,
   },
   pillText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#a1a1aa',
+    color: colors.textSecondary,
   },
   activePillText: {
-    color: '#09090b',
+    color: colors.textInverse,
   },
   countBadge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 10,
-    backgroundColor: '#18181b',
+    backgroundColor: colors.surfaceElevated,
   },
   activeCountBadge: {
-    backgroundColor: '#e4e4e7',
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
   },
   countText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#71717a',
+    color: colors.textSecondary,
   },
   activeCountText: {
-    color: '#09090b',
+    color: colors.textInverse,
   },
 });

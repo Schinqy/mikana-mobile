@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { colors } from '../../theme/colors';
 
-export type BadgeVariant = 'default' | 'emerald' | 'amber' | 'rose' | 'blue' | 'violet';
+export type BadgeVariant = 'default' | 'emerald' | 'amber' | 'rose' | 'blue' | 'navy';
 
 interface BadgeProps {
   children: React.ReactNode;
@@ -42,11 +43,11 @@ export const Badge: React.FC<BadgeProps> = ({
           text: styles.blueText,
           dot: styles.blueDot,
         };
-      case 'violet':
+      case 'navy':
         return {
-          container: styles.violetContainer,
-          text: styles.violetText,
-          dot: styles.violetDot,
+          container: styles.navyContainer,
+          text: styles.navyText,
+          dot: styles.navyDot,
         };
       default:
         return {
@@ -90,72 +91,72 @@ const styles = StyleSheet.create({
   baseText: {
     fontSize: 11,
     fontWeight: '600',
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
   },
-  // Default
+  // Default (Subtle Slate)
   defaultContainer: {
-    backgroundColor: '#18181b',
-    borderColor: '#27272a',
+    backgroundColor: colors.surfaceElevated,
+    borderColor: colors.border,
   },
   defaultText: {
-    color: '#a1a1aa',
+    color: colors.textSecondary,
   },
   defaultDot: {
-    backgroundColor: '#71717a',
+    backgroundColor: colors.textMuted,
   },
-  // Emerald
+  // Emerald (Active/Success)
   emeraldContainer: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    borderColor: 'rgba(16, 185, 129, 0.25)',
+    backgroundColor: colors.emeraldBg,
+    borderColor: colors.emeraldBorder,
   },
   emeraldText: {
-    color: '#10b981',
+    color: colors.emerald,
   },
   emeraldDot: {
-    backgroundColor: '#10b981',
+    backgroundColor: colors.emerald,
   },
-  // Amber
+  // Amber (Medium priority/Pending)
   amberContainer: {
-    backgroundColor: 'rgba(245, 158, 11, 0.1)',
-    borderColor: 'rgba(245, 158, 11, 0.25)',
+    backgroundColor: colors.amberBg,
+    borderColor: colors.amberBorder,
   },
   amberText: {
-    color: '#f59e0b',
+    color: colors.amber,
   },
   amberDot: {
-    backgroundColor: '#f59e0b',
+    backgroundColor: colors.amber,
   },
-  // Rose
+  // Rose (Urgent/Lost)
   roseContainer: {
-    backgroundColor: 'rgba(244, 63, 94, 0.1)',
-    borderColor: 'rgba(244, 63, 94, 0.25)',
+    backgroundColor: colors.roseBg,
+    borderColor: colors.roseBorder,
   },
   roseText: {
-    color: '#f43f5e',
+    color: colors.rose,
   },
   roseDot: {
-    backgroundColor: '#f43f5e',
+    backgroundColor: colors.rose,
   },
-  // Blue
+  // Blue (WhatsApp / Channel Accent)
   blueContainer: {
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    borderColor: 'rgba(59, 130, 246, 0.25)',
+    backgroundColor: colors.accentBlueTint,
+    borderColor: colors.accentBlueBorder,
   },
   blueText: {
-    color: '#3b82f6',
+    color: colors.accentBlue,
   },
   blueDot: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: colors.accentBlue,
   },
-  // Violet
-  violetContainer: {
-    backgroundColor: 'rgba(139, 92, 246, 0.1)',
-    borderColor: 'rgba(139, 92, 246, 0.25)',
+  // Navy (Brand Accent)
+  navyContainer: {
+    backgroundColor: '#0B254510',
+    borderColor: '#0B254530',
   },
-  violetText: {
-    color: '#a78bfa',
+  navyText: {
+    color: colors.brandNavy,
   },
-  violetDot: {
-    backgroundColor: '#a78bfa',
+  navyDot: {
+    backgroundColor: colors.brandNavy,
   },
 });

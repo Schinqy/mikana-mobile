@@ -8,6 +8,7 @@ import {
   TouchableOpacityProps,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { colors } from '../../theme/colors';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive' | 'outline';
 export type ButtonSize = 'sm' | 'md' | 'lg';
@@ -109,7 +110,7 @@ export const Button: React.FC<ButtonProps> = ({
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variant === 'primary' ? '#09090b' : '#f4f4f5'}
+          color={variant === 'primary' ? colors.textInverse : colors.brandNavy}
         />
       ) : (
         <View style={styles.contentRow}>
@@ -154,41 +155,41 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.2,
   },
-  // Variants
+  // Variants (Midnight Navy Light Palette)
   primaryContainer: {
-    backgroundColor: '#f4f4f5',
-    borderColor: '#f4f4f5',
+    backgroundColor: colors.brandNavy,
+    borderColor: colors.brandNavy,
   },
   primaryText: {
-    color: '#09090b',
+    color: colors.textInverse,
   },
   secondaryContainer: {
-    backgroundColor: '#18181b',
-    borderColor: '#27272a',
+    backgroundColor: colors.surfaceElevated,
+    borderColor: colors.border,
   },
   secondaryText: {
-    color: '#f4f4f5',
+    color: colors.textPrimary,
   },
   ghostContainer: {
     backgroundColor: 'transparent',
     borderColor: 'transparent',
   },
   ghostText: {
-    color: '#a1a1aa',
+    color: colors.textSecondary,
   },
   destructiveContainer: {
-    backgroundColor: 'rgba(244, 63, 94, 0.12)',
-    borderColor: 'rgba(244, 63, 94, 0.28)',
+    backgroundColor: colors.roseBg,
+    borderColor: colors.roseBorder,
   },
   destructiveText: {
-    color: '#f43f5e',
+    color: colors.rose,
   },
   outlineContainer: {
     backgroundColor: 'transparent',
-    borderColor: '#27272a',
+    borderColor: colors.border,
   },
   outlineText: {
-    color: '#f4f4f5',
+    color: colors.textPrimary,
   },
   // Sizes
   smContainer: {
@@ -216,6 +217,6 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   disabledText: {
-    color: '#71717a',
+    color: colors.textMuted,
   },
 });

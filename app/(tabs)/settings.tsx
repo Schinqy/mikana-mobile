@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   Switch,
   Platform,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSettingsStore } from '../../src/store/useSettingsStore';
@@ -18,20 +17,18 @@ import { Card } from '../../src/components/ui/Card';
 import { Badge } from '../../src/components/ui/Badge';
 import { Button } from '../../src/components/ui/Button';
 import { Input } from '../../src/components/ui/Input';
+import { colors } from '../../src/theme/colors';
 import {
-  Settings as SettingsIcon,
   Smartphone,
   Key,
   CreditCard,
   Bell,
   Cpu,
   Radio,
-  Sparkles,
-  ShieldCheck,
   RotateCcw,
-  ExternalLink,
   ChevronRight,
   QrCode,
+  CheckCircle,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
@@ -74,11 +71,6 @@ export default function SettingsScreen() {
     setNewChannelInput('');
   };
 
-  const handleToggleWhatsApp = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setWhatsAppConnected(!isWhatsAppConnected, isWhatsAppConnected ? '' : '+1 (415) 908-2214');
-  };
-
   const handleResetData = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     resetToSampleData();
@@ -98,234 +90,190 @@ export default function SettingsScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        {/* WhatsApp Channel Integration Card */}
-        <Card elevated style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={styles.cardTitleRow}>
-              <Smartphone size={18} color="#10b981" />
-              <Text style={styles.cardTitle}>WhatsApp Channel Link</Text>
-            </View>
-            <Badge variant={isWhatsAppConnected ? 'emerald' : 'rose'} showDot>
-              {isWhatsAppConnected ? 'Online & Linked' : 'Disconnected'}
-            </Badge>
-          </View>
+        {/* WhatsApp Multi-Device Pairing Section */}
+        <View style={styles.sectionHeader}>
+          <Smartphone size={14} color={colors.brandNavy} />
+          <Text style={styles.sectionTitle}>WhatsApp Channel Connection</Text>
+        </View>
 
-          <Text style={styles.cardText}>
-            {isWhatsAppConnected
-              ? `Connected via Baileys linked device: ${whatsappLinkedPhone}`
-              : 'Scan live QR code or connect your WhatsApp Multi-Device session to monitor group chats.'}
-          </Text>
-
-          <View style={styles.btnRow}>
-            <Button
-              size="sm"
-              variant="primary"
-              icon={<QrCode size={14} color="#09090b" />}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push('/modal/whatsapp-pair');
-              }}
-            >
-              {isWhatsAppConnected ? 'Manage WhatsApp Link / QR' : 'Pair WhatsApp Multi-Device QR'}
-            </Button>
-          </View>
-        </Card>
-
-        {/* RevenueCat & Monetization */}
         <Card style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={styles.cardTitleRow}>
-              <CreditCard size={18} color="#f59e0b" />
-              <Text style={styles.cardTitle}>RevenueCat Subscription</Text>
+          <View style={styles.waHeader}>
+            <View style={styles.waLeft}>
+              <View style={[styles.waDot, isWhatsAppConnected && styles.waDotActive]} />
+              <View>
+                <Text style={styles.waTitle}>
+                  {isWhatsAppConnected ? 'WhatsApp Multi-Device Linked' : 'WhatsApp Disconnected'}
+                </Text>
+                <Text style={styles.waSub}>
+                  {isWhatsAppConnected ? `Linked: ${whatsappLinkedPhone || '+27...'}` : 'Scan QR code to monitor groups'}
+                </Text>
+              </View>
             </View>
-            <Badge variant={status.isPro ? 'emerald' : 'amber'}>
-              {status.tier.toUpperCase()}
+            <Badge variant={isWhatsAppConnected ? 'emerald' : 'default'}>
+              {isWhatsAppConnected ? 'Active' : 'Offline'}
             </Badge>
-          </View>
-
-          <Text style={styles.cardText}>
-            {status.isPro
-              ? 'You have active Pro entitlements with unlimited lead interceptions and 24/7 Autopilot.'
-              : `Free Tier: ${status.leadsRemainingThisWeek} / 5 leads remaining this week.`}
-          </Text>
-
-          <View style={styles.sandboxRow}>
-            <View style={styles.sandboxTextCol}>
-              <Text style={styles.sandboxLabel}>Sandbox / Hackathon Demo Mode</Text>
-              <Text style={styles.sandboxHint}>
-                Allows instant testing and tier unlocking without live App Store sandbox accounts.
-              </Text>
-            </View>
-            <Switch
-              value={status.isSandboxMode}
-              onValueChange={toggleSandbox}
-              trackColor={{ false: '#27272a', true: '#3b82f6' }}
-              thumbColor="#f4f4f5"
-            />
-          </View>
-
-          {/* Quick Tier Switching for Demo Review */}
-          <View style={styles.tierButtonsRow}>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => setTier('free')}
-              style={[styles.tierPill, status.tier === 'free' && styles.activeTierPill]}
-            >
-              <Text style={[styles.tierPillText, status.tier === 'free' && styles.activeTierPillText]}>
-                Free
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => setTier('pro_monthly')}
-              style={[styles.tierPill, status.tier === 'pro_monthly' && styles.activeTierPill]}
-            >
-              <Text style={[styles.tierPillText, status.tier === 'pro_monthly' && styles.activeTierPillText]}>
-                Pro ($9.99)
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => setTier('agency')}
-              style={[styles.tierPill, status.tier === 'agency' && styles.activeTierPill]}
-            >
-              <Text style={[styles.tierPillText, status.tier === 'agency' && styles.activeTierPillText]}>
-                Agency ($24.99)
-              </Text>
-            </TouchableOpacity>
           </View>
 
           <Button
             size="sm"
-            variant="outline"
-            icon={<Sparkles size={13} color="#f4f4f5" />}
-            onPress={() => router.push('/modal/paywall')}
-            style={styles.paywallOpenBtn}
+            variant={isWhatsAppConnected ? 'secondary' : 'primary'}
+            icon={<QrCode size={14} color={isWhatsAppConnected ? colors.brandNavy : colors.textInverse} />}
+            onPress={() => router.push('/modal/whatsapp-pair')}
+            style={styles.qrBtn}
           >
-            Open Paywall Modal
+            {isWhatsAppConnected ? 'Manage WhatsApp Session' : 'Scan WhatsApp Web QR'}
           </Button>
         </Card>
 
-        {/* Google Gemini AI Configuration */}
+        {/* Monitored Channels */}
+        <View style={styles.sectionHeader}>
+          <Radio size={14} color={colors.brandNavy} />
+          <Text style={styles.sectionTitle}>Monitored WhatsApp Channels</Text>
+        </View>
+
         <Card style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={styles.cardTitleRow}>
-              <Cpu size={18} color="#3b82f6" />
-              <Text style={styles.cardTitle}>Google Gemini AI Model</Text>
+          <View style={styles.channelInputRow}>
+            <View style={{ flex: 1 }}>
+              <Input
+                placeholder="Add WhatsApp group name or link..."
+                value={newChannelInput}
+                onChangeText={setNewChannelInput}
+                containerStyle={{ marginBottom: 0 }}
+              />
             </View>
-          </View>
-
-          <Input
-            label="Google AI Studio API Key (Optional)"
-            placeholder="AIzaSy... (Leave blank to use built-in simulator)"
-            value={tempApiKey}
-            onChangeText={setTempApiKey}
-            secureTextEntry
-          />
-
-          <View style={styles.modelSelectorBox}>
-            <Text style={styles.inputLabel}>Active Gemini Model:</Text>
-            <View style={styles.modelPillsRow}>
-              {['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-2.5-flash-lite'].map((m) => (
-                <TouchableOpacity
-                  key={m}
-                  activeOpacity={0.7}
-                  onPress={() => setGeminiModel(m)}
-                  style={[styles.modelPill, geminiModel === m && styles.activeModelPill]}
-                >
-                  <Text style={[styles.modelPillText, geminiModel === m && styles.activeModelPillText]}>
-                    {m}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          <Button size="sm" variant="secondary" onPress={handleSaveGeminiKey}>
-            Save AI Settings
-          </Button>
-        </Card>
-
-        {/* Radar Monitored Channels */}
-        <Card style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={styles.cardTitleRow}>
-              <Radio size={18} color="#a78bfa" />
-              <Text style={styles.cardTitle}>Monitored Radar Channels ({radarChannels.length})</Text>
-            </View>
-          </View>
-
-          <View style={styles.channelAddRow}>
-            <Input
-              placeholder="Add WhatsApp / Telegram channel name..."
-              value={newChannelInput}
-              onChangeText={setNewChannelInput}
-              containerStyle={styles.channelInputContainer}
-            />
-            <Button size="sm" variant="primary" onPress={handleAddChannel}>
+            <Button size="md" variant="primary" onPress={handleAddChannel}>
               Add
             </Button>
           </View>
 
           <View style={styles.channelList}>
             {radarChannels.map((ch, idx) => (
-              <View key={idx} style={styles.channelTag}>
-                <Text style={styles.channelTagName} numberOfLines={1}>
-                  {ch}
-                </Text>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => removeRadarChannel(ch)}
-                  style={styles.removeTagBtn}
-                >
-                  <Text style={styles.removeTagText}>✕</Text>
+              <View key={idx} style={styles.channelItem}>
+                <View style={styles.channelLeft}>
+                  <Radio size={12} color={colors.accentBlue} />
+                  <Text style={styles.channelText} numberOfLines={1}>{ch}</Text>
+                </View>
+                <TouchableOpacity onPress={() => removeRadarChannel(ch)} style={styles.removeBtn}>
+                  <Text style={styles.removeText}>Remove</Text>
                 </TouchableOpacity>
               </View>
             ))}
           </View>
         </Card>
 
-        {/* System & Notification Toggles */}
-        <Card style={styles.card}>
-          <View style={styles.toggleRow}>
-            <View style={styles.toggleTextCol}>
-              <Text style={styles.toggleLabel}>Haptic Feedback & Sounds</Text>
-              <Text style={styles.toggleHint}>Tactile feedback on lead actions & quotes</Text>
-            </View>
-            <Switch
-              value={enableSoundHaptics}
-              onValueChange={toggleHaptics}
-              trackColor={{ false: '#27272a', true: '#3b82f6' }}
-              thumbColor="#f4f4f5"
-            />
-          </View>
+        {/* Google Gemini AI Configuration */}
+        <View style={styles.sectionHeader}>
+          <Cpu size={14} color={colors.brandNavy} />
+          <Text style={styles.sectionTitle}>Google Gemini AI Engine</Text>
+        </View>
 
-          <View style={[styles.toggleRow, styles.borderTop]}>
-            <View style={styles.toggleTextCol}>
-              <Text style={styles.toggleLabel}>Urgent Lead Push Notifications</Text>
-              <Text style={styles.toggleHint}>Vibrate instantly when 90%+ deal drops</Text>
-            </View>
-            <Switch
-              value={enablePushNotifications}
-              onValueChange={togglePushNotifications}
-              trackColor={{ false: '#27272a', true: '#3b82f6' }}
-              thumbColor="#f4f4f5"
-            />
+        <Card style={styles.card}>
+          <Input
+            label="GEMINI API KEY (OPTIONAL OVERRIDE)"
+            value={tempApiKey}
+            onChangeText={setTempApiKey}
+            secureTextEntry
+            placeholder="AIzaSy..."
+          />
+          <Button size="sm" variant="secondary" onPress={handleSaveGeminiKey} style={{ marginBottom: 14 }}>
+            Save API Key
+          </Button>
+
+          <Text style={styles.modelLabel}>ACTIVE GEMINI MODEL</Text>
+          <View style={styles.modelRow}>
+            {['gemini-3.5-flash-lite', 'gemini-2.5-flash'].map((m) => {
+              const isSel = geminiModel === m;
+              return (
+                <TouchableOpacity
+                  key={m}
+                  onPress={() => setGeminiModel(m)}
+                  style={[styles.modelPill, isSel && styles.activeModelPill]}
+                >
+                  <Text style={[styles.modelPillText, isSel && styles.activeModelPillText]}>
+                    {m === 'gemini-3.5-flash-lite' ? '3.5 Flash-Lite (Cheap & Fast)' : '2.5 Flash (Standard)'}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </Card>
 
-        {/* Reset / Sample Data */}
-        <View style={styles.footerActions}>
-          <Button
-            variant="ghost"
-            icon={<RotateCcw size={14} color="#71717a" />}
-            onPress={handleResetData}
-          >
-            Reset to Sample Hackathon Leads
-          </Button>
+        {/* RevenueCat Subscriptions & Judging Toggle */}
+        <View style={styles.sectionHeader}>
+          <CreditCard size={14} color={colors.brandNavy} />
+          <Text style={styles.sectionTitle}>RevenueCat Paywall & Subscriptions</Text>
         </View>
+
+        <Card style={styles.card}>
+          <View style={styles.rcHeader}>
+            <View>
+              <Text style={styles.rcTierTitle}>Current Tier: {status.tier.toUpperCase()}</Text>
+              <Text style={styles.rcSub}>
+                {status.isPro ? 'Unlimited AI pitches & autopilot active' : `${status.leadsRemainingThisWeek} free credits left`}
+              </Text>
+            </View>
+            <Badge variant={status.isPro ? 'emerald' : 'amber'}>
+              {status.isPro ? 'Pro Member' : 'Free Tier'}
+            </Badge>
+          </View>
+
+          <Button
+            size="sm"
+            variant="primary"
+            onPress={() => router.push('/modal/paywall')}
+            style={styles.paywallBtn}
+          >
+            Open RevenueCat Paywall
+          </Button>
+
+          {/* Sandbox Toggle for Hackathon Testing */}
+          <View style={styles.sandboxToggleRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.sandboxTitle}>Sandbox Simulation Mode</Text>
+              <Text style={styles.sandboxSub}>Instant 1-tap entitlement toggle for testing without store billing</Text>
+            </View>
+            <Switch
+              value={status.isSandboxMode}
+              onValueChange={toggleSandbox}
+              trackColor={{ false: colors.borderStrong, true: colors.brandNavy }}
+              thumbColor="#FFFFFF"
+            />
+          </View>
+
+          {status.isSandboxMode && (
+            <View style={styles.tierButtonsRow}>
+              <TouchableOpacity
+                onPress={() => setTier('free')}
+                style={[styles.tierBtn, status.tier === 'free' && styles.activeTierBtn]}
+              >
+                <Text style={[styles.tierBtnText, status.tier === 'free' && styles.activeTierBtnText]}>Free Plan</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setTier('pro_monthly')}
+                style={[styles.tierBtn, status.tier === 'pro_monthly' && styles.activeTierBtn]}
+              >
+                <Text style={[styles.tierBtnText, status.tier === 'pro_monthly' && styles.activeTierBtnText]}>Pro Monthly</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setTier('pro_annual')}
+                style={[styles.tierBtn, status.tier === 'pro_annual' && styles.activeTierBtn]}
+              >
+                <Text style={[styles.tierBtnText, status.tier === 'pro_annual' && styles.activeTierBtnText]}>Pro Annual</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </Card>
+
+        {/* Reset / Clean Data */}
+        <Button
+          size="sm"
+          variant="outline"
+          icon={<RotateCcw size={13} color={colors.textSecondary} />}
+          onPress={handleResetData}
+          style={styles.resetBtn}
+        >
+          Reset to Sample Commercial Leads
+        </Button>
       </ScrollView>
     </SafeAreaView>
   );
@@ -334,210 +282,212 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#09090b',
+    backgroundColor: colors.canvas,
     paddingTop: Platform.OS === 'android' ? 30 : 0,
   },
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#18181b',
+    borderBottomColor: colors.border,
   },
   title: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#f4f4f5',
+    color: colors.textPrimary,
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 12,
-    color: '#71717a',
+    fontSize: 11,
+    color: colors.textMuted,
     marginTop: 2,
   },
   content: {
     padding: 16,
     paddingBottom: 40,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+    marginTop: 10,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
   card: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     marginBottom: 16,
   },
-  cardHeader: {
+  waHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  waLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  waDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.textMuted,
+  },
+  waDotActive: {
+    backgroundColor: colors.emerald,
+  },
+  waTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  waSub: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 1,
+  },
+  qrBtn: {
+    width: '100%',
+  },
+  channelInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  channelList: {
+    gap: 6,
+  },
+  channelItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    backgroundColor: colors.surfaceElevated,
+  },
+  channelLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  channelText: {
+    fontSize: 12,
+    color: colors.textPrimary,
+    fontWeight: '500',
+  },
+  removeBtn: {
+    paddingHorizontal: 6,
+  },
+  removeText: {
+    fontSize: 11,
+    color: colors.rose,
+    fontWeight: '600',
+  },
+  modelLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.textMuted,
     marginBottom: 8,
   },
-  cardTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  cardTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#f4f4f5',
-  },
-  cardText: {
-    fontSize: 12,
-    color: '#a1a1aa',
-    lineHeight: 17,
-    marginBottom: 12,
-  },
-  btnRow: {
-    flexDirection: 'row',
-  },
-  sandboxRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#18181b',
-    marginBottom: 12,
-  },
-  sandboxTextCol: {
-    flex: 1,
-    paddingRight: 10,
-  },
-  sandboxLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#f4f4f5',
-  },
-  sandboxHint: {
-    fontSize: 11,
-    color: '#71717a',
-    marginTop: 2,
-  },
-  tierButtonsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-  },
-  tierPill: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 6,
-    backgroundColor: '#18181b',
-    borderWidth: 1,
-    borderColor: '#27272a',
-    alignItems: 'center',
-  },
-  activeTierPill: {
-    backgroundColor: '#f4f4f5',
-    borderColor: '#f4f4f5',
-  },
-  tierPillText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#a1a1aa',
-  },
-  activeTierPillText: {
-    color: '#09090b',
-  },
-  paywallOpenBtn: {
-    marginTop: 4,
-  },
-  inputLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#a1a1aa',
-    marginBottom: 6,
-  },
-  modelSelectorBox: {
-    marginBottom: 14,
-  },
-  modelPillsRow: {
-    flexDirection: 'row',
-    gap: 8,
+  modelRow: {
+    gap: 6,
   },
   modelPill: {
+    paddingVertical: 8,
     paddingHorizontal: 12,
-    paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: '#18181b',
+    backgroundColor: colors.surfaceElevated,
     borderWidth: 1,
-    borderColor: '#27272a',
+    borderColor: colors.border,
   },
   activeModelPill: {
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
-    borderColor: '#3b82f6',
+    backgroundColor: colors.brandNavy,
+    borderColor: colors.brandNavy,
   },
   modelPillText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#a1a1aa',
+    color: colors.textSecondary,
   },
   activeModelPillText: {
-    color: '#3b82f6',
+    color: colors.textInverse,
   },
-  channelAddRow: {
+  rcHeader: {
     flexDirection: 'row',
-    gap: 8,
-    alignItems: 'flex-start',
-    marginBottom: 10,
-  },
-  channelInputContainer: {
-    flex: 1,
-    marginBottom: 0,
-  },
-  channelList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  channelTag: {
-    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: '#18181b',
-    borderWidth: 1,
-    borderColor: '#27272a',
-    gap: 6,
+    marginBottom: 12,
   },
-  channelTagName: {
+  rcTierTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  rcSub: {
     fontSize: 11,
-    color: '#d4d4d8',
-    maxWidth: 200,
+    color: colors.textMuted,
+    marginTop: 2,
   },
-  removeTagBtn: {
-    padding: 2,
+  paywallBtn: {
+    marginBottom: 14,
   },
-  removeTagText: {
-    fontSize: 10,
-    color: '#71717a',
-  },
-  toggleRow: {
+  sandboxToggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
-  },
-  borderTop: {
-    borderTopWidth: 1,
-    borderTopColor: '#18181b',
     paddingTop: 12,
-    marginTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: colors.surfaceElevated,
   },
-  toggleTextCol: {
-    flex: 1,
-    paddingRight: 10,
+  sandboxTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textPrimary,
   },
-  toggleLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#f4f4f5',
-  },
-  toggleHint: {
-    fontSize: 11,
-    color: '#71717a',
+  sandboxSub: {
+    fontSize: 10,
+    color: colors.textMuted,
     marginTop: 2,
   },
-  footerActions: {
+  tierButtonsRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 10,
+  },
+  tierBtn: {
+    flex: 1,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceElevated,
     alignItems: 'center',
-    paddingTop: 10,
+  },
+  activeTierBtn: {
+    backgroundColor: colors.brandNavy,
+    borderColor: colors.brandNavy,
+  },
+  tierBtnText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  activeTierBtnText: {
+    color: colors.textInverse,
+  },
+  resetBtn: {
+    marginTop: 8,
+    marginBottom: 20,
   },
 });

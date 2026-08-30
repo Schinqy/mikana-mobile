@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Platform,
   Alert,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
@@ -18,13 +19,11 @@ import { analyzeLead } from '../../src/services/ai/geminiExtractor';
 import { Card } from '../../src/components/ui/Card';
 import { Button } from '../../src/components/ui/Button';
 import { Input } from '../../src/components/ui/Input';
+import { colors } from '../../src/theme/colors';
 import {
   X,
-  Sparkles,
   Clipboard as ClipboardIcon,
-  Radio,
-  FileText,
-  CheckCircle,
+  Plus,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
@@ -36,7 +35,7 @@ export default function NewLeadModal() {
 
   const [rawText, setRawText] = useState('');
   const [senderName, setSenderName] = useState('New Client');
-  const [senderPhone, setSenderPhone] = useState('+1 (555) 019-2831');
+  const [senderPhone, setSenderPhone] = useState('+27 82 194 8831');
   const [channelName, setChannelName] = useState(radarChannels[0] || 'WhatsApp Group');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
@@ -68,7 +67,7 @@ export default function NewLeadModal() {
       const newLead = addLead({
         rawText: rawText.trim(),
         senderName: senderName.trim() || 'Direct Inquiry',
-        senderPhone: senderPhone.trim() || '+1 (555) 000-0000',
+        senderPhone: senderPhone.trim() || '+27 82 194 8831',
         channelName: channelName.trim(),
         category: analysis.category,
         urgency: analysis.urgency,
@@ -98,76 +97,71 @@ export default function NewLeadModal() {
     <SafeAreaView style={styles.safeArea}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <FileText size={18} color="#3b82f6" />
-          <Text style={styles.modalTitle}>Scan / Paste Opportunity</Text>
+        <View>
+          <Text style={styles.headerTitle}>Ingest Opportunity</Text>
+          <Text style={styles.headerSub}>Extract and parse buyer requests with AI</Text>
         </View>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => router.back()}
-          style={styles.closeBtn}
-        >
-          <X size={18} color="#f4f4f5" />
+        <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
+          <X size={20} color={colors.textPrimary} />
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        <Card elevated style={styles.card}>
-          <View style={styles.pasteHeaderRow}>
-            <Text style={styles.inputLabel}>Raw Message / Buyer Post:</Text>
-            <Button
-              size="sm"
-              variant="secondary"
-              icon={<ClipboardIcon size={12} color="#f4f4f5" />}
-              onPress={handlePasteClipboard}
-            >
-              Paste
-            </Button>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Paste Raw Text Box */}
+        <Card style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardLabel}>WHATSAPP MESSAGE / BUYER INQUIRY</Text>
+            <TouchableOpacity onPress={handlePasteClipboard} style={styles.pasteBtn}>
+              <ClipboardIcon size={12} color={colors.brandNavy} />
+              <Text style={styles.pasteBtnText}>Paste</Text>
+            </TouchableOpacity>
           </View>
 
-          <Input
-            placeholder="Paste text from WhatsApp, Telegram, classifieds, or email inquiries..."
+          <TextInput
             multiline
-            numberOfLines={6}
             value={rawText}
             onChangeText={setRawText}
-            style={styles.rawInput}
+            placeholder="Paste forwarded WhatsApp group message, buyer inquiry, or RFQ..."
+            placeholderTextColor={colors.textMuted}
+            style={styles.textArea}
           />
+        </Card>
 
-          <View style={styles.row}>
-            <View style={styles.flex1}>
-              <Input
-                label="Sender Name"
-                value={senderName}
-                onChangeText={setSenderName}
-              />
-            </View>
-            <View style={styles.flex1}>
-              <Input
-                label="Phone / WhatsApp"
-                value={senderPhone}
-                onChangeText={setSenderPhone}
-              />
-            </View>
-          </View>
-
+        {/* Contact & Channel Metadata */}
+        <Card style={styles.card}>
           <Input
-            label="Origin Channel / Group"
+            label="SENDER NAME / CONTACT"
+            value={senderName}
+            onChangeText={setSenderName}
+            placeholder="e.g. Dr. Sithole"
+          />
+          <Input
+            label="WHATSAPP PHONE NUMBER"
+            value={senderPhone}
+            onChangeText={setSenderPhone}
+            keyboardType="phone-pad"
+            placeholder="+27..."
+          />
+          <Input
+            label="SOURCE WHATSAPP GROUP"
             value={channelName}
             onChangeText={setChannelName}
+            placeholder="e.g. B2B Contractors Network"
+            containerStyle={{ marginBottom: 0 }}
           />
-
-          <Button
-            size="lg"
-            variant="primary"
-            loading={isAnalyzing}
-            icon={<Sparkles size={16} color="#09090b" />}
-            onPress={handleAnalyzeAndIngest}
-            style={styles.submitBtn}
-          >
-            Analyze & Score with Gemini AI
-          </Button>
         </Card>
+
+        {/* Action Button */}
+        <Button
+          size="lg"
+          variant="primary"
+          onPress={handleAnalyzeAndIngest}
+          loading={isAnalyzing}
+          iconRight={<Plus size={16} color={colors.textInverse} />}
+          style={styles.submitBtn}
+        >
+          Parse & Open Proposal Studio
+        </Button>
       </ScrollView>
     </SafeAreaView>
   );
@@ -176,7 +170,7 @@ export default function NewLeadModal() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#09090b',
+    backgroundColor: colors.canvas,
     paddingTop: Platform.OS === 'android' ? 30 : 0,
   },
   header: {
@@ -185,58 +179,72 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 14,
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#18181b',
+    borderBottomColor: colors.border,
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  modalTitle: {
+  headerTitle: {
     fontSize: 18,
-    fontWeight: '800',
-    color: '#f4f4f5',
-    letterSpacing: -0.3,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  headerSub: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 2,
   },
   closeBtn: {
     padding: 6,
     borderRadius: 6,
-    backgroundColor: '#18181b',
+    backgroundColor: colors.surfaceElevated,
   },
   content: {
     padding: 16,
     paddingBottom: 40,
   },
   card: {
-    marginBottom: 12,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    marginBottom: 16,
   },
-  pasteHeaderRow: {
+  cardHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
   },
-  inputLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#a1a1aa',
+  cardLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.textMuted,
+    letterSpacing: 0.5,
   },
-  rawInput: {
+  pasteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    backgroundColor: colors.surfaceElevated,
+  },
+  pasteBtnText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.brandNavy,
+  },
+  textArea: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    color: colors.textHeading,
     minHeight: 120,
     textAlignVertical: 'top',
-    fontSize: 13,
-    lineHeight: 18,
-    marginBottom: 12,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  flex1: {
-    flex: 1,
   },
   submitBtn: {
-    marginTop: 8,
+    width: '100%',
   },
 });
