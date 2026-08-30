@@ -1,0 +1,132 @@
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors } from '../../theme/colors';
+import { fonts } from '../../theme/fonts';
+
+interface ScreenHeaderProps {
+  title: string;
+  subtitle?: string;
+  statusDot?: 'active' | 'inactive' | 'warning';
+  rightAction?: {
+    label: string;
+    icon?: React.ComponentType<any>;
+    onPress: () => void;
+  };
+}
+
+export function ScreenHeader({
+  title,
+  subtitle,
+  statusDot,
+  rightAction,
+}: ScreenHeaderProps) {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
+      <View style={styles.content}>
+        <View style={styles.titleColumn}>
+          <Text style={styles.title}>{title}</Text>
+          {subtitle ? (
+            <View style={styles.subtitleRow}>
+              {statusDot && (
+                <View
+                  style={[
+                    styles.dot,
+                    statusDot === 'active' && styles.dotActive,
+                    statusDot === 'inactive' && styles.dotInactive,
+                    statusDot === 'warning' && styles.dotWarning,
+                  ]}
+                />
+              )}
+              <Text style={styles.subtitle}>{subtitle}</Text>
+            </View>
+          ) : null}
+        </View>
+
+        {rightAction && (
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={rightAction.onPress}
+            style={styles.actionBtn}
+          >
+            {rightAction.icon && (
+              <rightAction.icon size={14} color={colors.textInverse} strokeWidth={2.5} />
+            )}
+            <Text style={styles.actionBtnText}>{rightAction.label}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+      <View style={styles.divider} />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: colors.surface,
+  },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 16,
+  },
+  titleColumn: {
+    flex: 1,
+    gap: 4,
+  },
+  title: {
+    fontFamily: fonts.geist.bold,
+    fontSize: 24,
+    color: colors.brandNavy,
+    letterSpacing: -0.6,
+  },
+  subtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  dotActive: {
+    backgroundColor: colors.emerald,
+  },
+  dotInactive: {
+    backgroundColor: colors.textMuted,
+  },
+  dotWarning: {
+    backgroundColor: colors.amber,
+  },
+  subtitle: {
+    fontFamily: fonts.inter.regular,
+    fontSize: 12,
+    color: colors.textSecondary,
+    letterSpacing: -0.1,
+  },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: colors.brandNavy,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 6,
+  },
+  actionBtnText: {
+    fontFamily: fonts.geist.semibold,
+    fontSize: 12,
+    color: colors.textInverse,
+    letterSpacing: -0.1,
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+  },
+});

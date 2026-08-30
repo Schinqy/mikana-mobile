@@ -4,15 +4,12 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  SafeAreaView,
-  TouchableOpacity,
-  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLeadStore } from '../../src/store/useLeadStore';
 import { DealStage } from '../../src/types/lead';
 import { DealCard } from '../../src/components/pipeline/DealCard';
-import { Badge } from '../../src/components/ui/Badge';
+import { ScreenHeader } from '../../src/components/ui/ScreenHeader';
 import { Card } from '../../src/components/ui/Card';
 import { colors } from '../../src/theme/colors';
 import { fonts } from '../../src/theme/fonts';
@@ -53,14 +50,11 @@ export default function PipelineScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>Deals</Text>
-          <Text style={styles.subtitle}>Quoted proposals and closed revenue</Text>
-        </View>
-      </View>
+    <View style={styles.container}>
+      <ScreenHeader
+        title="Deals"
+        subtitle={`$${activePipelineValue.toLocaleString()} active pipeline • ${wonDeals.length} won`}
+      />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {/* Pipeline Valuation Summary Cards */}
@@ -128,29 +122,9 @@ export default function PipelineScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
-    backgroundColor: colors.canvas,
-    paddingTop: Platform.OS === 'android' ? 30 : 0,
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
     backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  title: {
-    fontFamily: fonts.geist.bold,
-    fontSize: 26,
-    color: colors.textPrimary,
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontFamily: fonts.inter.regular,
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 2,
   },
   content: {
     padding: 16,

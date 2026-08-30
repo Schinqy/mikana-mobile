@@ -6,9 +6,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   Switch,
-  Platform,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { useSettingsStore } from '../../src/store/useSettingsStore';
+import { ScreenHeader } from '../../src/components/ui/ScreenHeader';
 import {
   Building2,
   Package,
@@ -22,7 +23,7 @@ import {
   LogOut,
 } from 'lucide-react-native';
 import { colors } from '../../src/theme/colors';
-import { fonts, type as typeScale } from '../../src/theme/fonts';
+import { fonts } from '../../src/theme/fonts';
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
@@ -110,23 +111,28 @@ function Divider() {
 // ─── Screen ──────────────────────────────────────────────────────────────────
 
 export default function BusinessScreen() {
-  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const {
+    isWhatsAppConnected,
+    whatsappLinkedPhone,
+    radarChannels,
+  } = useSettingsStore();
+
   const [autopilotEnabled, setAutopilotEnabled] = React.useState(false);
   const [quietHours, setQuietHours] = React.useState(true);
 
-  // WhatsApp connection status (mock — replace with real store)
-  const isConnected = false;
-
   return (
-    <ScrollView
-      style={[styles.container, { paddingTop: insets.top }]}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* ── Header ── */}
-      <View style={styles.header}>
-        <Text style={styles.screenTitle}>Business</Text>
-      </View>
+    <View style={styles.container}>
+      <ScreenHeader
+        title="Business"
+        subtitle={isWhatsAppConnected ? `${radarChannels.length} channels monitored` : 'Setup & Integrations'}
+        statusDot={isWhatsAppConnected ? 'active' : 'warning'}
+      />
+
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
 
       {/* ── WhatsApp Connection ── */}
       <SectionHeader title="WhatsApp" />
@@ -259,18 +265,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.canvas,
   },
   content: {
-    paddingBottom: 24,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 20,
-  },
-  screenTitle: {
-    fontFamily: fonts.geist.bold,
-    fontSize: 26,
-    letterSpacing: -0.5,
-    color: colors.textHeading,
+    paddingBottom: 40,
   },
   sectionHeader: {
     fontFamily: fonts.geist.medium,

@@ -1,20 +1,11 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Platform,
-  TouchableOpacity,
-  type LayoutChangeEvent,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, TrendingUp, Building2 } from 'lucide-react-native';
 import { colors } from '../../src/theme/colors';
 import { fonts } from '../../src/theme/fonts';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-// ─── Custom Tab Bar ─────────────────────────────────────────────────────────
 
 const TABS = [
   { name: 'index', label: 'Home', Icon: Home },
@@ -22,12 +13,11 @@ const TABS = [
   { name: 'business', label: 'Business', Icon: Building2 },
 ];
 
-function MikanaTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+function MikanaTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const paddingBottom = Math.max(insets.bottom, 8);
+  const paddingBottom = Math.max(insets.bottom, 10);
 
-  // Only render the 3 tabs we care about
-  const visibleRoutes = state.routes.filter(r =>
+  const visibleRoutes = state.routes.filter((r) =>
     ['index', 'pipeline', 'business'].includes(r.name)
   );
 
@@ -35,11 +25,11 @@ function MikanaTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     <View style={[styles.tabBar, { paddingBottom }]}>
       <View style={styles.tabBarInner}>
         {visibleRoutes.map((route) => {
-          const tabDef = TABS.find(t => t.name === route.name);
+          const tabDef = TABS.find((t) => t.name === route.name);
           if (!tabDef) return null;
 
           const { label, Icon } = tabDef;
-          const globalIndex = state.routes.findIndex(r => r.name === route.name);
+          const globalIndex = state.routes.findIndex((r) => r.name === route.name);
           const isFocused = state.index === globalIndex;
 
           const onPress = () => {
@@ -63,19 +53,19 @@ function MikanaTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               activeOpacity={0.7}
               style={styles.tabItem}
             >
-              {/* Active top indicator */}
-              <View style={[styles.indicator, isFocused && styles.indicatorActive]} />
-
-              <View style={styles.tabContent}>
-                <Icon
-                  size={20}
-                  color={isFocused ? colors.brandNavy : colors.textMuted}
-                  strokeWidth={isFocused ? 2.5 : 1.75}
-                />
-                {isFocused && (
-                  <Text style={styles.tabLabel}>{label}</Text>
-                )}
-              </View>
+              <Icon
+                size={20}
+                color={isFocused ? colors.brandNavy : colors.textMuted}
+                strokeWidth={isFocused ? 2.5 : 1.75}
+              />
+              <Text
+                style={[
+                  styles.tabLabel,
+                  isFocused ? styles.tabLabelActive : styles.tabLabelInactive,
+                ]}
+              >
+                {label}
+              </Text>
             </TouchableOpacity>
           );
         })}
@@ -83,8 +73,6 @@ function MikanaTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     </View>
   );
 }
-
-// ─── Layout ──────────────────────────────────────────────────────────────────
 
 export default function TabLayout() {
   return (
@@ -97,7 +85,7 @@ export default function TabLayout() {
       <Tabs.Screen name="index" />
       <Tabs.Screen name="pipeline" />
       <Tabs.Screen name="business" />
-      {/* Hidden from tab bar — still navigable as routes */}
+      {/* Routes accessible via navigation but not shown in tab bar */}
       <Tabs.Screen name="autopilot" options={{ href: null }} />
       <Tabs.Screen name="catalog" options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ href: null }} />
@@ -105,51 +93,36 @@ export default function TabLayout() {
   );
 }
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: colors.surface,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
-    // No elevation, no shadow — contrast does the work
     elevation: 0,
     shadowOpacity: 0,
   },
   tabBarInner: {
     flexDirection: 'row',
-    paddingTop: 0,
+    alignItems: 'center',
+    height: 54,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
-    paddingTop: 12,
-    paddingBottom: 4,
-    minHeight: 52,
-  },
-  indicator: {
-    position: 'absolute',
-    top: 0,
-    left: '20%',
-    right: '20%',
-    height: 2,
-    borderRadius: 0,
-    backgroundColor: 'transparent',
-  },
-  indicatorActive: {
-    backgroundColor: colors.brandNavy,
-  },
-  tabContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 6,
   },
   tabLabel: {
-    fontFamily: fonts.geist.semibold,
-    fontSize: 13,
-    letterSpacing: -0.2,
+    fontFamily: fonts.geist.medium,
+    fontSize: 11,
+    letterSpacing: -0.1,
+  },
+  tabLabelActive: {
     color: colors.brandNavy,
+    fontFamily: fonts.geist.semibold,
+  },
+  tabLabelInactive: {
+    color: colors.textMuted,
   },
 });

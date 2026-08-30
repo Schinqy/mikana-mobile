@@ -4,28 +4,30 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
-  Platform,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLeadStore } from '../../src/store/useLeadStore';
 import { useSettingsStore } from '../../src/store/useSettingsStore';
 import { LeadRow } from '../../src/components/radar/LeadRow';
+import { ScreenHeader } from '../../src/components/ui/ScreenHeader';
 import { Input } from '../../src/components/ui/Input';
 import { colors } from '../../src/theme/colors';
 import { fonts } from '../../src/theme/fonts';
 import { LeadFilter } from '../../src/types/lead';
+import { FlashList } from '@shopify/flash-list';
+import * as Haptics from 'expo-haptics';
 import {
   Search,
   Plus,
   MessageCircle,
+  Zap,
+  CheckCircle2,
   ChevronRight,
-  AlertCircle,
+  Sparkles,
 } from 'lucide-react-native';
-import { FlashList } from '@shopify/flash-list';
-import * as Haptics from 'expo-haptics';
 
-export default function RadarScreen() {
+export default function HomeScreen() {
   const router = useRouter();
   const {
     filter,
@@ -37,7 +39,7 @@ export default function RadarScreen() {
     leads,
   } = useLeadStore();
 
-  const { radarChannels } = useSettingsStore();
+  const { isWhatsAppConnected, radarChannels, setWhatsAppConnected } = useSettingsStore();
   const filteredLeads = getFilteredLeads();
 
   const filterTabs: Array<{ id: LeadFilter; label: string }> = [
@@ -58,33 +60,113 @@ export default function RadarScreen() {
     setFilter(newFilter);
   };
 
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      {/* Top Header */}
-      <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.appTitle}>Home</Text>
-          <View style={styles.statusPill}>
-            <View style={[styles.statusDot, radarChannels.length > 0 ? styles.statusDotActive : styles.statusDotInactive]} />
-            <Text style={styles.headerSub}>
-              {radarChannels.length > 0
-                ? `${radarChannels.length} groups active • ${leads.length} inquiries`
-                : 'WhatsApp not connected'}
-            </Text>
-          </View>
-        </View>
+  // ─── Disconnected / First-Time State ────────────────────────────────────────
 
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => router.push('/modal/new-lead')}
-          style={styles.addBtn}
+  if (!isWhatsAppConnected) {
+    return (
+      <View style={styles.container}>
+        <ScreenHeader
+          title="Mikana"
+          subtitle="Setup Required"
+          statusDot="warning"
+        />
+
+        <ScrollView
+          contentContainerStyle={styles.onboardingContent}
+          showsVerticalScrollIndicator={false}
         >
-          <Plus size={14} color={colors.textInverse} strokeWidth={2.5} />
-          <Text style={styles.addBtnText}>New Inquiry</Text>
-        </TouchableOpacity>
-      </View>
+          {/* Hero Icon */}
+          <View style={styles.heroIconWrapper}>
+            <View style={styles.heroIconCircle}>
+              <MessageCircle size={32} color={colors.accentBlue} strokeWidth={2} />
+            </View>
+          </View>
 
-      {/* Search Input */}
+          {/* Heading */}
+          <Text style={styles.heroTitle}>
+            Connect WhatsApp to start capturing inquiries
+          </Text>
+          <Text style={styles.heroSubtitle}>
+            Mikana listens to buyer requests across your business groups and synthesizes competitive quotes in seconds.
+          </Text>
+
+          {/* Value Props */}
+          <View style={styles.valuePropsCard}>
+            <View style={styles.valuePropItem}>
+              <Zap size={18} color={colors.accentBlue} strokeWidth={2} style={styles.propIcon} />
+              <View style={styles.propTextCol}>
+                <Text style={styles.propTitle}>Instant RFQ Interception</Text>
+                <Text style={styles.propSub}>
+                  Detects buyer requests and RFQs across your WhatsApp groups in real time.
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.propDivider} />
+
+            <View style={styles.valuePropItem}>
+              <Sparkles size={18} color={colors.brandNavy} strokeWidth={2} style={styles.propIcon} />
+              <View style={styles.propTextCol}>
+                <Text style={styles.propTitle}>AI Proposal Studio</Text>
+                <Text style={styles.propSub}>
+                  Generates personalized, priced quotes grounded in your catalog offerings.
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.propDivider} />
+
+            <View style={styles.valuePropItem}>
+              <CheckCircle2 size={18} color={colors.emerald} strokeWidth={2} style={styles.propIcon} />
+              <View style={styles.propTextCol}>
+                <Text style={styles.propTitle}>1-Tap WhatsApp DM Dispatch</Text>
+                <Text style={styles.propSub}>
+                  Reach the buyer's private inbox with a tailored pitch before competitors reply.
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Primary CTA */}
+          <TouchableOpacity
+            style={styles.connectPrimaryBtn}
+            activeOpacity={0.8}
+            onPress={() => router.push('/modal/whatsapp-pair')}
+          >
+            <MessageCircle size={18} color={colors.surface} strokeWidth={2.5} />
+            <Text style={styles.connectPrimaryBtnText}>Link WhatsApp Account</Text>
+            <ChevronRight size={16} color={colors.surface} strokeWidth={2.5} />
+          </TouchableOpacity>
+
+          {/* Secondary Demo Action */}
+          <TouchableOpacity
+            style={styles.demoBtn}
+            activeOpacity={0.7}
+            onPress={() => setWhatsAppConnected(true, '+1 (415) 908-2214')}
+          >
+            <Text style={styles.demoBtnText}>Explore with Sample Inquiries</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // ─── Connected Feed State ───────────────────────────────────────────────────
+
+  return (
+    <View style={styles.container}>
+      <ScreenHeader
+        title="Home"
+        subtitle={`${radarChannels.length} groups active • ${leads.length} inquiries`}
+        statusDot="active"
+        rightAction={{
+          label: 'New Inquiry',
+          icon: Plus,
+          onPress: () => router.push('/modal/new-lead'),
+        }}
+      />
+
+      {/* Search Bar */}
       <View style={styles.searchWrapper}>
         <Input
           placeholder="Search buyer requests, RFQs, locations..."
@@ -95,7 +177,7 @@ export default function RadarScreen() {
         />
       </View>
 
-      {/* Minimal Filter Tabs */}
+      {/* Underline Filter Tabs */}
       <View style={styles.filterBar}>
         {filterTabs.map((tab) => {
           const isActive = filter === tab.id;
@@ -114,7 +196,7 @@ export default function RadarScreen() {
         })}
       </View>
 
-      {/* Clean List Stream (Zero Floating Cards) */}
+      {/* List Feed */}
       <FlashList
         data={filteredLeads}
         keyExtractor={(item) => item.id}
@@ -127,106 +209,27 @@ export default function RadarScreen() {
         estimatedItemSize={72}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={
-          radarChannels.length === 0 ? (
-            <View style={styles.connectCard}>
-              <View style={styles.connectRow}>
-                <AlertCircle size={16} color={colors.amber} strokeWidth={2} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.connectTitle}>Link WhatsApp to get started</Text>
-                  <Text style={styles.connectSub}>
-                    Mikana monitors buyer requests across your business groups and drafts quotes instantly.
-                  </Text>
-                </View>
-              </View>
-              <TouchableOpacity
-                style={styles.connectBtn}
-                activeOpacity={0.8}
-                onPress={() => router.push('/modal/whatsapp-pair')}
-              >
-                <MessageCircle size={14} color={colors.surface} strokeWidth={2.5} />
-                <Text style={styles.connectBtnLabel}>Link WhatsApp Account</Text>
-                <ChevronRight size={13} color={colors.surface} strokeWidth={2.5} />
-              </TouchableOpacity>
-            </View>
-          ) : null
-        }
         ListEmptyComponent={
-          radarChannels.length > 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>No matching inquiries</Text>
-              <Text style={styles.emptySubtitle}>
-                Incoming buyer requests from your WhatsApp groups will appear here.
-              </Text>
-            </View>
-          ) : null
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>No matching inquiries</Text>
+            <Text style={styles.emptySubtitle}>
+              Incoming buyer requests from your WhatsApp groups will appear here.
+            </Text>
+          </View>
         }
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
     backgroundColor: colors.surface,
-    paddingTop: Platform.OS === 'android' ? 30 : 0,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
-    backgroundColor: colors.surface,
-  },
-  appTitle: {
-    fontFamily: fonts.geist.bold,
-    fontSize: 26,
-    color: colors.textHeading,
-    letterSpacing: -0.5,
-  },
-  statusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginTop: 3,
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  statusDotActive: {
-    backgroundColor: colors.emerald,
-  },
-  statusDotInactive: {
-    backgroundColor: colors.textMuted,
-  },
-  headerSub: {
-    fontFamily: fonts.inter.regular,
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: colors.brandNavy,
-    paddingHorizontal: 11,
-    paddingVertical: 8,
-    borderRadius: 7,
-  },
-  addBtnText: {
-    fontFamily: fonts.geist.medium,
-    fontSize: 13,
-    color: colors.textInverse,
-    letterSpacing: -0.1,
   },
   searchWrapper: {
     paddingHorizontal: 16,
-    paddingTop: 4,
+    paddingTop: 12,
     paddingBottom: 8,
     backgroundColor: colors.surface,
   },
@@ -235,12 +238,12 @@ const styles = StyleSheet.create({
   },
   filterBar: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingBottom: 10,
     backgroundColor: colors.surface,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
-    gap: 16,
+    gap: 20,
   },
   filterTab: {
     paddingVertical: 4,
@@ -257,54 +260,11 @@ const styles = StyleSheet.create({
   },
   activeFilterTabText: {
     fontFamily: fonts.geist.semibold,
-    color: colors.textHeading,
+    color: colors.brandNavy,
   },
   listContent: {
     backgroundColor: colors.surface,
     paddingBottom: 32,
-  },
-  // WhatsApp zero-state connect card
-  connectCard: {
-    margin: 16,
-    padding: 16,
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.amberBorder,
-    borderRadius: 10,
-    gap: 12,
-  },
-  connectRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-  },
-  connectTitle: {
-    fontFamily: fonts.geist.semibold,
-    fontSize: 14,
-    color: colors.textPrimary,
-    letterSpacing: -0.2,
-    marginBottom: 2,
-  },
-  connectSub: {
-    fontFamily: fonts.inter.regular,
-    fontSize: 13,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
-  connectBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: colors.brandNavy,
-    borderRadius: 8,
-    paddingVertical: 11,
-  },
-  connectBtnLabel: {
-    fontFamily: fonts.geist.semibold,
-    fontSize: 14,
-    color: colors.surface,
-    letterSpacing: -0.2,
   },
   emptyState: {
     alignItems: 'center',
@@ -324,5 +284,108 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 18,
+  },
+
+  // Onboarding / Disconnected Styles
+  onboardingContent: {
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 48,
+    alignItems: 'center',
+  },
+  heroIconWrapper: {
+    marginBottom: 20,
+  },
+  heroIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.accentBlueTint,
+    borderWidth: 1,
+    borderColor: colors.accentBlueBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroTitle: {
+    fontFamily: fonts.geist.bold,
+    fontSize: 22,
+    lineHeight: 28,
+    color: colors.brandNavy,
+    textAlign: 'center',
+    letterSpacing: -0.5,
+    marginBottom: 10,
+  },
+  heroSubtitle: {
+    fontFamily: fonts.inter.regular,
+    fontSize: 14,
+    lineHeight: 21,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 28,
+    paddingHorizontal: 8,
+  },
+  valuePropsCard: {
+    width: '100%',
+    backgroundColor: colors.canvas,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+    marginBottom: 28,
+    gap: 14,
+  },
+  valuePropItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  propIcon: {
+    marginTop: 2,
+  },
+  propTextCol: {
+    flex: 1,
+    gap: 2,
+  },
+  propTitle: {
+    fontFamily: fonts.geist.semibold,
+    fontSize: 14,
+    color: colors.textPrimary,
+    letterSpacing: -0.2,
+  },
+  propSub: {
+    fontFamily: fonts.inter.regular,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.textSecondary,
+  },
+  propDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+  },
+  connectPrimaryBtn: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.brandNavy,
+    borderRadius: 8,
+    paddingVertical: 14,
+    marginBottom: 14,
+  },
+  connectPrimaryBtnText: {
+    fontFamily: fonts.geist.semibold,
+    fontSize: 15,
+    color: colors.surface,
+    letterSpacing: -0.2,
+  },
+  demoBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  demoBtnText: {
+    fontFamily: fonts.inter.medium,
+    fontSize: 13,
+    color: colors.accentBlue,
   },
 });
