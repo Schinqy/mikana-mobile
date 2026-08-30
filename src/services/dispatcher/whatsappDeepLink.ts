@@ -50,3 +50,6 @@ export async function copyToClipboard(text: string): Promise<boolean> {
     return false;
   }
 }
+
+export const openWhatsAppDM = openWhatsAppChat;
+

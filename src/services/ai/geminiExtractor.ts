@@ -17,7 +17,7 @@ export async function analyzeLead(
   rawText: string,
   services: ServiceItem[],
   apiKey?: string,
-  modelName: string = 'gemini-2.5-flash'
+  modelName: string = 'gemini-3.5-flash-lite'
 ): Promise<AIAnalysisResult> {
   // If API key is provided, attempt live Google Gemini API call
   if (apiKey && apiKey.trim().length > 10) {
@@ -101,7 +101,7 @@ export async function generateTailoredPitch(
   matchedService: ServiceItem | undefined,
   profile: BusinessProfile,
   apiKey?: string,
-  modelName: string = 'gemini-2.5-flash'
+  modelName: string = 'gemini-3.5-flash-lite'
 ): Promise<string> {
   if (apiKey && apiKey.trim().length > 10) {
     try {

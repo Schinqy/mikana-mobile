@@ -50,6 +50,14 @@ export default function RootLayout() {
               animation: 'slide_from_bottom',
             }}
           />
+          <Stack.Screen
+            name="modal/whatsapp-pair"
+            options={{
+              presentation: 'modal',
+              headerShown: false,
+              animation: 'slide_from_bottom',
+            }}
+          />
         </Stack>
       </View>
     </SafeAreaProvider>

@@ -31,6 +31,7 @@ import {
   RotateCcw,
   ExternalLink,
   ChevronRight,
+  QrCode,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
@@ -112,16 +113,20 @@ export default function SettingsScreen() {
           <Text style={styles.cardText}>
             {isWhatsAppConnected
               ? `Connected via Baileys linked device: ${whatsappLinkedPhone}`
-              : 'Scan QR code or connect your WhatsApp session to monitor group chats.'}
+              : 'Scan live QR code or connect your WhatsApp Multi-Device session to monitor group chats.'}
           </Text>
 
           <View style={styles.btnRow}>
             <Button
               size="sm"
-              variant={isWhatsAppConnected ? 'destructive' : 'primary'}
-              onPress={handleToggleWhatsApp}
+              variant="primary"
+              icon={<QrCode size={14} color="#09090b" />}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/modal/whatsapp-pair');
+              }}
             >
-              {isWhatsAppConnected ? 'Disconnect Device' : 'Link WhatsApp Web Device'}
+              {isWhatsAppConnected ? 'Manage WhatsApp Link / QR' : 'Pair WhatsApp Multi-Device QR'}
             </Button>
           </View>
         </Card>
@@ -223,7 +228,7 @@ export default function SettingsScreen() {
           <View style={styles.modelSelectorBox}>
             <Text style={styles.inputLabel}>Active Gemini Model:</Text>
             <View style={styles.modelPillsRow}>
-              {['gemini-2.5-flash', 'gemini-2.5-pro'].map((m) => (
+              {['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-2.5-flash-lite'].map((m) => (
                 <TouchableOpacity
                   key={m}
                   activeOpacity={0.7}
