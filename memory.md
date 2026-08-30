@@ -18,15 +18,20 @@
 
 ## 2. Brand Identity & Design System
 
-- **Primary Brand Color:** **Midnight Navy (`#0B2545` / `#07182E`)** from official Mikana Brand Guidelines (Concept 1 Pathway M & Concept 2 Open Door).
-- **Secondary Accent:** **Royal Blue (`#1E56A0`)** for interactive active states and focus borders.
+- **Primary Brand Colors (Dual-Blue System from Logo):**
+  - **Left Pillar / Active Accent:** **Royal Blue (`#1E56A0`)** for primary CTAs, interactive highlights, and active focus.
+  - **Right Pillar / Base Foundation:** **Midnight Navy (`#0B2545` / `#07182E`)** for display titles, headers, and stable dark chrome.
 - **Theme Paradigm:** **Clean, High-Craft Light Mode** (Things 3 / Linear / Stripe benchmark).
   - Background Canvas: `#F8FAFC` (soft off-white).
-  - Surfaces / Cards: `#FFFFFF` (pure crisp white).
+  - Surfaces: `#FFFFFF` (crisp white).
   - Hairline Borders: `1px solid #E2E8F0` / `#CBD5E1`.
   - Primary Text: `#0B2545` (high-contrast deep navy).
   - Secondary Text: `#486581` (steel slate).
-  - Action Buttons: Solid `#0B2545` with crisp `#FFFFFF` typography.
+  - Typography: **Geist** (UI chrome, titles, labels, numbers) + **Inter** (body copy, descriptions).
+- **Navigation Architecture (3 Focused Tabs):**
+  - **Tab 1: `Home` (`index.tsx`)** — High-speed live inquiry feed + disconnected WhatsApp setup card + FlashList list rows.
+  - **Tab 2: `Deals` (`pipeline.tsx`)** — Active pipeline CRM & closed revenue swimlanes.
+  - **Tab 3: `Business` (`business.tsx`)** — Consolidated vertical sections for WhatsApp sync, Offerings, 24/7 Autopilot, and Subscription.
 - **Strict Anti-Slop Enforcement:** Rules defined in `anti-slop-expo` and `mobile-ui-review` skills (Zero emojis in UI buttons/badges/headers, no cards-inside-cards, realistic SME buyer inquiries).
 
 ---

@@ -2,6 +2,16 @@
 
 All notable changes to **Mikana Mobile** are documented here.
 
+## [1.2.0] - 2026-08-31
+
+### Navigation, Typography & Architecture Refactor
+- **3-Tab Navigation Architecture:** Streamlined 5 tabs down to 3 focused tabs (`Home`, `Deals`, `Business`) with custom top-indicator tab bar and dynamic active item expansion.
+- **Geist & Inter Typography System:** Integrated `@expo-google-fonts/geist` for UI chrome, headings, and numbers, alongside `@expo-google-fonts/inter` for body copy and descriptions. Defined strict type scale in `src/theme/fonts.ts`.
+- **Dual-Blue Palette Lock:** Locked **Royal Blue (`#1E56A0`)** for interactive CTAs & active states alongside **Midnight Navy (`#0B2545`)** for headers and dark surfaces.
+- **FlashList Performance:** Upgraded Home inquiry feed from `FlatList` to `@shopify/flash-list` for smooth 60fps scrolling.
+- **Business Hub:** Created `app/(tabs)/business.tsx` consolidating WhatsApp multi-device status, product offerings, 24/7 Autopilot toggles, and Pro subscriptions.
+- **Live Emulator Verification:** Verified all 3 tabs running live on Android emulator `Pixel_4a`.
+
 ## [1.1.0] - 2026-08-30
 
 ### Brand & Design Transformation (Mikana Identity System)
