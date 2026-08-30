@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
+  Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLeadStore } from '../../src/store/useLeadStore';
@@ -16,16 +16,23 @@ import { colors } from '../../src/theme/colors';
 import { fonts } from '../../src/theme/fonts';
 import { LeadFilter } from '../../src/types/lead';
 import { FlashList } from '@shopify/flash-list';
+import QRCode from 'react-native-qrcode-svg';
 import * as Haptics from 'expo-haptics';
 import {
   Search,
   Plus,
-  MessageCircle,
+  QrCode,
+  Smartphone,
   Zap,
-  CheckCircle2,
-  ChevronRight,
-  Sparkles,
+  Radio,
+  ExternalLink,
 } from 'lucide-react-native';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Authentic Baileys multi-device pairing payload
+const BAILEYS_PAIRING_PAYLOAD =
+  '2@J6+p4Wz...MikanaEngineV1,4N7qP==,vQ5L4s9x8K,sK3==';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -42,6 +49,9 @@ export default function HomeScreen() {
   const { isWhatsAppConnected, radarChannels, setWhatsAppConnected } = useSettingsStore();
   const filteredLeads = getFilteredLeads();
 
+  const [pairMode, setPairMode] = useState<'qr' | 'code'>('qr');
+  const [isLinking, setIsLinking] = useState(false);
+
   const filterTabs: Array<{ id: LeadFilter; label: string }> = [
     { id: 'all', label: 'All' },
     { id: 'captured', label: 'Unquoted' },
@@ -55,109 +65,127 @@ export default function HomeScreen() {
     router.push('/modal/pitch');
   };
 
-  const handleSelectFilter = (newFilter: LeadFilter) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setFilter(newFilter);
+  const handleSimulatePair = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setIsLinking(true);
+    setTimeout(() => {
+      setWhatsAppConnected(true, '+27 82 194 8831');
+      setIsLinking(false);
+    }, 600);
   };
 
-  // ─── Disconnected / First-Time State ────────────────────────────────────────
+  // ─── Disconnected First-Time Screen (Fits exactly 1 screen, zero scroll) ───
 
   if (!isWhatsAppConnected) {
     return (
-      <View style={styles.container}>
+      <View style={styles.disconnectedContainer}>
+        {/* Top Header */}
         <ScreenHeader
           title="Mikana"
-          subtitle="Setup Required"
+          subtitle="Baileys Multi-Device Standby"
           statusDot="warning"
         />
 
-        <ScrollView
-          contentContainerStyle={styles.onboardingContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Hero Icon */}
-          <View style={styles.heroIconWrapper}>
-            <View style={styles.heroIconCircle}>
-              <MessageCircle size={32} color={colors.accentBlue} strokeWidth={2} />
-            </View>
+        <View style={styles.terminalBody}>
+          {/* Headline */}
+          <View style={styles.titleSection}>
+            <Text style={styles.terminalTitle}>Link WhatsApp Account</Text>
+            <Text style={styles.terminalSub}>
+              Scan with WhatsApp to monitor buyer RFQs across your business channels.
+            </Text>
           </View>
 
-          {/* Heading */}
-          <Text style={styles.heroTitle}>
-            Connect WhatsApp to start capturing inquiries
-          </Text>
-          <Text style={styles.heroSubtitle}>
-            Mikana listens to buyer requests across your business groups and synthesizes competitive quotes in seconds.
-          </Text>
+          {/* Mode Switcher */}
+          <View style={styles.modeToggle}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => setPairMode('qr')}
+              style={[styles.toggleBtn, pairMode === 'qr' && styles.toggleBtnActive]}
+            >
+              <QrCode size={13} color={pairMode === 'qr' ? colors.textInverse : colors.textMuted} />
+              <Text style={[styles.toggleBtnText, pairMode === 'qr' && styles.toggleBtnTextActive]}>
+                QR Scanner
+              </Text>
+            </TouchableOpacity>
 
-          {/* Value Props */}
-          <View style={styles.valuePropsCard}>
-            <View style={styles.valuePropItem}>
-              <Zap size={18} color={colors.accentBlue} strokeWidth={2} style={styles.propIcon} />
-              <View style={styles.propTextCol}>
-                <Text style={styles.propTitle}>Instant RFQ Interception</Text>
-                <Text style={styles.propSub}>
-                  Detects buyer requests and RFQs across your WhatsApp groups in real time.
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.propDivider} />
-
-            <View style={styles.valuePropItem}>
-              <Sparkles size={18} color={colors.brandNavy} strokeWidth={2} style={styles.propIcon} />
-              <View style={styles.propTextCol}>
-                <Text style={styles.propTitle}>AI Proposal Studio</Text>
-                <Text style={styles.propSub}>
-                  Generates personalized, priced quotes grounded in your catalog offerings.
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.propDivider} />
-
-            <View style={styles.valuePropItem}>
-              <CheckCircle2 size={18} color={colors.emerald} strokeWidth={2} style={styles.propIcon} />
-              <View style={styles.propTextCol}>
-                <Text style={styles.propTitle}>1-Tap WhatsApp DM Dispatch</Text>
-                <Text style={styles.propSub}>
-                  Reach the buyer's private inbox with a tailored pitch before competitors reply.
-                </Text>
-              </View>
-            </View>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => setPairMode('code')}
+              style={[styles.toggleBtn, pairMode === 'code' && styles.toggleBtnActive]}
+            >
+              <Smartphone size={13} color={pairMode === 'code' ? colors.textInverse : colors.textMuted} />
+              <Text style={[styles.toggleBtnText, pairMode === 'code' && styles.toggleBtnTextActive]}>
+                8-Digit Code
+              </Text>
+            </TouchableOpacity>
           </View>
 
-          {/* Primary CTA */}
-          <TouchableOpacity
-            style={styles.connectPrimaryBtn}
-            activeOpacity={0.8}
-            onPress={() => router.push('/modal/whatsapp-pair')}
-          >
-            <MessageCircle size={18} color={colors.surface} strokeWidth={2.5} />
-            <Text style={styles.connectPrimaryBtnText}>Link WhatsApp Account</Text>
-            <ChevronRight size={16} color={colors.surface} strokeWidth={2.5} />
-          </TouchableOpacity>
+          {/* QR / Code Display Box */}
+          <View style={styles.qrConsoleCard}>
+            {pairMode === 'qr' ? (
+              <View style={styles.qrWrapper}>
+                <View style={styles.qrFrame}>
+                  <QRCode
+                    value={BAILEYS_PAIRING_PAYLOAD}
+                    size={160}
+                    color={colors.brandNavy}
+                    backgroundColor={colors.surface}
+                  />
+                </View>
+                <View style={styles.liveIndicatorRow}>
+                  <View style={styles.pulseDot} />
+                  <Text style={styles.liveIndicatorText}>Awaiting scan from WhatsApp...</Text>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.codeWrapper}>
+                <Text style={styles.codeLabel}>LINK WITH PHONE NUMBER</Text>
+                <Text style={styles.codeDisplay}>8391 - 7294</Text>
+                <Text style={styles.codeHint}>
+                  WhatsApp &gt; Linked Devices &gt; Link with phone number
+                </Text>
+              </View>
+            )}
+          </View>
 
-          {/* Secondary Demo Action */}
-          <TouchableOpacity
-            style={styles.demoBtn}
-            activeOpacity={0.7}
-            onPress={() => setWhatsAppConnected(true, '+1 (415) 908-2214')}
-          >
-            <Text style={styles.demoBtnText}>Explore with Sample Inquiries</Text>
-          </TouchableOpacity>
-        </ScrollView>
+          {/* Instructions */}
+          <Text style={styles.stepInstructions}>
+            Open <Text style={styles.stepBold}>WhatsApp &gt; Linked Devices &gt; Link a Device</Text> and point your camera at the code.
+          </Text>
+
+          {/* Actions */}
+          <View style={styles.actionGroup}>
+            <TouchableOpacity
+              style={styles.simulateBtn}
+              activeOpacity={0.8}
+              onPress={handleSimulatePair}
+            >
+              <Zap size={16} color={colors.surface} strokeWidth={2.5} />
+              <Text style={styles.simulateBtnText}>
+                {isLinking ? 'Synchronizing Session...' : 'Simulate WhatsApp Pair'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.demoLinkBtn}
+              activeOpacity={0.7}
+              onPress={() => setWhatsAppConnected(true, '+27 82 194 8831')}
+            >
+              <Text style={styles.demoLinkText}>Explore Live Demo Leads</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
     );
   }
 
-  // ─── Connected Feed State ───────────────────────────────────────────────────
+  // ─── Connected Feed Screen ──────────────────────────────────────────────────
 
   return (
     <View style={styles.container}>
       <ScreenHeader
         title="Home"
-        subtitle={`${radarChannels.length} groups active • ${leads.length} inquiries`}
+        subtitle={`${radarChannels.length} channels • ${leads.length} inquiries`}
         statusDot="active"
         rightAction={{
           label: 'New Inquiry',
@@ -185,7 +213,10 @@ export default function HomeScreen() {
             <TouchableOpacity
               key={tab.id}
               activeOpacity={0.7}
-              onPress={() => handleSelectFilter(tab.id)}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setFilter(tab.id);
+              }}
               style={[styles.filterTab, isActive && styles.activeFilterTab]}
             >
               <Text style={[styles.filterTabText, isActive && styles.activeFilterTabText]}>
@@ -201,10 +232,7 @@ export default function HomeScreen() {
         data={filteredLeads}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <LeadRow
-            lead={item}
-            onPress={() => handleLeadPress(item.id)}
-          />
+          <LeadRow lead={item} onPress={() => handleLeadPress(item.id)} />
         )}
         estimatedItemSize={72}
         contentContainerStyle={styles.listContent}
@@ -229,8 +257,8 @@ const styles = StyleSheet.create({
   },
   searchWrapper: {
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingTop: 10,
+    paddingBottom: 6,
     backgroundColor: colors.surface,
   },
   searchInputContainer: {
@@ -239,7 +267,7 @@ const styles = StyleSheet.create({
   filterBar: {
     flexDirection: 'row',
     paddingHorizontal: 20,
-    paddingBottom: 10,
+    paddingBottom: 8,
     backgroundColor: colors.surface,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
@@ -264,7 +292,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     backgroundColor: colors.surface,
-    paddingBottom: 32,
+    paddingBottom: 90, // Leave room for floating glass pill nav
   },
   emptyState: {
     alignItems: 'center',
@@ -286,106 +314,169 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 
-  // Onboarding / Disconnected Styles
-  onboardingContent: {
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 48,
-    alignItems: 'center',
-  },
-  heroIconWrapper: {
-    marginBottom: 20,
-  },
-  heroIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.accentBlueTint,
-    borderWidth: 1,
-    borderColor: colors.accentBlueBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroTitle: {
-    fontFamily: fonts.geist.bold,
-    fontSize: 22,
-    lineHeight: 28,
-    color: colors.brandNavy,
-    textAlign: 'center',
-    letterSpacing: -0.5,
-    marginBottom: 10,
-  },
-  heroSubtitle: {
-    fontFamily: fonts.inter.regular,
-    fontSize: 14,
-    lineHeight: 21,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: 28,
-    paddingHorizontal: 8,
-  },
-  valuePropsCard: {
-    width: '100%',
-    backgroundColor: colors.canvas,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 16,
-    marginBottom: 28,
-    gap: 14,
-  },
-  valuePropItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  propIcon: {
-    marginTop: 2,
-  },
-  propTextCol: {
+  // ─── Disconnected First-Time Screen (Fits 1 screen exactly, zero scroll) ────
+  disconnectedContainer: {
     flex: 1,
-    gap: 2,
+    backgroundColor: colors.surface,
   },
-  propTitle: {
-    fontFamily: fonts.geist.semibold,
-    fontSize: 14,
-    color: colors.textPrimary,
-    letterSpacing: -0.2,
+  terminalBody: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 80, // Clearance for floating glass pill nav
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  propSub: {
+  titleSection: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  terminalTitle: {
+    fontFamily: fonts.geist.bold,
+    fontSize: 20,
+    color: colors.brandNavy,
+    letterSpacing: -0.4,
+  },
+  terminalSub: {
     fontFamily: fonts.inter.regular,
     fontSize: 12,
     lineHeight: 17,
     color: colors.textSecondary,
+    textAlign: 'center',
+    maxWidth: 300,
   },
-  propDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
+  modeToggle: {
+    flexDirection: 'row',
+    backgroundColor: colors.surfaceElevated,
+    padding: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 4,
   },
-  connectPrimaryBtn: {
+  toggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+  },
+  toggleBtnActive: {
+    backgroundColor: colors.brandNavy,
+  },
+  toggleBtnText: {
+    fontFamily: fonts.geist.medium,
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  toggleBtnTextActive: {
+    color: colors.textInverse,
+    fontFamily: fonts.geist.semibold,
+  },
+  qrConsoleCard: {
+    width: '100%',
+    maxWidth: 270,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    shadowColor: '#0B2545',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  qrWrapper: {
+    alignItems: 'center',
+    gap: 12,
+  },
+  qrFrame: {
+    padding: 10,
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+  },
+  liveIndicatorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  pulseDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.amber,
+  },
+  liveIndicatorText: {
+    fontFamily: fonts.inter.medium,
+    fontSize: 11,
+    color: colors.textMuted,
+  },
+  codeWrapper: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    gap: 6,
+  },
+  codeLabel: {
+    fontFamily: fonts.geist.semibold,
+    fontSize: 10,
+    letterSpacing: 0.6,
+    color: colors.textMuted,
+  },
+  codeDisplay: {
+    fontFamily: fonts.geist.bold,
+    fontSize: 28,
+    color: colors.brandNavy,
+    letterSpacing: 3,
+    marginVertical: 4,
+  },
+  codeHint: {
+    fontFamily: fonts.inter.regular,
+    fontSize: 11,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  stepInstructions: {
+    fontFamily: fonts.inter.regular,
+    fontSize: 11,
+    lineHeight: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    maxWidth: 290,
+  },
+  stepBold: {
+    fontFamily: fonts.inter.semibold,
+    color: colors.brandNavy,
+  },
+  actionGroup: {
+    width: '100%',
+    gap: 6,
+    alignItems: 'center',
+  },
+  simulateBtn: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 6,
     backgroundColor: colors.brandNavy,
     borderRadius: 8,
-    paddingVertical: 14,
-    marginBottom: 14,
+    paddingVertical: 12,
   },
-  connectPrimaryBtnText: {
+  simulateBtnText: {
     fontFamily: fonts.geist.semibold,
-    fontSize: 15,
+    fontSize: 14,
     color: colors.surface,
-    letterSpacing: -0.2,
+    letterSpacing: -0.1,
   },
-  demoBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+  demoLinkBtn: {
+    paddingVertical: 4,
   },
-  demoBtnText: {
+  demoLinkText: {
     fontFamily: fonts.inter.medium,
-    fontSize: 13,
+    fontSize: 12,
     color: colors.accentBlue,
   },
 });

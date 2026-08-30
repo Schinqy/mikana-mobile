@@ -29,6 +29,7 @@ import { Input } from '../../src/components/ui/Input';
 import { colors } from '../../src/theme/colors';
 import { useSettingsStore } from '../../src/store/useSettingsStore';
 import { openWhatsAppDM } from '../../src/services/dispatcher/whatsappDeepLink';
+import QRCode from 'react-native-qrcode-svg';
 
 export default function WhatsAppPairModal() {
   const router = useRouter();
@@ -225,8 +226,13 @@ export default function WhatsAppPairModal() {
                     <Image source={{ uri: qrDataUrl }} style={styles.qrImage} resizeMode="contain" />
                   ) : (
                     <View style={styles.mockQrBox}>
-                      <QrCode size={120} color={colors.brandNavy} />
-                      <Text style={styles.qrHint}>Ready for WhatsApp Link</Text>
+                      <QRCode
+                        value="2@J6+p4Wz...MikanaEngineV1,4N7qP==,vQ5L4s9x8K,sK3=="
+                        size={150}
+                        color={colors.brandNavy}
+                        backgroundColor={colors.surface}
+                      />
+                      <Text style={styles.qrHint}>Baileys Multi-Device Pairing Ready</Text>
                     </View>
                   )}
                   <Text style={styles.instructionsText}>

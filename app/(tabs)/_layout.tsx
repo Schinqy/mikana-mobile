@@ -6,6 +6,7 @@ import { Home, TrendingUp, Building2 } from 'lucide-react-native';
 import { colors } from '../../src/theme/colors';
 import { fonts } from '../../src/theme/fonts';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import * as Haptics from 'expo-haptics';
 
 const TABS = [
   { name: 'index', label: 'Home', Icon: Home },
@@ -13,17 +14,17 @@ const TABS = [
   { name: 'business', label: 'Business', Icon: Building2 },
 ];
 
-function MikanaTabBar({ state, navigation }: BottomTabBarProps) {
+function FloatingGlassTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const paddingBottom = Math.max(insets.bottom, 10);
+  const bottomPosition = Math.max(insets.bottom, 16);
 
   const visibleRoutes = state.routes.filter((r) =>
     ['index', 'pipeline', 'business'].includes(r.name)
   );
 
   return (
-    <View style={[styles.tabBar, { paddingBottom }]}>
-      <View style={styles.tabBarInner}>
+    <View style={[styles.floatingWrapper, { bottom: bottomPosition }]} pointerEvents="box-none">
+      <View style={styles.glassPill}>
         {visibleRoutes.map((route) => {
           const tabDef = TABS.find((t) => t.name === route.name);
           if (!tabDef) return null;
@@ -33,6 +34,7 @@ function MikanaTabBar({ state, navigation }: BottomTabBarProps) {
           const isFocused = state.index === globalIndex;
 
           const onPress = () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             const event = navigation.emit({
               type: 'tabPress',
               target: route.key,
@@ -51,21 +53,14 @@ function MikanaTabBar({ state, navigation }: BottomTabBarProps) {
               accessibilityLabel={label}
               onPress={onPress}
               activeOpacity={0.7}
-              style={styles.tabItem}
+              style={[styles.pillItem, isFocused && styles.pillItemActive]}
             >
               <Icon
-                size={20}
-                color={isFocused ? colors.brandNavy : colors.textMuted}
+                size={18}
+                color={isFocused ? colors.textInverse : colors.textMuted}
                 strokeWidth={isFocused ? 2.5 : 1.75}
               />
-              <Text
-                style={[
-                  styles.tabLabel,
-                  isFocused ? styles.tabLabelActive : styles.tabLabelInactive,
-                ]}
-              >
-                {label}
-              </Text>
+              {isFocused && <Text style={styles.pillLabel}>{label}</Text>}
             </TouchableOpacity>
           );
         })}
@@ -77,7 +72,7 @@ function MikanaTabBar({ state, navigation }: BottomTabBarProps) {
 export default function TabLayout() {
   return (
     <Tabs
-      tabBar={(props) => <MikanaTabBar {...props} />}
+      tabBar={(props) => <FloatingGlassTabBar {...props} />}
       screenOptions={{
         headerShown: false,
       }}
@@ -85,7 +80,7 @@ export default function TabLayout() {
       <Tabs.Screen name="index" />
       <Tabs.Screen name="pipeline" />
       <Tabs.Screen name="business" />
-      {/* Routes accessible via navigation but not shown in tab bar */}
+      {/* Hidden from tab bar */}
       <Tabs.Screen name="autopilot" options={{ href: null }} />
       <Tabs.Screen name="catalog" options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ href: null }} />
@@ -94,35 +89,45 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: colors.surface,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    elevation: 0,
-    shadowOpacity: 0,
-  },
-  tabBarInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 54,
-  },
-  tabItem: {
-    flex: 1,
+  floatingWrapper: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    zIndex: 100,
+  },
+  glassPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.brandNavyDark, // Deep solid Midnight Navy
     paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 32,
+    borderWidth: 1,
+    borderColor: '#1E3A5F', // Subtle hairline border
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 12,
+    gap: 4,
   },
-  tabLabel: {
-    fontFamily: fonts.geist.medium,
-    fontSize: 11,
-    letterSpacing: -0.1,
+  pillItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 24,
   },
-  tabLabelActive: {
-    color: colors.brandNavy,
+  pillItemActive: {
+    backgroundColor: colors.brandNavyLight, // Lighter navy pill highlight
+  },
+  pillLabel: {
     fontFamily: fonts.geist.semibold,
-  },
-  tabLabelInactive: {
-    color: colors.textMuted,
+    fontSize: 12,
+    color: colors.textInverse,
+    letterSpacing: -0.1,
   },
 });

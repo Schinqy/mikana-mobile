@@ -117,7 +117,7 @@ export default function PipelineScreen() {
           );
         })}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

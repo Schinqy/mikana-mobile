@@ -137,7 +137,7 @@ export default function BusinessScreen() {
       {/* ── WhatsApp Connection ── */}
       <SectionHeader title="WhatsApp" />
       <View style={styles.section}>
-        {isConnected ? (
+        {isWhatsAppConnected ? (
           <>
             <Row
               icon={CheckCircle2}
@@ -253,7 +253,8 @@ export default function BusinessScreen() {
       </View>
 
       <View style={{ height: 40 }} />
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
