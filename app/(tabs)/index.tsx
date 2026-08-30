@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  FlatList,
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
@@ -23,6 +22,7 @@ import {
   ChevronRight,
   AlertCircle,
 } from 'lucide-react-native';
+import { FlashList } from '@shopify/flash-list';
 import * as Haptics from 'expo-haptics';
 
 export default function RadarScreen() {
@@ -115,7 +115,7 @@ export default function RadarScreen() {
       </View>
 
       {/* Clean List Stream (Zero Floating Cards) */}
-      <FlatList
+      <FlashList
         data={filteredLeads}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
@@ -124,6 +124,7 @@ export default function RadarScreen() {
             onPress={() => handleLeadPress(item.id)}
           />
         )}
+        estimatedItemSize={72}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
