@@ -15,6 +15,7 @@ import { DealCard } from '../../src/components/pipeline/DealCard';
 import { Badge } from '../../src/components/ui/Badge';
 import { Card } from '../../src/components/ui/Card';
 import { colors } from '../../src/theme/colors';
+import { fonts } from '../../src/theme/fonts';
 import {
   DollarSign,
   TrendingUp,
@@ -56,8 +57,8 @@ export default function PipelineScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>Deal Pipeline CRM</Text>
-          <Text style={styles.subtitle}>Track leads from WhatsApp interception to closed revenue</Text>
+          <Text style={styles.title}>Deals</Text>
+          <Text style={styles.subtitle}>Quoted proposals and closed revenue</Text>
         </View>
       </View>
 
@@ -140,13 +141,14 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontFamily: fonts.geist.bold,
+    fontSize: 26,
     color: colors.textPrimary,
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 11,
+    fontFamily: fonts.inter.regular,
+    fontSize: 12,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -172,15 +174,16 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   metricLabel: {
+    fontFamily: fonts.inter.medium,
     fontSize: 11,
-    fontWeight: '600',
     color: colors.textSecondary,
   },
   metricValue: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontFamily: fonts.geist.bold,
+    fontSize: 22,
     color: colors.textPrimary,
     letterSpacing: -0.5,
+    marginTop: 4,
   },
   wonValue: {
     color: colors.emerald,
@@ -205,9 +208,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   stageTitle: {
+    fontFamily: fonts.geist.semibold,
     fontSize: 13,
-    fontWeight: '700',
     color: colors.textPrimary,
+    letterSpacing: -0.1,
   },
   stageCount: {
     paddingHorizontal: 6,

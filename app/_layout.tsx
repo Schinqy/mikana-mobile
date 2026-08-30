@@ -5,6 +5,22 @@ import { View, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
+import { useFonts } from 'expo-font';
+import {
+  Geist_100Thin,
+  Geist_300Light,
+  Geist_400Regular,
+  Geist_500Medium,
+  Geist_600SemiBold,
+  Geist_700Bold,
+  Geist_900Black,
+} from '@expo-google-fonts/geist';
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter';
 import { initializeRevenueCat } from '../src/services/purchases/revenueCat';
 import { useSettingsStore } from '../src/store/useSettingsStore';
 import { colors } from '../src/theme/colors';
@@ -12,10 +28,28 @@ import { colors } from '../src/theme/colors';
 export default function RootLayout() {
   const { revenueCatApiKey } = useSettingsStore();
 
+  const [fontsLoaded] = useFonts({
+    Geist_100Thin,
+    Geist_300Light,
+    Geist_400Regular,
+    Geist_500Medium,
+    Geist_600SemiBold,
+    Geist_700Bold,
+    Geist_900Black,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+  });
+
   useEffect(() => {
     // Initialize RevenueCat SDK on startup
     initializeRevenueCat(revenueCatApiKey);
   }, [revenueCatApiKey]);
+
+  if (!fontsLoaded) {
+    return <View style={styles.container} />; // blank while fonts load
+  }
 
   return (
     <GestureHandlerRootView style={styles.container}>
