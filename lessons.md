@@ -11,5 +11,5 @@
 - **Expo Router entry point:** When using Expo Router, ensure `package.json` specifies `"main": "expo-router/entry"` and remove any standalone root `index.ts` or `App.tsx` templates.
 - **RevenueCat Sandbox:** Always build a safe fallback/sandbox simulation layer into RevenueCat services so that the app's entire paywall, entitlement unlock, and tier-gated features can be demonstrated smoothly during hackathons and development without requiring live store merchant credentials.
 - **StatusBar typing:** In `expo-status-bar`, `<StatusBar style="light" />` does not take `backgroundColor` on all platforms; background color should be applied via the root container view.
-- **Reanimated 4.x Android Gradle Dependency:** Under React Native 0.86 / Expo SDK 57, `react-native-reanimated` 4.x requires `react-native-worklets` to be explicitly installed in dependencies for native Android build scripts (`app:assembleDebug`) to resolve the Worklets C++/JNI bindings.
+- **Reanimated 4.x Android Gradle Dependency:** Under React Native 0.86 / Expo SDK 57, `react-native-reanimated` 4.5.1 strictly requires `react-native-worklets` pinned to version `0.10.0` (Worklets 0.12.x throws `assertWorkletsVersionTask` build failure).
 
