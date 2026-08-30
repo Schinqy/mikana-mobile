@@ -10,21 +10,16 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLeadStore } from '../../src/store/useLeadStore';
-import { useSubscriptionStore } from '../../src/store/useSubscriptionStore';
 import { useSettingsStore } from '../../src/store/useSettingsStore';
-import { LeadCard } from '../../src/components/radar/LeadCard';
-import { LeadFilterBar } from '../../src/components/radar/LeadFilterBar';
+import { LeadRow } from '../../src/components/radar/LeadRow';
 import { Input } from '../../src/components/ui/Input';
-import { Badge } from '../../src/components/ui/Badge';
-import { Button } from '../../src/components/ui/Button';
 import { colors } from '../../src/theme/colors';
+import { LeadFilter } from '../../src/types/lead';
 import {
-  Radio,
   Search,
   Plus,
-  RefreshCw,
-  Crown,
-  Lock,
+  Radio,
+  SlidersHorizontal,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
@@ -36,168 +31,101 @@ export default function RadarScreen() {
     searchQuery,
     setSearchQuery,
     getFilteredLeads,
-    simulateIncomingLead,
     setSelectedLeadId,
     leads,
   } = useLeadStore();
 
-  const { status, setPaywallVisible } = useSubscriptionStore();
   const { radarChannels } = useSettingsStore();
-  const [isSimulating, setIsSimulating] = useState(false);
-
   const filteredLeads = getFilteredLeads();
 
-  const counts = {
-    all: leads.length,
-    hot: leads.filter((l) => l.matchScore >= 90).length,
-    urgent: leads.filter((l) => l.urgency === 'urgent').length,
-    captured: leads.filter((l) => l.stage === 'captured').length,
-    quoted: leads.filter((l) => l.stage === 'quoted').length,
-    won: leads.filter((l) => l.stage === 'won').length,
-  };
-
-  const handleSimulateDrop = () => {
-    setIsSimulating(true);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setTimeout(() => {
-      simulateIncomingLead();
-      setIsSimulating(false);
-    }, 400);
-  };
+  const filterTabs: Array<{ id: LeadFilter; label: string }> = [
+    { id: 'all', label: 'All' },
+    { id: 'captured', label: 'Unquoted' },
+    { id: 'urgent', label: 'Urgent' },
+    { id: 'quoted', label: 'Quoted' },
+    { id: 'won', label: 'Won' },
+  ];
 
   const handleLeadPress = (leadId: string) => {
     setSelectedLeadId(leadId);
     router.push('/modal/pitch');
   };
 
-  const handlePitchPress = (leadId: string) => {
-    setSelectedLeadId(leadId);
-    router.push('/modal/pitch');
+  const handleSelectFilter = (newFilter: LeadFilter) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setFilter(newFilter);
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Top Header */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <View style={styles.titleRow}>
-            <Text style={styles.appTitle}>Mikana</Text>
-            <Badge variant="emerald" showDot>
-              Radar Live
-            </Badge>
-          </View>
+        <View>
+          <Text style={styles.appTitle}>Opportunities</Text>
           <Text style={styles.headerSub}>
-            Scanning {radarChannels.length} active WhatsApp groups
+            Monitoring {radarChannels.length} WhatsApp channels • {leads.length} active
           </Text>
         </View>
 
-        <View style={styles.headerRight}>
-          {status.isPro ? (
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => router.push('/modal/paywall')}
-              style={styles.proBadge}
-            >
-              <Crown size={12} color={colors.amber} />
-              <Text style={styles.proBadgeText}>PRO</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => setPaywallVisible(true)}
-              style={styles.upgradeBtn}
-            >
-              <Crown size={12} color={colors.brandNavy} />
-              <Text style={styles.upgradeBtnText}>Upgrade</Text>
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={handleSimulateDrop}
-            style={styles.actionIconBtn}
-          >
-            <RefreshCw
-              size={15}
-              color={colors.textSecondary}
-              style={isSimulating ? styles.rotating : undefined}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => router.push('/modal/new-lead')}
-            style={[styles.actionIconBtn, styles.addBtn]}
-          >
-            <Plus size={16} color={colors.textInverse} />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => router.push('/modal/new-lead')}
+          style={styles.addBtn}
+        >
+          <Plus size={16} color={colors.textInverse} />
+          <Text style={styles.addBtnText}>New Inquiry</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Free Tier Lead Counter Banner */}
-      {!status.isPro && (
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => router.push('/modal/paywall')}
-          style={styles.freeTierBanner}
-        >
-          <View style={styles.freeTierLeft}>
-            <Lock size={12} color={colors.amber} />
-            <Text style={styles.freeTierText}>
-              Free Plan: <Text style={styles.boldText}>{status.leadsRemainingThisWeek} / 5 leads</Text> left this week
-            </Text>
-          </View>
-          <Text style={styles.unlockProLink}>Unlock Pro →</Text>
-        </TouchableOpacity>
-      )}
-
-      {/* Search Bar */}
+      {/* Search Input */}
       <View style={styles.searchWrapper}>
         <Input
-          placeholder="Search buyer requests, services, locations..."
+          placeholder="Search buyer requests, RFQs, locations..."
           value={searchQuery}
           onChangeText={setSearchQuery}
-          iconLeft={<Search size={15} color={colors.textMuted} />}
+          iconLeft={<Search size={14} color={colors.textMuted} />}
           containerStyle={styles.searchInputContainer}
         />
       </View>
 
-      {/* Filter Tabs */}
-      <LeadFilterBar
-        activeFilter={filter}
-        onSelectFilter={setFilter}
-        counts={counts}
-      />
+      {/* Minimal Filter Tabs */}
+      <View style={styles.filterBar}>
+        {filterTabs.map((tab) => {
+          const isActive = filter === tab.id;
+          return (
+            <TouchableOpacity
+              key={tab.id}
+              activeOpacity={0.7}
+              onPress={() => handleSelectFilter(tab.id)}
+              style={[styles.filterTab, isActive && styles.activeFilterTab]}
+            >
+              <Text style={[styles.filterTabText, isActive && styles.activeFilterTabText]}>
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
-      {/* Leads Feed */}
+      {/* Clean List Stream (Zero Floating Cards) */}
       <FlatList
         data={filteredLeads}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <LeadCard
+          <LeadRow
             lead={item}
             onPress={() => handleLeadPress(item.id)}
-            onPitchPress={() => handlePitchPress(item.id)}
           />
         )}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Radio size={32} color={colors.textMuted} style={styles.emptyIcon} />
+            <Radio size={28} color={colors.textMuted} style={styles.emptyIcon} />
             <Text style={styles.emptyTitle}>No matching opportunities</Text>
             <Text style={styles.emptySubtitle}>
-              Try adjusting your filter or tap "Simulate Inquiry" to intercept real-time channel leads.
+              Incoming buyer inquiries from your linked WhatsApp groups will appear here automatically.
             </Text>
-            <Button
-              size="sm"
-              variant="secondary"
-              icon={<Plus size={13} color={colors.brandNavy} />}
-              onPress={handleSimulateDrop}
-              style={styles.emptyBtn}
-            >
-              Simulate Channel Lead
-            </Button>
           </View>
         }
       />
@@ -208,7 +136,7 @@ export default function RadarScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.canvas,
+    backgroundColor: colors.surface,
     paddingTop: Platform.OS === 'android' ? 30 : 0,
   },
   header: {
@@ -216,148 +144,92 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 16,
+    paddingBottom: 12,
     backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerLeft: {
-    flex: 1,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
   },
   appTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '800',
-    color: colors.textPrimary,
-    letterSpacing: -0.5,
+    color: colors.brandNavyDark,
+    letterSpacing: -0.6,
   },
   headerSub: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textMuted,
     marginTop: 2,
   },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  proBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: colors.amberBg,
-    borderWidth: 1,
-    borderColor: colors.amberBorder,
-  },
-  proBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.amber,
-  },
-  upgradeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  upgradeBtnText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.brandNavy,
-  },
-  actionIconBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 6,
-    backgroundColor: colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: colors.brandNavy,
-    borderColor: colors.brandNavy,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 6,
   },
-  freeTierBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.amberBg,
-    borderBottomWidth: 1,
-    borderColor: colors.amberBorder,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  freeTierLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  freeTierText: {
+  addBtnText: {
     fontSize: 12,
-    color: colors.textSecondary,
-  },
-  boldText: {
-    fontWeight: '700',
-    color: colors.brandNavy,
-  },
-  unlockProLink: {
-    fontSize: 11,
     fontWeight: '600',
-    color: colors.brandNavy,
+    color: colors.textInverse,
   },
   searchWrapper: {
     paddingHorizontal: 16,
-    paddingTop: 12,
-    backgroundColor: colors.canvas,
+    paddingTop: 4,
+    paddingBottom: 8,
+    backgroundColor: colors.surface,
   },
   searchInputContainer: {
     marginBottom: 0,
   },
-  listContent: {
+  filterBar: {
+    flexDirection: 'row',
     paddingHorizontal: 16,
-    paddingTop: 6,
-    paddingBottom: 24,
+    paddingBottom: 10,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    gap: 16,
+  },
+  filterTab: {
+    paddingVertical: 4,
+  },
+  activeFilterTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: colors.brandNavy,
+  },
+  filterTabText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textMuted,
+  },
+  activeFilterTabText: {
+    color: colors.brandNavyDark,
+    fontWeight: '700',
+  },
+  listContent: {
+    backgroundColor: colors.surface,
+    paddingBottom: 32,
   },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 48,
-    paddingHorizontal: 20,
+    paddingVertical: 64,
+    paddingHorizontal: 24,
   },
   emptyIcon: {
-    marginBottom: 10,
+    marginBottom: 12,
   },
   emptyTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.textPrimary,
     marginBottom: 4,
   },
   emptySubtitle: {
-    fontSize: 12,
+    fontSize: 13,
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 18,
-    marginBottom: 16,
-  },
-  emptyBtn: {
-    marginTop: 4,
-  },
-  rotating: {
-    transform: [{ rotate: '45deg' }],
   },
 });
