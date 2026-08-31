@@ -23,6 +23,11 @@ import {
   QrCode,
   Smartphone,
   Zap,
+  Crown,
+  TrendingUp,
+  Clock,
+  ArrowRight,
+  ShieldCheck,
 } from 'lucide-react-native';
 
 const WHATSAPP_PAIRING_PAYLOAD =
@@ -168,7 +173,86 @@ export default function HomeScreen() {
     );
   }
 
-  // ─── Connected Feed Screen ──────────────────────────────────────────────────
+  // ─── Connected Feed Screen (With Home Overview Footer) ─────────────────────
+
+  const renderOverviewFooter = () => (
+    <View style={styles.footerOverviewSection}>
+      {/* Section Divider */}
+      <View style={styles.overviewHeaderRow}>
+        <Text style={styles.overviewSectionTitle}>DAILY PULSE</Text>
+        <Text style={styles.overviewSectionSub}>Real-time speed metrics</Text>
+      </View>
+
+      {/* Speed-to-Lead Metric Tiles */}
+      <View style={styles.metricsRow}>
+        <View style={styles.metricCard}>
+          <View style={styles.metricIconRow}>
+            <Clock size={14} color={colors.emerald} strokeWidth={2.5} />
+            <Text style={styles.metricCardLabel}>AVG SPEED TO LEAD</Text>
+          </View>
+          <Text style={styles.metricValue}>3.8 min</Text>
+          <Text style={styles.metricSubtext}>vs 45 min industry avg</Text>
+        </View>
+
+        <View style={styles.metricCard}>
+          <View style={styles.metricIconRow}>
+            <TrendingUp size={14} color={colors.accentBlue} strokeWidth={2.5} />
+            <Text style={styles.metricCardLabel}>PIPELINE VALUE</Text>
+          </View>
+          <Text style={styles.metricValue}>$17,150</Text>
+          <Text style={styles.metricSubtext}>4 active opportunities</Text>
+        </View>
+      </View>
+
+      {/* Pro Upgrade Banner */}
+      <View style={styles.proCard}>
+        <View style={styles.proCardTop}>
+          <View style={styles.crownCircle}>
+            <Crown size={16} color={colors.amber} strokeWidth={2} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.proCardTitle}>24/7 Autopilot Quote Engine</Text>
+            <Text style={styles.proCardDesc}>
+              Auto-qualify RFQs and send personalized quotes within 30s while you're away.
+            </Text>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={styles.proUpgradeBtn}
+          activeOpacity={0.8}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            router.push('/modal/paywall');
+          }}
+        >
+          <Text style={styles.proUpgradeBtnText}>Upgrade to Pro</Text>
+          <ArrowRight size={14} color={colors.surface} strokeWidth={2.5} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Monitored Channels Snapshot */}
+      <View style={styles.channelsSnapshot}>
+        <View style={styles.channelsTitleRow}>
+          <Text style={styles.channelsSectionTitle}>MONITORED GROUPS ({radarChannels.length})</Text>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/business')}>
+            <Text style={styles.manageChannelsText}>Manage</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.channelChipsContainer}>
+          {radarChannels.map((channel, idx) => (
+            <View key={idx} style={styles.channelChip}>
+              <View style={styles.channelStatusDot} />
+              <Text style={styles.channelChipText} numberOfLines={1}>
+                {channel}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -215,7 +299,7 @@ export default function HomeScreen() {
         })}
       </View>
 
-      {/* List Feed */}
+      {/* List Feed with Home Overview Footer */}
       <FlashList
         data={filteredLeads}
         keyExtractor={(item) => item.id}
@@ -225,6 +309,7 @@ export default function HomeScreen() {
         estimatedItemSize={72}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        ListFooterComponent={renderOverviewFooter}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>No matching inquiries</Text>
@@ -266,7 +351,7 @@ const styles = StyleSheet.create({
   },
   activeFilterTab: {
     borderBottomWidth: 2,
-    borderBottomColor: colors.accentBlue, // Royal blue accent
+    borderBottomColor: colors.accentBlue,
   },
   filterTabText: {
     fontFamily: fonts.geist.medium,
@@ -280,11 +365,11 @@ const styles = StyleSheet.create({
   },
   listContent: {
     backgroundColor: colors.surface,
-    paddingBottom: 90,
+    paddingBottom: 110, // Generous clearance for floating navbar
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 64,
+    paddingVertical: 48,
     paddingHorizontal: 24,
   },
   emptyTitle: {
@@ -302,7 +387,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 
-  // ─── Disconnected First-Time Screen (Fits 1 screen exactly, zero scroll) ────
+  // ─── Disconnected First-Time Screen ────────────────────────────────────────
   disconnectedContainer: {
     flex: 1,
     backgroundColor: colors.surface,
@@ -311,7 +396,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
     paddingTop: 12,
-    paddingBottom: 84, // Clearance for floating glass pill nav
+    paddingBottom: 84,
     justifyContent: 'space-between',
     alignItems: 'center',
   },
@@ -351,7 +436,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   toggleBtnActive: {
-    backgroundColor: colors.accentBlue, // Royal blue accent for active mode
+    backgroundColor: colors.accentBlue,
   },
   toggleBtnText: {
     fontFamily: fonts.geist.medium,
@@ -367,7 +452,7 @@ const styles = StyleSheet.create({
     maxWidth: 270,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.accentBlueBorder, // Royal blue hairline border
+    borderColor: colors.accentBlueBorder,
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
@@ -438,7 +523,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: colors.accentBlue, // Royal blue primary CTA
+    backgroundColor: colors.accentBlue,
     borderRadius: 8,
     paddingVertical: 13,
   },
@@ -455,5 +540,168 @@ const styles = StyleSheet.create({
     fontFamily: fonts.inter.medium,
     fontSize: 12,
     color: colors.accentBlue,
+  },
+
+  // ─── Home Overview Footer Styles ───────────────────────────────────────────
+  footerOverviewSection: {
+    marginTop: 24,
+    paddingHorizontal: 16,
+    gap: 16,
+  },
+  overviewHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  overviewSectionTitle: {
+    fontFamily: fonts.geist.semibold,
+    fontSize: 11,
+    letterSpacing: 0.6,
+    color: colors.textMuted,
+  },
+  overviewSectionSub: {
+    fontFamily: fonts.inter.regular,
+    fontSize: 11,
+    color: colors.textMuted,
+  },
+  metricsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  metricCard: {
+    flex: 1,
+    backgroundColor: colors.canvas,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 12,
+    gap: 4,
+  },
+  metricIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  metricCardLabel: {
+    fontFamily: fonts.geist.medium,
+    fontSize: 9.5,
+    letterSpacing: 0.4,
+    color: colors.textMuted,
+  },
+  metricValue: {
+    fontFamily: fonts.geist.bold,
+    fontSize: 20,
+    color: colors.brandNavy,
+    letterSpacing: -0.4,
+    marginTop: 2,
+  },
+  metricSubtext: {
+    fontFamily: fonts.inter.medium,
+    fontSize: 11,
+    color: colors.emerald,
+  },
+
+  // Pro Banner
+  proCard: {
+    backgroundColor: colors.brandNavy,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.accentBlue,
+    padding: 14,
+    gap: 12,
+  },
+  proCardTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  crownCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(217, 119, 6, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  proCardTitle: {
+    fontFamily: fonts.geist.bold,
+    fontSize: 14,
+    color: colors.surface,
+    letterSpacing: -0.2,
+  },
+  proCardDesc: {
+    fontFamily: fonts.inter.regular,
+    fontSize: 12,
+    color: '#CBD5E1',
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  proUpgradeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.accentBlue,
+    borderRadius: 6,
+    paddingVertical: 9,
+    gap: 6,
+  },
+  proUpgradeBtnText: {
+    fontFamily: fonts.geist.semibold,
+    fontSize: 13,
+    color: colors.surface,
+    letterSpacing: -0.1,
+  },
+
+  // Monitored Channels Snapshot
+  channelsSnapshot: {
+    gap: 8,
+    marginTop: 4,
+  },
+  channelsTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  channelsSectionTitle: {
+    fontFamily: fonts.geist.semibold,
+    fontSize: 11,
+    letterSpacing: 0.6,
+    color: colors.textMuted,
+  },
+  manageChannelsText: {
+    fontFamily: fonts.inter.medium,
+    fontSize: 12,
+    color: colors.accentBlue,
+  },
+  channelChipsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  channelChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.canvas,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  channelStatusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.emerald,
+  },
+  channelChipText: {
+    fontFamily: fonts.inter.medium,
+    fontSize: 11.5,
+    color: colors.textSecondary,
   },
 });

@@ -1,16 +1,44 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
+import { Image } from 'expo-image';
 import { Lead } from '../../types/lead';
 import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/fonts';
-import { ChevronRight, Check, Send, Archive } from 'lucide-react-native';
+import { ChevronRight, Check, Send, Archive, MessageSquare } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
 interface LeadRowProps {
   lead: Lead;
   onPress: () => void;
   onArchive?: () => void;
+}
+
+// Generate consistent initials from sender name
+function getInitials(name: string): string {
+  if (!name) return '??';
+  const clean = name.replace(/^(Dr\.|Mr\.|Mrs\.|Ms\.)\s*/i, '').trim();
+  const parts = clean.split(/\s+/);
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+// Generate consistent background color from name hash
+const AVATAR_COLORS = [
+  colors.brandNavy,
+  colors.accentBlue,
+  colors.brandNavyLight,
+  '#2C5282',
+  '#2B6CB0',
+  '#1A365D',
+];
+
+function getAvatarBg(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
 export const LeadRow: React.FC<LeadRowProps> = ({ lead, onPress, onArchive }) => {
@@ -94,6 +122,8 @@ export const LeadRow: React.FC<LeadRowProps> = ({ lead, onPress, onArchive }) =>
   };
 
   const isQuoted = lead.stage === 'quoted' || lead.stage === 'won';
+  const initials = getInitials(lead.senderName);
+  const avatarBg = getAvatarBg(lead.senderName);
 
   return (
     <Swipeable
@@ -103,7 +133,7 @@ export const LeadRow: React.FC<LeadRowProps> = ({ lead, onPress, onArchive }) =>
       friction={2}
       leftThreshold={40}
       rightThreshold={40}
-      onSwipeableWillOpen={(direction) => {
+      onSwipeableWillOpen={() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }}
     >
@@ -112,8 +142,29 @@ export const LeadRow: React.FC<LeadRowProps> = ({ lead, onPress, onArchive }) =>
         onPress={handlePress}
         style={styles.row}
       >
+        {/* Left Column: Avatar with Initials / Expo-Image */}
+        <View style={styles.avatarWrapper}>
+          {lead.senderAvatarUrl ? (
+            <Image
+              source={{ uri: lead.senderAvatarUrl }}
+              style={styles.avatarImage}
+              contentFit="cover"
+              transition={200}
+            />
+          ) : (
+            <View style={[styles.avatarFallback, { backgroundColor: avatarBg }]}>
+              <Text style={styles.initialsText}>{initials}</Text>
+            </View>
+          )}
+          {/* Subtle WhatsApp Indicator Badge */}
+          <View style={styles.waBadge}>
+            <MessageSquare size={8} color={colors.surface} strokeWidth={2.5} />
+          </View>
+        </View>
+
+        {/* Center Column: Sender, Metadata & Inquiry */}
         <View style={styles.contentColumn}>
-          {/* Top Metadata Row: Sender & Timestamp */}
+          {/* Top Row: Sender & Timestamp */}
           <View style={styles.metaRow}>
             <Text style={styles.senderName} numberOfLines={1}>
               {lead.senderName}
@@ -130,7 +181,7 @@ export const LeadRow: React.FC<LeadRowProps> = ({ lead, onPress, onArchive }) =>
             {lead.aiSummary || lead.rawText}
           </Text>
 
-          {/* Bottom Supporting Info: Budget, Location, Status */}
+          {/* Bottom Supporting Row: Budget, Location, Status */}
           <View style={styles.footerRow}>
             {lead.budgetEstimate ? (
               <Text style={styles.budgetText}>{lead.budgetEstimate}</Text>
@@ -175,20 +226,54 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
+    paddingVertical: 13,
+    paddingHorizontal: 16,
     backgroundColor: colors.surface,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
+    gap: 12,
+  },
+  avatarWrapper: {
+    position: 'relative',
+  },
+  avatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  avatarFallback: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  initialsText: {
+    fontFamily: fonts.geist.bold,
+    fontSize: 13,
+    color: colors.surface,
+    letterSpacing: 0.5,
+  },
+  waBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: colors.emerald,
+    borderWidth: 1.5,
+    borderColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   contentColumn: {
     flex: 1,
-    paddingRight: 10,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   senderName: {
     fontFamily: fonts.geist.semibold,
@@ -204,7 +289,7 @@ const styles = StyleSheet.create({
   bullet: {
     fontSize: 10,
     color: colors.borderStrong,
-    marginHorizontal: 5,
+    marginHorizontal: 4,
   },
   timeAgoText: {
     fontFamily: fonts.inter.regular,
@@ -214,11 +299,11 @@ const styles = StyleSheet.create({
   },
   inquiryText: {
     fontFamily: fonts.inter.medium,
-    fontSize: 14,
+    fontSize: 13.5,
     color: colors.textPrimary,
-    lineHeight: 20,
+    lineHeight: 19,
     letterSpacing: -0.1,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   footerRow: {
     flexDirection: 'row',

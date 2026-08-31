@@ -9,6 +9,7 @@ export interface Lead {
   rawText: string;
   senderName: string;
   senderPhone: string;
+  senderAvatarUrl?: string;
   channelName: string;
   category: string;
   urgency: LeadUrgency;
