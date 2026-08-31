@@ -7,7 +7,6 @@ import { fonts } from '../../theme/fonts';
 interface ScreenHeaderProps {
   title: string;
   subtitle?: string;
-  statusDot?: 'active' | 'inactive' | 'warning';
   rightAction?: {
     label: string;
     icon?: React.ComponentType<any>;
@@ -18,7 +17,6 @@ interface ScreenHeaderProps {
 export function ScreenHeader({
   title,
   subtitle,
-  statusDot,
   rightAction,
 }: ScreenHeaderProps) {
   const insets = useSafeAreaInsets();
@@ -28,21 +26,7 @@ export function ScreenHeader({
       <View style={styles.content}>
         <View style={styles.titleColumn}>
           <Text style={styles.title}>{title}</Text>
-          {subtitle ? (
-            <View style={styles.subtitleRow}>
-              {statusDot && (
-                <View
-                  style={[
-                    styles.dot,
-                    statusDot === 'active' && styles.dotActive,
-                    statusDot === 'inactive' && styles.dotInactive,
-                    statusDot === 'warning' && styles.dotWarning,
-                  ]}
-                />
-              )}
-              <Text style={styles.subtitle}>{subtitle}</Text>
-            </View>
-          ) : null}
+          {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
         </View>
 
         {rightAction && (
@@ -84,25 +68,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: colors.brandNavy,
     letterSpacing: -0.6,
-  },
-  subtitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  dotActive: {
-    backgroundColor: colors.emerald,
-  },
-  dotInactive: {
-    backgroundColor: colors.textMuted,
-  },
-  dotWarning: {
-    backgroundColor: colors.amber,
   },
   subtitle: {
     fontFamily: fonts.inter.regular,

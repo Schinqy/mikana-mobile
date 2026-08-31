@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLeadStore } from '../../src/store/useLeadStore';
@@ -24,14 +23,9 @@ import {
   QrCode,
   Smartphone,
   Zap,
-  Radio,
-  ExternalLink,
 } from 'lucide-react-native';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-// Authentic Baileys multi-device pairing payload
-const BAILEYS_PAIRING_PAYLOAD =
+const WHATSAPP_PAIRING_PAYLOAD =
   '2@J6+p4Wz...MikanaEngineV1,4N7qP==,vQ5L4s9x8K,sK3==';
 
 export default function HomeScreen() {
@@ -74,16 +68,14 @@ export default function HomeScreen() {
     }, 600);
   };
 
-  // ─── Disconnected First-Time Screen (Fits exactly 1 screen, zero scroll) ───
+  // ─── Disconnected First-Time Screen (Fits 1 screen, zero scroll) ───────────
 
   if (!isWhatsAppConnected) {
     return (
       <View style={styles.disconnectedContainer}>
-        {/* Top Header */}
         <ScreenHeader
           title="Mikana"
-          subtitle="Baileys Multi-Device Standby"
-          statusDot="warning"
+          subtitle="Where Opportunities Meet You"
         />
 
         <View style={styles.terminalBody}>
@@ -91,7 +83,7 @@ export default function HomeScreen() {
           <View style={styles.titleSection}>
             <Text style={styles.terminalTitle}>Link WhatsApp Account</Text>
             <Text style={styles.terminalSub}>
-              Scan with WhatsApp to monitor buyer RFQs across your business channels.
+              Scan to monitor incoming buyer inquiries across your business groups.
             </Text>
           </View>
 
@@ -115,7 +107,7 @@ export default function HomeScreen() {
             >
               <Smartphone size={13} color={pairMode === 'code' ? colors.textInverse : colors.textMuted} />
               <Text style={[styles.toggleBtnText, pairMode === 'code' && styles.toggleBtnTextActive]}>
-                8-Digit Code
+                Phone Code
               </Text>
             </TouchableOpacity>
           </View>
@@ -126,20 +118,17 @@ export default function HomeScreen() {
               <View style={styles.qrWrapper}>
                 <View style={styles.qrFrame}>
                   <QRCode
-                    value={BAILEYS_PAIRING_PAYLOAD}
+                    value={WHATSAPP_PAIRING_PAYLOAD}
                     size={160}
                     color={colors.brandNavy}
                     backgroundColor={colors.surface}
                   />
                 </View>
-                <View style={styles.liveIndicatorRow}>
-                  <View style={styles.pulseDot} />
-                  <Text style={styles.liveIndicatorText}>Awaiting scan from WhatsApp...</Text>
-                </View>
+                <Text style={styles.liveIndicatorText}>Ready for WhatsApp scan</Text>
               </View>
             ) : (
               <View style={styles.codeWrapper}>
-                <Text style={styles.codeLabel}>LINK WITH PHONE NUMBER</Text>
+                <Text style={styles.codeLabel}>8-DIGIT PAIRING CODE</Text>
                 <Text style={styles.codeDisplay}>8391 - 7294</Text>
                 <Text style={styles.codeHint}>
                   WhatsApp &gt; Linked Devices &gt; Link with phone number
@@ -150,19 +139,19 @@ export default function HomeScreen() {
 
           {/* Instructions */}
           <Text style={styles.stepInstructions}>
-            Open <Text style={styles.stepBold}>WhatsApp &gt; Linked Devices &gt; Link a Device</Text> and point your camera at the code.
+            Open <Text style={styles.stepBold}>WhatsApp &gt; Linked Devices &gt; Link a Device</Text> and scan this code.
           </Text>
 
           {/* Actions */}
           <View style={styles.actionGroup}>
             <TouchableOpacity
-              style={styles.simulateBtn}
+              style={styles.connectPrimaryBtn}
               activeOpacity={0.8}
               onPress={handleSimulatePair}
             >
               <Zap size={16} color={colors.surface} strokeWidth={2.5} />
-              <Text style={styles.simulateBtnText}>
-                {isLinking ? 'Synchronizing Session...' : 'Simulate WhatsApp Pair'}
+              <Text style={styles.connectPrimaryBtnText}>
+                {isLinking ? 'Linking Account...' : 'Connect WhatsApp Account'}
               </Text>
             </TouchableOpacity>
 
@@ -171,7 +160,7 @@ export default function HomeScreen() {
               activeOpacity={0.7}
               onPress={() => setWhatsAppConnected(true, '+27 82 194 8831')}
             >
-              <Text style={styles.demoLinkText}>Explore Live Demo Leads</Text>
+              <Text style={styles.demoLinkText}>Explore with Sample Inquiries</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -185,8 +174,7 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <ScreenHeader
         title="Home"
-        subtitle={`${radarChannels.length} channels • ${leads.length} inquiries`}
-        statusDot="active"
+        subtitle={`${radarChannels.length} channels monitored • ${leads.length} inquiries`}
         rightAction={{
           label: 'New Inquiry',
           icon: Plus,
@@ -278,7 +266,7 @@ const styles = StyleSheet.create({
   },
   activeFilterTab: {
     borderBottomWidth: 2,
-    borderBottomColor: colors.brandNavy,
+    borderBottomColor: colors.accentBlue, // Royal blue accent
   },
   filterTabText: {
     fontFamily: fonts.geist.medium,
@@ -292,7 +280,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     backgroundColor: colors.surface,
-    paddingBottom: 90, // Leave room for floating glass pill nav
+    paddingBottom: 90,
   },
   emptyState: {
     alignItems: 'center',
@@ -323,7 +311,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
     paddingTop: 12,
-    paddingBottom: 80, // Clearance for floating glass pill nav
+    paddingBottom: 84, // Clearance for floating glass pill nav
     justifyContent: 'space-between',
     alignItems: 'center',
   },
@@ -363,7 +351,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   toggleBtnActive: {
-    backgroundColor: colors.brandNavy,
+    backgroundColor: colors.accentBlue, // Royal blue accent for active mode
   },
   toggleBtnText: {
     fontFamily: fonts.geist.medium,
@@ -379,44 +367,33 @@ const styles = StyleSheet.create({
     maxWidth: 270,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.accentBlueBorder, // Royal blue hairline border
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
     shadowColor: '#0B2545',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 3,
   },
   qrWrapper: {
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   qrFrame: {
     padding: 10,
     backgroundColor: colors.surface,
     borderRadius: 8,
   },
-  liveIndicatorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  pulseDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.amber,
-  },
   liveIndicatorText: {
     fontFamily: fonts.inter.medium,
     fontSize: 11,
-    color: colors.textMuted,
+    color: colors.textSecondary,
   },
   codeWrapper: {
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: 18,
     gap: 6,
   },
   codeLabel: {
@@ -455,17 +432,17 @@ const styles = StyleSheet.create({
     gap: 6,
     alignItems: 'center',
   },
-  simulateBtn: {
+  connectPrimaryBtn: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    backgroundColor: colors.brandNavy,
+    gap: 8,
+    backgroundColor: colors.accentBlue, // Royal blue primary CTA
     borderRadius: 8,
-    paddingVertical: 12,
+    paddingVertical: 13,
   },
-  simulateBtnText: {
+  connectPrimaryBtnText: {
     fontFamily: fonts.geist.semibold,
     fontSize: 14,
     color: colors.surface,

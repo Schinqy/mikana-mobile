@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
   },
   pillItemActive: {
-    backgroundColor: colors.brandNavyLight, // Lighter navy pill highlight
+    backgroundColor: colors.accentBlue, // Royal Blue highlight from logo
   },
   pillLabel: {
     fontFamily: fonts.geist.semibold,
