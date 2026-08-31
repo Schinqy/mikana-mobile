@@ -1,16 +1,21 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { Lead } from '../../types/lead';
 import { colors } from '../../theme/colors';
-import { ChevronRight, Check } from 'lucide-react-native';
+import { fonts } from '../../theme/fonts';
+import { ChevronRight, Check, Send, Archive } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
 interface LeadRowProps {
   lead: Lead;
   onPress: () => void;
+  onArchive?: () => void;
 }
 
-export const LeadRow: React.FC<LeadRowProps> = ({ lead, onPress }) => {
+export const LeadRow: React.FC<LeadRowProps> = ({ lead, onPress, onArchive }) => {
+  const swipeableRef = React.useRef<Swipeable>(null);
+
   const timeAgo = (dateStr: string) => {
     const diffMs = Date.now() - new Date(dateStr).getTime();
     const mins = Math.floor(diffMs / (1000 * 60));
@@ -26,69 +31,143 @@ export const LeadRow: React.FC<LeadRowProps> = ({ lead, onPress }) => {
     onPress();
   };
 
+  const handleSwipeQuote = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    swipeableRef.current?.close();
+    onPress();
+  };
+
+  const handleSwipeArchive = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    swipeableRef.current?.close();
+    if (onArchive) onArchive();
+  };
+
+  // ─── Swipe Action: Slide Right to Quote ────────────────────────────────────
+  const renderLeftActions = (
+    progress: Animated.AnimatedInterpolation<number>,
+    dragX: Animated.AnimatedInterpolation<number>
+  ) => {
+    const trans = dragX.interpolate({
+      inputRange: [0, 80],
+      outputRange: [-20, 0],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <TouchableOpacity
+        style={styles.leftAction}
+        activeOpacity={0.8}
+        onPress={handleSwipeQuote}
+      >
+        <Animated.View style={[styles.actionContent, { transform: [{ translateX: trans }] }]}>
+          <Send size={16} color={colors.surface} strokeWidth={2.5} />
+          <Text style={styles.actionText}>Quote</Text>
+        </Animated.View>
+      </TouchableOpacity>
+    );
+  };
+
+  // ─── Swipe Action: Slide Left to Archive ───────────────────────────────────
+  const renderRightActions = (
+    progress: Animated.AnimatedInterpolation<number>,
+    dragX: Animated.AnimatedInterpolation<number>
+  ) => {
+    const trans = dragX.interpolate({
+      inputRange: [-80, 0],
+      outputRange: [0, 20],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <TouchableOpacity
+        style={styles.rightAction}
+        activeOpacity={0.8}
+        onPress={handleSwipeArchive}
+      >
+        <Animated.View style={[styles.actionContent, { transform: [{ translateX: trans }] }]}>
+          <Archive size={16} color={colors.surface} strokeWidth={2.5} />
+          <Text style={styles.actionText}>Archive</Text>
+        </Animated.View>
+      </TouchableOpacity>
+    );
+  };
+
   const isQuoted = lead.stage === 'quoted' || lead.stage === 'won';
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.7}
-      onPress={handlePress}
-      style={styles.row}
+    <Swipeable
+      ref={swipeableRef}
+      renderLeftActions={renderLeftActions}
+      renderRightActions={renderRightActions}
+      friction={2}
+      leftThreshold={40}
+      rightThreshold={40}
+      onSwipeableWillOpen={(direction) => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }}
     >
-      <View style={styles.contentColumn}>
-        {/* Top Metadata Row: Sender & Timestamp */}
-        <View style={styles.metaRow}>
-          <Text style={styles.senderName} numberOfLines={1}>
-            {lead.senderName}
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={handlePress}
+        style={styles.row}
+      >
+        <View style={styles.contentColumn}>
+          {/* Top Metadata Row: Sender & Timestamp */}
+          <View style={styles.metaRow}>
+            <Text style={styles.senderName} numberOfLines={1}>
+              {lead.senderName}
+            </Text>
+            <Text style={styles.bullet}>•</Text>
+            <Text style={styles.channelText} numberOfLines={1}>
+              {lead.channelName.split(' ')[0]}
+            </Text>
+            <Text style={styles.timeAgoText}>{timeAgo(lead.createdAt)}</Text>
+          </View>
+
+          {/* Primary Inquiry Text */}
+          <Text style={styles.inquiryText} numberOfLines={2}>
+            {lead.aiSummary || lead.rawText}
           </Text>
-          <Text style={styles.bullet}>•</Text>
-          <Text style={styles.channelText} numberOfLines={1}>
-            {lead.channelName.split(' ')[0]}
-          </Text>
-          <Text style={styles.timeAgoText}>{timeAgo(lead.createdAt)}</Text>
+
+          {/* Bottom Supporting Info: Budget, Location, Status */}
+          <View style={styles.footerRow}>
+            {lead.budgetEstimate ? (
+              <Text style={styles.budgetText}>{lead.budgetEstimate}</Text>
+            ) : null}
+
+            {lead.location ? (
+              <>
+                <Text style={styles.bullet}>•</Text>
+                <Text style={styles.locationText}>{lead.location}</Text>
+              </>
+            ) : null}
+
+            {lead.urgency === 'urgent' && !isQuoted && (
+              <>
+                <Text style={styles.bullet}>•</Text>
+                <Text style={styles.urgentText}>Urgent</Text>
+              </>
+            )}
+
+            {isQuoted && (
+              <>
+                <Text style={styles.bullet}>•</Text>
+                <View style={styles.quotedInline}>
+                  <Check size={11} color={colors.emerald} style={{ marginRight: 2 }} />
+                  <Text style={styles.quotedText}>Quoted</Text>
+                </View>
+              </>
+            )}
+          </View>
         </View>
 
-        {/* Primary Inquiry Text */}
-        <Text style={styles.inquiryText} numberOfLines={2}>
-          {lead.aiSummary || lead.rawText}
-        </Text>
-
-        {/* Bottom Supporting Info: Budget, Location, Status */}
-        <View style={styles.footerRow}>
-          {lead.budgetEstimate ? (
-            <Text style={styles.budgetText}>{lead.budgetEstimate}</Text>
-          ) : null}
-
-          {lead.location ? (
-            <>
-              <Text style={styles.bullet}>•</Text>
-              <Text style={styles.locationText}>{lead.location}</Text>
-            </>
-          ) : null}
-
-          {lead.urgency === 'urgent' && !isQuoted && (
-            <>
-              <Text style={styles.bullet}>•</Text>
-              <Text style={styles.urgentText}>Urgent</Text>
-            </>
-          )}
-
-          {isQuoted && (
-            <>
-              <Text style={styles.bullet}>•</Text>
-              <View style={styles.quotedInline}>
-                <Check size={11} color={colors.emerald} style={{ marginRight: 2 }} />
-                <Text style={styles.quotedText}>Quoted</Text>
-              </View>
-            </>
-          )}
+        {/* Right Navigation Indicator */}
+        <View style={styles.chevronWrapper}>
+          <ChevronRight size={15} color={colors.borderStrong} />
         </View>
-      </View>
-
-      {/* Right Navigation Indicator */}
-      <View style={styles.chevronWrapper}>
-        <ChevronRight size={16} color={colors.borderStrong} />
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </Swipeable>
   );
 };
 
@@ -97,9 +176,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     backgroundColor: colors.surface,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
   contentColumn: {
@@ -112,12 +191,13 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   senderName: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontFamily: fonts.geist.semibold,
+    fontSize: 13,
     color: colors.brandNavyDark,
     letterSpacing: -0.1,
   },
   channelText: {
+    fontFamily: fonts.inter.regular,
     fontSize: 11,
     color: colors.textMuted,
   },
@@ -127,16 +207,17 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   timeAgoText: {
+    fontFamily: fonts.inter.regular,
     fontSize: 11,
     color: colors.textMuted,
     marginLeft: 'auto',
   },
   inquiryText: {
+    fontFamily: fonts.inter.medium,
     fontSize: 14,
-    fontWeight: '600',
     color: colors.textPrimary,
-    lineHeight: 19,
-    letterSpacing: -0.2,
+    lineHeight: 20,
+    letterSpacing: -0.1,
     marginBottom: 6,
   },
   footerRow: {
@@ -144,17 +225,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   budgetText: {
+    fontFamily: fonts.geist.bold,
     fontSize: 12,
-    fontWeight: '700',
     color: colors.emerald,
+    letterSpacing: -0.2,
   },
   locationText: {
+    fontFamily: fonts.inter.regular,
     fontSize: 11,
     color: colors.textSecondary,
   },
   urgentText: {
+    fontFamily: fonts.geist.semibold,
     fontSize: 11,
-    fontWeight: '600',
     color: colors.rose,
   },
   quotedInline: {
@@ -162,12 +245,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   quotedText: {
+    fontFamily: fonts.geist.semibold,
     fontSize: 11,
-    fontWeight: '600',
     color: colors.emerald,
   },
   chevronWrapper: {
     justifyContent: 'center',
     alignItems: 'center',
+  },
+
+  // Swipe Action Styles
+  leftAction: {
+    backgroundColor: colors.accentBlue, // Royal Blue for Quote
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+  },
+  rightAction: {
+    backgroundColor: colors.brandNavyLight, // Navy for Archive
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+  },
+  actionContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  actionText: {
+    fontFamily: fonts.geist.semibold,
+    fontSize: 11,
+    color: colors.surface,
+    letterSpacing: -0.1,
   },
 });
