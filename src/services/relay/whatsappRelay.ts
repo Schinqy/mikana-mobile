@@ -9,25 +9,17 @@
  * - Outbound quote dispatch
  */
 
-import Constants from 'expo-constants';
+
 
 /**
- * Automatically resolves localhost/127.0.0.1 to development host machine IP
- * so physical devices and emulators connect reliably over Wi-Fi/LAN.
+ * Resolves the relay URL for the current environment.
+ *
+ * On physical Android devices we use ADB reverse (adb reverse tcp:3005 tcp:3005),
+ * which means localhost:3005 on the device routes directly to the host PC.
+ * Always return localhost:3005 — do NOT substitute a LAN IP.
  */
-export function resolveRelayUrl(inputUrl?: string): string {
-  const hostUri = Constants.expoConfig?.hostUri;
-  const devHost = hostUri ? hostUri.split(':')[0] : '192.168.1.3';
-
-  if (!inputUrl || inputUrl.trim().length === 0) {
-    return `http://${devHost}:3005`;
-  }
-
-  if (inputUrl.includes('localhost') || inputUrl.includes('127.0.0.1')) {
-    return inputUrl.replace(/localhost|127\.0\.0\.1/, devHost);
-  }
-
-  return inputUrl;
+export function resolveRelayUrl(_inputUrl?: string): string {
+  return 'http://localhost:3005';
 }
 
 type RelayEventHandler = {
