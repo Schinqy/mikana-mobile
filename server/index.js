@@ -740,15 +740,17 @@ async function startBaileysSession(sessionId, userId, usePairingCode = false) {
 
   const authPath = path.join(AUTH_DIR, sessionId);
 
-  // When requesting a new pairing code, ALWAYS wipe stale auth credentials.
-  // Reusing creds from a previous incomplete pairing causes WhatsApp to send 401 (logged out),
-  // making the new code immediately invalid.
   if (usePairingCode && fs.existsSync(authPath)) {
     logger.info({ sessionId }, 'Wiping stale auth for fresh pairing-code session...');
     fs.rmSync(authPath, { recursive: true, force: true });
   }
 
   const { state, saveCreds } = await useMultiFileAuthState(authPath);
+  
+  // If creds are not registered, clean directory so Baileys starts in fresh QR emission mode
+  if (!state.creds?.registered && fs.existsSync(authPath)) {
+    fs.rmSync(authPath, { recursive: true, force: true });
+  }
   const { version } = await fetchLatestBaileysVersion();
 
   const sock = makeWASocket({
@@ -860,15 +862,19 @@ async function startBaileysSession(sessionId, userId, usePairingCode = false) {
         reason: isRealLogout ? 'logged_out' : 'connection_lost',
       });
 
-      if (!isRealLogout) {
-        addLog('info', 'Maintaining active companion socket with saved pairing keys, reconnecting...', { sessionId });
-        setTimeout(() => startBaileysSession(sessionId, userId, false), 1200);
-      } else {
+      // ONLY auto-reconnect if session was ALREADY authenticated and connected before.
+      // During QR code pairing, do NOT restart sockets in a loop.
+      if (session.wasConnected && !isRealLogout) {
+        addLog('info', 'Active session dropped, auto-reconnecting...', { sessionId });
+        setTimeout(() => startBaileysSession(sessionId, userId, false), 3000);
+      } else if (isRealLogout) {
         addLog('warn', 'Active session logged out by user, removing credentials', { sessionId });
         sessions.delete(sessionId);
         if (fs.existsSync(authPath)) {
           fs.rmSync(authPath, { recursive: true, force: true });
         }
+      } else {
+        addLog('info', 'QR socket closed by WhatsApp', { sessionId, statusCode });
       }
     }
   });
