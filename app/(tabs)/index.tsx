@@ -74,8 +74,31 @@ export default function HomeScreen() {
   const [pairingCodeLoading, setPairingCodeLoading] = useState(false);
   const [pairingError, setPairingError] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [codeSecondsLeft, setCodeSecondsLeft] = useState<number>(0);
+  const codeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [relayStatus, setRelayStatus] = useState<'idle' | 'connecting' | 'qr_ready' | 'connected' | 'error'>('idle');
   const sessionIdRef = useRef<string | null>(null);
+
+  // 60-second countdown once a code is generated
+  useEffect(() => {
+    if (pairingCode) {
+      setCodeSecondsLeft(60);
+      codeTimerRef.current = setInterval(() => {
+        setCodeSecondsLeft((s) => {
+          if (s <= 1) {
+            clearInterval(codeTimerRef.current!);
+            setPairingCode(null);
+            setPairingError('Code expired. Generate a new one and enter it in WhatsApp immediately.');
+            return 0;
+          }
+          return s - 1;
+        });
+      }, 1000);
+    } else {
+      if (codeTimerRef.current) clearInterval(codeTimerRef.current);
+    }
+    return () => { if (codeTimerRef.current) clearInterval(codeTimerRef.current); };
+  }, [pairingCode]);
 
   const filterTabs: Array<{ id: LeadFilter; label: string }> = [
     { id: 'all', label: 'All' },
@@ -195,7 +218,11 @@ export default function HomeScreen() {
 
   const handleCopyCode = async () => {
     if (!pairingCode) return;
-    await Clipboard.setStringAsync(pairingCode);
+    // Copy with dash separator — WhatsApp accepts XXXX-XXXX format
+    const formatted = pairingCode.length === 8
+      ? `${pairingCode.slice(0, 4)}-${pairingCode.slice(4)}`
+      : pairingCode;
+    await Clipboard.setStringAsync(formatted);
     setCopiedCode(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setTimeout(() => setCopiedCode(false), 2500);
@@ -203,7 +230,7 @@ export default function HomeScreen() {
 
   const formattedPairingCode = pairingCode
     ? pairingCode.length === 8
-      ? `${pairingCode.slice(0, 4)} - ${pairingCode.slice(4)}`
+      ? `${pairingCode.slice(0, 4)}-${pairingCode.slice(4)}`
       : pairingCode
     : '';
 
@@ -356,8 +383,15 @@ export default function HomeScreen() {
                   </TouchableOpacity>
                 ) : (
                   <View style={styles.pairingCodeBox}>
-                    <Text style={styles.codeLabel}>OFFICIAL WHATSAPP PAIRING CODE</Text>
+                    <Text style={styles.codeLabel}>WHATSAPP PAIRING CODE</Text>
                     <Text style={styles.codeDisplay}>{formattedPairingCode}</Text>
+
+                    <Text style={[
+                      styles.codeMatchWarning,
+                      codeSecondsLeft <= 15 && { color: colors.rose }
+                    ]}>
+                      {codeSecondsLeft}s remaining — enter in WhatsApp now
+                    </Text>
 
                     <View style={styles.codeActionRow}>
                       <TouchableOpacity
@@ -389,7 +423,7 @@ export default function HomeScreen() {
                         activeOpacity={0.7}
                       >
                         <RotateCcw size={12} color={colors.textSecondary} />
-                        <Text style={styles.resetCodeBtnText}>Change Number</Text>
+                        <Text style={styles.resetCodeBtnText}>Wrong Number</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -959,6 +993,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginTop: 4,
+  },
+  codeMatchWarning: {
+    fontFamily: fonts.inter.medium,
+    fontSize: 11,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
   copyCodeBtn: {
     flexDirection: 'row',
