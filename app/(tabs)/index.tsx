@@ -754,8 +754,9 @@ const styles = StyleSheet.create({
   toggleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
-    paddingVertical: 6,
+    paddingVertical: 7,
     paddingHorizontal: 16,
     borderRadius: 6,
   },
@@ -764,12 +765,16 @@ const styles = StyleSheet.create({
   },
   toggleBtnText: {
     fontFamily: fonts.geist.medium,
-    fontSize: 12,
+    fontSize: 12.5,
     color: colors.textSecondary,
+    includeFontPadding: false,
+    paddingRight: 4,
   },
   toggleBtnTextActive: {
     color: colors.textInverse,
     fontFamily: fonts.geist.semibold,
+    includeFontPadding: false,
+    paddingRight: 4,
   },
   qrConsoleCard: {
     width: '100%',

@@ -138,5 +138,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textInverse,
     flexShrink: 0,
+    includeFontPadding: false,
+    paddingRight: 4,
   },
 });
