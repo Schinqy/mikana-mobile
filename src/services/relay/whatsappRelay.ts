@@ -14,36 +14,17 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
+export const PRODUCTION_RELAY_URL = 'https://mikana-relay.onrender.com';
+
 /**
  * Resolves the relay URL for the current environment.
- * Dynamically resolves the Metro dev server IP on physical devices over Wi-Fi,
- * falling back to active host IP or localhost.
+ * Default is the live cloud deployment on Render (https://mikana-relay.onrender.com).
  */
 export function resolveRelayUrl(inputUrl?: string): string {
-  // If user provided a remote production / Railway URL, keep it
-  if (inputUrl && !inputUrl.includes('localhost') && !inputUrl.includes('127.0.0.1')) {
-    return inputUrl;
+  if (inputUrl && inputUrl.trim().length > 0) {
+    return inputUrl.trim().replace(/\/$/, '');
   }
-
-  // On Android physical devices, try to extract the LAN IP from Metro's hostUri.
-  // When USB + ADB reverse is active, hostUri resolves to the actual LAN IP of the PC,
-  // and the ADB tunnel makes localhost:3005 work anyway.
-  // When on Wi-Fi only, this gives us the correct LAN IP directly.
-  if (Platform.OS === 'android') {
-    const hostUri =
-      Constants.expoConfig?.hostUri ||
-      (Constants as any).manifest2?.extra?.expoGo?.debuggerHost;
-    if (hostUri) {
-      const host = hostUri.split(':')[0];
-      if (host && host !== 'localhost' && host !== '127.0.0.1') {
-        // Use the actual LAN IP for wireless; ADB reverse makes this work on USB too.
-        return `http://${host}:3005`;
-      }
-    }
-  }
-
-  // iOS simulator and fallback
-  return 'http://localhost:3005';
+  return PRODUCTION_RELAY_URL;
 }
 
 type RelayEventHandler = {

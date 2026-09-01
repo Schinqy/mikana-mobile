@@ -3,9 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 function getDefaultRelayUrl(): string {
-  // ADB reverse tcp:3005 tcp:3005 is always active during dev,
-  // so localhost on the device routes directly to the host PC.
-  return 'http://localhost:3005';
+  return 'https://mikana-relay.onrender.com';
 }
 
 interface SettingsState {
