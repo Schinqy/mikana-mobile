@@ -425,6 +425,7 @@ async function startBaileysSession(sessionId, userId, usePairingCode = false) {
 
     if (connection === 'open') {
       session.status = 'connected';
+      session.wasConnected = true;
       session.phone = sock.user?.id?.split(':')[0] || null;
       logger.info({ sessionId, phone: session.phone }, 'WhatsApp connected');
       addLog('info', 'WhatsApp connection established successfully!', { sessionId, phone: session.phone });
@@ -449,11 +450,13 @@ async function startBaileysSession(sessionId, userId, usePairingCode = false) {
     if (connection === 'close') {
       const statusCode = lastDisconnect?.error?.output?.statusCode;
       const isRestart = statusCode === DisconnectReason.restartRequired || statusCode === 515;
-      const isLoggedOut = statusCode === DisconnectReason.loggedOut;
-      const shouldReconnect = !isLoggedOut;
+      // 401 is only a real user logout if the session was previously authenticated and connected.
+      // During pairing/linking, 401 is a pre-auth response from WhatsApp and credentials MUST be kept!
+      const isRealLogout = statusCode === DisconnectReason.loggedOut && session.wasConnected;
+      const shouldReconnect = !isRealLogout;
 
-      logger.info({ sessionId, statusCode, isRestart, shouldReconnect }, 'Connection closed');
-      addLog('info', 'Connection closed', { sessionId, statusCode, isRestart, isLoggedOut });
+      logger.info({ sessionId, statusCode, isRestart, isRealLogout, shouldReconnect }, 'Connection closed');
+      addLog('info', 'Connection closed', { sessionId, statusCode, isRestart, isRealLogout });
 
       if (isRestart) {
         logger.info({ sessionId }, 'Pairing handshake restart required (515) — reconnecting immediately (0ms)...');
@@ -465,14 +468,14 @@ async function startBaileysSession(sessionId, userId, usePairingCode = false) {
       session.status = 'disconnected';
       broadcastToSession(sessionId, {
         type: 'disconnected',
-        reason: isLoggedOut ? 'logged_out' : 'connection_lost',
+        reason: isRealLogout ? 'logged_out' : 'connection_lost',
       });
 
       if (shouldReconnect) {
-        addLog('info', 'Attempting auto-reconnect...', { sessionId });
+        addLog('info', 'Keeping credentials alive, reconnecting socket for pairing...', { sessionId });
         setTimeout(() => startBaileysSession(sessionId, userId, false), 1500);
       } else {
-        addLog('warn', 'Session logged out, removing credentials', { sessionId });
+        addLog('warn', 'Active session logged out by user, removing credentials', { sessionId });
         sessions.delete(sessionId);
         if (fs.existsSync(authPath)) {
           fs.rmSync(authPath, { recursive: true, force: true });
