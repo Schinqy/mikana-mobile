@@ -234,12 +234,22 @@ export default function HomeScreen() {
 
   const handleShareWebQR = async () => {
     const sessionParam = sessionIdRef.current || 'session_user_default';
-    const url = `${resolveRelayUrl(whatsappRelayUrl)}/pair?session=${sessionParam}`;
+    const baseUrl = resolveRelayUrl(whatsappRelayUrl);
     try {
+      // Request a secure, cryptographically unguessable 15-min pairing ticket
+      let targetUrl = `${baseUrl}/pair?session=${sessionParam}`;
+      try {
+        const res = await fetch(`${baseUrl}/api/sessions/${sessionParam}/ticket`, { method: 'POST' });
+        const data = await res.json();
+        if (data.ok && data.token) {
+          targetUrl = `${baseUrl}/pair?token=${data.token}`;
+        }
+      } catch (_) {}
+
       await Share.share({
-        title: 'Mikana WhatsApp Web QR',
-        message: `Open this link on your PC or second phone to scan your private WhatsApp QR code:\n\n${url}`,
-        url: url,
+        title: 'Mikana Secure WhatsApp QR',
+        message: `Open this secure link on your PC or second phone to scan your WhatsApp QR code:\n\n${targetUrl}`,
+        url: targetUrl,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {}

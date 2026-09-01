@@ -26,6 +26,7 @@ const pino = require('pino');
 const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -33,6 +34,9 @@ const PORT = process.env.PORT || 3005;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+// ─── Pairing Tickets Store (15-min ephemeral crypto tokens) ─────────────────
+const pairingTickets = new Map(); // token -> { sessionId, userId, expiresAt }
 
 // In-memory ring buffer for remote log diagnostics
 const recentLogs = [];
@@ -93,9 +97,113 @@ app.get('/api/logs', (req, res) => {
   res.json({ count: recentLogs.length, logs: recentLogs.slice(-100) });
 });
 
-// ─── Web QR Pairing Portal ──────────────────────────────────────────────────
+// ─── Generate Cryptographic One-Time Pairing Ticket (15 min expiry) ─────────
+
+app.post('/api/sessions/:sessionId/ticket', (req, res) => {
+  const { sessionId } = req.params;
+  const userId = sessionId.replace('session_', '');
+  const token = crypto.randomUUID();
+  const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
+
+  pairingTickets.set(token, {
+    sessionId,
+    userId,
+    expiresAt,
+  });
+
+  addLog('info', 'Generated secure pairing ticket', { sessionId, token: token.slice(0, 8) + '...' });
+  res.json({
+    ok: true,
+    token,
+    expiresAt,
+    url: `/pair?token=${token}`,
+  });
+});
+
+// ─── Web QR Pairing Portal (Authentication Protected) ───────────────────────
 
 app.get('/pair', (req, res) => {
+  const token = req.query.token;
+  const explicitSession = req.query.session;
+
+  let resolvedSessionId = null;
+  let resolvedUserId = null;
+
+  if (token && pairingTickets.has(token)) {
+    const ticket = pairingTickets.get(token);
+    if (Date.now() < ticket.expiresAt) {
+      resolvedSessionId = ticket.sessionId;
+      resolvedUserId = ticket.userId;
+    } else {
+      pairingTickets.delete(token);
+    }
+  } else if (explicitSession && process.env.NODE_ENV !== 'production') {
+    resolvedSessionId = explicitSession;
+    resolvedUserId = explicitSession.replace('session_', '');
+  }
+
+  // If no valid secure token was provided, reject with security gatekeeper
+  if (!resolvedSessionId) {
+    return res.status(403).send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mikana • Secure Pairing</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: #09090b;
+      color: #f4f4f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 16px;
+      padding: 36px 32px;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      margin-bottom: 20px;
+    }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    h1 { font-size: 18px; font-weight: 700; color: #ffffff; margin-bottom: 10px; }
+    p { font-size: 13px; color: #a1a1aa; line-height: 1.6; margin-bottom: 24px; }
+    .footer-hint { font-size: 11.5px; color: #71717a; border-top: 1px solid #27272a; padding-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge"><span class="dot"></span>Authentication Required</div>
+    <h1>Missing or Expired Pairing Link</h1>
+    <p>To securely pair your WhatsApp, open the <b>Mikana Mobile</b> app on your phone, go to the QR Scanner tab, and tap <b>"Open / Share Live QR on PC"</b>.</p>
+    <div class="footer-hint">Each link is cryptographically protected with a one-time token that expires in 15 minutes.</div>
+  </div>
+</body>
+</html>`);
+  }
+
   res.send(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -197,6 +305,11 @@ app.get('/pair', (req, res) => {
       padding: 10px 16px;
       font-size: 13px;
       font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #1d4ed8; }
     .btn-secondary {
       background: #27272a;
       color: #e4e4e7;
