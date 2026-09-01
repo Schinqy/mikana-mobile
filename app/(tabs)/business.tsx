@@ -142,7 +142,7 @@ export default function BusinessScreen() {
             <Row
               icon={CheckCircle2}
               iconColor={colors.emerald}
-              label="+27 82 000 0000"
+              label={whatsappLinkedPhone || '+27 82 194 8831'}
               value="Connected"
               showChevron={false}
             />
@@ -151,8 +151,19 @@ export default function BusinessScreen() {
               icon={MessageCircle}
               iconColor={colors.accentBlue}
               label="Monitored Groups"
-              value="4 active"
+              value={`${radarChannels.length} active`}
               onPress={() => {}}
+            />
+            <Divider />
+            <Row
+              icon={AlertCircle}
+              iconColor={colors.rose}
+              label="Disconnect / Re-link WhatsApp"
+              value=""
+              onPress={() => {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                setWhatsAppConnected(false, '');
+              }}
             />
           </>
         ) : (
