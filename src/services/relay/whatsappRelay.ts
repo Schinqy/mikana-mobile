@@ -61,20 +61,40 @@ class WhatsAppRelayClient {
     this.handlers = handlers;
     this.isIntentionalClose = false;
 
-    const wsUrl = resolvedUrl.replace(/^http/, 'ws') + '/ws';
+    // Clean up any existing connection and timers first
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    if (this.ws) {
+      try {
+        this.ws.onopen = null;
+        this.ws.onmessage = null;
+        this.ws.onerror = null;
+        this.ws.onclose = null;
+        this.ws.close();
+      } catch (_) {}
+      this.ws = null;
+    }
+
+    const wsUrl = resolvedUrl.replace(/^http:\/\//, 'ws://').replace(/^https:\/\//, 'wss://') + '/ws';
 
     try {
-      this.ws = new WebSocket(wsUrl);
+      const socket = new WebSocket(wsUrl);
+      this.ws = socket;
 
-      this.ws.onopen = () => {
-        // Subscribe to our session
-        this.ws?.send(JSON.stringify({
-          type: 'subscribe',
-          sessionId: this.sessionId,
-        }));
+      socket.onopen = () => {
+        if (socket.readyState === WebSocket.OPEN) {
+          try {
+            socket.send(JSON.stringify({
+              type: 'subscribe',
+              sessionId: this.sessionId,
+            }));
+          } catch (_) {}
+        }
       };
 
-      this.ws.onmessage = (event) => {
+      socket.onmessage = (event) => {
         try {
           const msg = JSON.parse(event.data as string);
 
@@ -103,17 +123,17 @@ class WhatsAppRelayClient {
         }
       };
 
-      this.ws.onclose = () => {
-        if (!this.isIntentionalClose) {
-          // Auto-reconnect after 3 seconds
+      socket.onclose = () => {
+        if (!this.isIntentionalClose && this.ws === socket) {
+          // Auto-reconnect after 4 seconds
           this.reconnectTimer = setTimeout(() => {
             this.connect(this.relayUrl, this.sessionId, this.handlers);
-          }, 3000);
+          }, 4000);
         }
       };
 
-      this.ws.onerror = () => {
-        this.handlers.onError?.('WebSocket connection failed');
+      socket.onerror = () => {
+        // Silently handled by onclose reconnect
       };
     } catch (err) {
       this.handlers.onError?.('Failed to connect to relay server');
@@ -125,9 +145,20 @@ class WhatsAppRelayClient {
    */
   disconnect() {
     this.isIntentionalClose = true;
-    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
-    this.ws?.close();
-    this.ws = null;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    if (this.ws) {
+      try {
+        this.ws.onopen = null;
+        this.ws.onmessage = null;
+        this.ws.onerror = null;
+        this.ws.onclose = null;
+        this.ws.close();
+      } catch (_) {}
+      this.ws = null;
+    }
   }
 
   /**
