@@ -24,21 +24,7 @@ export function resolveRelayUrl(inputUrl?: string): string {
   if (inputUrl && !inputUrl.includes('localhost') && !inputUrl.includes('127.0.0.1')) {
     return inputUrl;
   }
-
-  // Dynamic host extraction from Metro dev server hostUri (works on physical Wi-Fi devices)
-  const hostUri = Constants.expoConfig?.hostUri || (Constants as any).manifest2?.extra?.expoGo?.debuggerHost;
-  if (hostUri) {
-    const host = hostUri.split(':')[0];
-    if (host && host !== 'localhost' && host !== '127.0.0.1') {
-      return `http://${host}:3005`;
-    }
-  }
-
-  // Android emulator fallback
-  if (Platform.OS === 'android') {
-    return 'http://10.207.186.145:3005';
-  }
-
+  // ADB reverse tcp:3005 tcp:3005 tunnels localhost:3005 on the phone to the PC.
   return 'http://localhost:3005';
 }
 
