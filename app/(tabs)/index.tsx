@@ -367,13 +367,34 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <ScreenHeader
         title="Home"
-        subtitle={`${radarChannels.length} channels monitored • ${leads.length} inquiries`}
+        subtitle={
+          isWhatsAppConnected
+            ? `${radarChannels.length} channels monitored • ${leads.length} inquiries`
+            : 'WhatsApp disconnected'
+        }
         rightAction={{
-          label: 'New Inquiry',
-          icon: Plus,
-          onPress: () => router.push('/modal/new-lead'),
+          label: isWhatsAppConnected ? 'Pair WhatsApp' : 'Scan QR',
+          icon: QrCode,
+          onPress: () => router.push('/modal/whatsapp-pair'),
         }}
       />
+
+      {!isWhatsAppConnected && (
+        <TouchableOpacity
+          style={styles.reconnectBanner}
+          activeOpacity={0.8}
+          onPress={() => router.push('/modal/whatsapp-pair')}
+        >
+          <QrCode size={16} color={colors.accentBlue} strokeWidth={2} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.reconnectBannerTitle}>Link WhatsApp Channel</Text>
+            <Text style={styles.reconnectBannerSub}>
+              Tap to scan QR code and start intercepting real buyer inquiries.
+            </Text>
+          </View>
+          <ArrowRight size={14} color={colors.accentBlue} />
+        </TouchableOpacity>
+      )}
 
       {/* Search Bar */}
       <View style={styles.searchWrapper}>
@@ -436,6 +457,30 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
+  },
+  reconnectBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 4,
+    padding: 12,
+    backgroundColor: '#F0F7FF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  reconnectBannerTitle: {
+    fontFamily: fonts.geist.semibold,
+    fontSize: 13,
+    color: colors.brandNavy,
+  },
+  reconnectBannerSub: {
+    fontFamily: fonts.inter.regular,
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 1,
   },
   searchWrapper: {
     paddingHorizontal: 16,
