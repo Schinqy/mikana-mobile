@@ -389,11 +389,14 @@ async function startBaileysSession(sessionId, userId, usePairingCode = false) {
   sessions.set(sessionId, session);
   addLog('info', 'Baileys socket initialized', { sessionId, version: version?.join('.') });
 
-  // ─── Connection Events ───────────────────────────────────────────────────
-
   sock.ev.on('creds.update', () => {
     addLog('info', 'Credentials updated by WhatsApp', { sessionId });
     saveCreds();
+    broadcastToSession(sessionId, {
+      type: 'status',
+      status: 'pairing_syncing',
+      message: 'WhatsApp accepted code! Finalizing connection...',
+    });
   });
 
   sock.ev.on('connection.update', async (update) => {
@@ -469,19 +472,15 @@ async function startBaileysSession(sessionId, userId, usePairingCode = false) {
         reason: isRealLogout ? 'logged_out' : 'connection_lost',
       });
 
-      // ONLY auto-reconnect if session was ALREADY connected (active monitoring).
-      // During pairing, DO NOT spawn infinite new sockets — each new socket kills the previous pairing code!
-      if (session.wasConnected && !isRealLogout) {
-        addLog('info', 'Active session dropped, auto-reconnecting...', { sessionId });
-        setTimeout(() => startBaileysSession(sessionId, userId, false), 2000);
-      } else if (isRealLogout) {
+      if (!isRealLogout) {
+        addLog('info', 'Maintaining active companion socket with saved pairing keys, reconnecting...', { sessionId });
+        setTimeout(() => startBaileysSession(sessionId, userId, false), 1200);
+      } else {
         addLog('warn', 'Active session logged out by user, removing credentials', { sessionId });
         sessions.delete(sessionId);
         if (fs.existsSync(authPath)) {
           fs.rmSync(authPath, { recursive: true, force: true });
         }
-      } else {
-        addLog('info', 'Pairing socket closed by WhatsApp — awaiting user code submission or retry', { sessionId, statusCode });
       }
     }
   });
