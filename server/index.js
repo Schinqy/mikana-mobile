@@ -426,23 +426,34 @@ async function startBaileysSession(sessionId, userId, usePairingCode = false) {
 
     if (connection === 'close') {
       const statusCode = lastDisconnect?.error?.output?.statusCode;
-      const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
-      logger.info({ sessionId, statusCode, shouldReconnect }, 'Connection closed');
+      const isRestart = statusCode === DisconnectReason.restartRequired || statusCode === 515;
+      const isLoggedOut = statusCode === DisconnectReason.loggedOut;
+      const shouldReconnect = !isLoggedOut;
+
+      logger.info({ sessionId, statusCode, isRestart, shouldReconnect }, 'Connection closed');
+
+      if (isRestart) {
+        // WhatsApp requires immediate reconnect during pairing handshake.
+        // Zero delay is crucial: WhatsApp client on phone times out after ~2s.
+        logger.info({ sessionId }, 'Pairing handshake restart required — reconnecting immediately (0ms)...');
+        startBaileysSession(sessionId, userId, false);
+        return;
+      }
 
       session.status = 'disconnected';
       broadcastToSession(sessionId, {
         type: 'disconnected',
-        reason: statusCode === DisconnectReason.loggedOut ? 'logged_out' : 'connection_lost',
+        reason: isLoggedOut ? 'logged_out' : 'connection_lost',
       });
 
       if (shouldReconnect) {
-        // Auto-reconnect after brief delay
-        setTimeout(() => startBaileysSession(sessionId, userId), 3000);
+        // Quick reconnect for network drops
+        setTimeout(() => startBaileysSession(sessionId, userId, false), 1500);
       } else {
         sessions.delete(sessionId);
         // Clean auth on logout
         if (fs.existsSync(authPath)) {
-          fs.rmSync(authPath, { recursive: true });
+          fs.rmSync(authPath, { recursive: true, force: true });
         }
       }
     }
