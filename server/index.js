@@ -34,6 +34,19 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
+// In-memory ring buffer for remote log diagnostics
+const recentLogs = [];
+function addLog(level, msg, extra = {}) {
+  const entry = {
+    time: new Date().toISOString(),
+    level,
+    msg,
+    ...extra,
+  };
+  recentLogs.push(entry);
+  if (recentLogs.length > 150) recentLogs.shift();
+}
+
 const logger = pino({ level: 'info' });
 
 // Supabase client (service role for server-side writes)
@@ -61,7 +74,7 @@ app.use(express.json());
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: '/ws' });
 
-// ─── Health Check ────────────────────────────────────────────────────────────
+// ─── Health & Diagnostics ───────────────────────────────────────────────────
 
 app.get('/', (req, res) => {
   res.json({
@@ -74,6 +87,10 @@ app.get('/', (req, res) => {
 
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, sessions: sessions.size });
+});
+
+app.get('/api/logs', (req, res) => {
+  res.json({ count: recentLogs.length, logs: recentLogs.slice(-100) });
 });
 
 // ─── Create Session ──────────────────────────────────────────────────────────
@@ -353,10 +370,8 @@ async function startBaileysSession(sessionId, userId, usePairingCode = false) {
       keys: makeCacheableSignalKeyStore(state.keys, logger),
     },
     logger: pino({ level: 'silent' }),
-    browser: Browsers.macOS('Desktop'),
+    browser: Browsers.ubuntu('Chrome'),
     printQRInTerminal: false,
-    // usePairingCode: true DISABLES qr and enables 8-digit phone pairing
-    ...(usePairingCode ? { usePairingCode: true } : {}),
     syncFullHistory: false,
     generateHighQualityLinkPreview: false,
     connectTimeoutMs: 60000,
@@ -372,10 +387,14 @@ async function startBaileysSession(sessionId, userId, usePairingCode = false) {
     qrRetries: 0,
   };
   sessions.set(sessionId, session);
+  addLog('info', 'Baileys socket initialized', { sessionId, version: version?.join('.') });
 
   // ─── Connection Events ───────────────────────────────────────────────────
 
-  sock.ev.on('creds.update', saveCreds);
+  sock.ev.on('creds.update', () => {
+    addLog('info', 'Credentials updated by WhatsApp', { sessionId });
+    saveCreds();
+  });
 
   sock.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect, qr } = update;
@@ -384,15 +403,17 @@ async function startBaileysSession(sessionId, userId, usePairingCode = false) {
       session.status = 'qr_ready';
       session.qrRetries++;
       logger.info({ sessionId, retry: session.qrRetries }, 'QR code generated');
+      addLog('info', 'QR code generated', { sessionId, retry: session.qrRetries });
 
       // Send QR to all subscribed mobile clients
       broadcastToSession(sessionId, {
         type: 'qr',
-        qr: qr, // Raw QR string — mobile renders with react-native-qrcode-svg
+        qr: qr,
       });
 
       if (session.qrRetries > 5) {
         logger.warn({ sessionId }, 'Too many QR retries, closing');
+        addLog('warn', 'QR code retries exceeded limit', { sessionId });
         sock.end();
         sessions.delete(sessionId);
         broadcastToSession(sessionId, {
@@ -406,6 +427,7 @@ async function startBaileysSession(sessionId, userId, usePairingCode = false) {
       session.status = 'connected';
       session.phone = sock.user?.id?.split(':')[0] || null;
       logger.info({ sessionId, phone: session.phone }, 'WhatsApp connected');
+      addLog('info', 'WhatsApp connection established successfully!', { sessionId, phone: session.phone });
 
       broadcastToSession(sessionId, {
         type: 'connected',
@@ -431,11 +453,11 @@ async function startBaileysSession(sessionId, userId, usePairingCode = false) {
       const shouldReconnect = !isLoggedOut;
 
       logger.info({ sessionId, statusCode, isRestart, shouldReconnect }, 'Connection closed');
+      addLog('info', 'Connection closed', { sessionId, statusCode, isRestart, isLoggedOut });
 
       if (isRestart) {
-        // WhatsApp requires immediate reconnect during pairing handshake.
-        // Zero delay is crucial: WhatsApp client on phone times out after ~2s.
-        logger.info({ sessionId }, 'Pairing handshake restart required — reconnecting immediately (0ms)...');
+        logger.info({ sessionId }, 'Pairing handshake restart required (515) — reconnecting immediately (0ms)...');
+        addLog('info', 'Pairing handshake 515 received, reconnecting immediately with saved credentials...', { sessionId });
         startBaileysSession(sessionId, userId, false);
         return;
       }
@@ -447,11 +469,11 @@ async function startBaileysSession(sessionId, userId, usePairingCode = false) {
       });
 
       if (shouldReconnect) {
-        // Quick reconnect for network drops
+        addLog('info', 'Attempting auto-reconnect...', { sessionId });
         setTimeout(() => startBaileysSession(sessionId, userId, false), 1500);
       } else {
+        addLog('warn', 'Session logged out, removing credentials', { sessionId });
         sessions.delete(sessionId);
-        // Clean auth on logout
         if (fs.existsSync(authPath)) {
           fs.rmSync(authPath, { recursive: true, force: true });
         }
