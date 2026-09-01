@@ -247,8 +247,8 @@ export default function HomeScreen() {
       } catch (_) {}
 
       await Share.share({
-        title: 'Mikana Secure WhatsApp QR',
-        message: `Open this secure link on your PC or second phone to scan your WhatsApp QR code:\n\n${targetUrl}`,
+        title: 'Mikana WhatsApp Web QR',
+        message: targetUrl,
         url: targetUrl,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -352,7 +352,7 @@ export default function HomeScreen() {
                 </TouchableOpacity>
 
                 <Text style={styles.liveIndicatorText}>
-                  {liveQR ? 'Open link on PC $\\rightarrow$ scan with WhatsApp' : 'Connecting to Baileys engine...'}
+                  {liveQR ? 'Open link on PC → scan with WhatsApp' : 'Connecting to Baileys engine...'}
                 </Text>
               </View>
             ) : (
