@@ -47,10 +47,6 @@ export default function RootLayout() {
     initializeRevenueCat(revenueCatApiKey);
   }, [revenueCatApiKey]);
 
-  if (!fontsLoaded) {
-    return <View style={styles.container} />; // blank while fonts load
-  }
-
   return (
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider>

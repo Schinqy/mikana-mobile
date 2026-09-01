@@ -123,11 +123,13 @@ const styles = StyleSheet.create({
   },
   pillItemActive: {
     backgroundColor: colors.accentBlue, // Royal Blue highlight from logo
+    paddingHorizontal: 18,
   },
   pillLabel: {
     fontFamily: fonts.geist.semibold,
-    fontSize: 12,
+    fontSize: 12.5,
     color: colors.textInverse,
     letterSpacing: -0.1,
+    includeFontPadding: false,
   },
 });
