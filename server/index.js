@@ -103,6 +103,29 @@ app.post('/api/sessions', async (req, res) => {
   }
 });
 
+// ─── Request 8-Digit Pairing Code (Phone Number Link) ─────────────────────────
+
+app.post('/api/sessions/:sessionId/pairing-code', async (req, res) => {
+  const { sessionId } = req.params;
+  const { phoneNumber } = req.body;
+  if (!phoneNumber) return res.status(400).json({ error: 'phoneNumber required' });
+
+  const session = sessions.get(sessionId);
+  if (!session || !session.sock) {
+    return res.status(404).json({ error: 'Session not found. Create session first.' });
+  }
+
+  try {
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    const code = await session.sock.requestPairingCode(cleanPhone);
+    logger.info({ sessionId, cleanPhone, code }, 'WhatsApp pairing code generated');
+    res.json({ ok: true, code });
+  } catch (err) {
+    logger.error({ err }, 'Failed to request pairing code');
+    res.status(500).json({ error: 'Failed to generate pairing code. Ensure phone number is valid.' });
+  }
+});
+
 // ─── Get Session Status ──────────────────────────────────────────────────────
 
 app.get('/api/sessions/:sessionId/status', (req, res) => {

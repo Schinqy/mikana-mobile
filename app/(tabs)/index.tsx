@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLeadStore } from '../../src/store/useLeadStore';
@@ -408,25 +409,31 @@ export default function HomeScreen() {
       </View>
 
       {/* Underline Filter Tabs */}
-      <View style={styles.filterBar}>
-        {filterTabs.map((tab) => {
-          const isActive = filter === tab.id;
-          return (
-            <TouchableOpacity
-              key={tab.id}
-              activeOpacity={0.7}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setFilter(tab.id);
-              }}
-              style={[styles.filterTab, isActive && styles.activeFilterTab]}
-            >
-              <Text style={[styles.filterTabText, isActive && styles.activeFilterTabText]}>
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+      <View style={styles.filterBarWrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterBar}
+        >
+          {filterTabs.map((tab) => {
+            const isActive = filter === tab.id;
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                activeOpacity={0.7}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setFilter(tab.id);
+                }}
+                style={[styles.filterTab, isActive && styles.activeFilterTab]}
+              >
+                <Text style={[styles.filterTabText, isActive && styles.activeFilterTabText]}>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {/* List Feed with Home Overview Footer */}
@@ -491,14 +498,16 @@ const styles = StyleSheet.create({
   searchInputContainer: {
     marginBottom: 0,
   },
+  filterBarWrapper: {
+    backgroundColor: colors.surface,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
   filterBar: {
     flexDirection: 'row',
     paddingHorizontal: 20,
     paddingBottom: 8,
-    backgroundColor: colors.surface,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-    gap: 20,
+    gap: 22,
   },
   filterTab: {
     paddingVertical: 4,

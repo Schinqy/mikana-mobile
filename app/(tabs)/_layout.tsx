@@ -116,19 +116,21 @@ const styles = StyleSheet.create({
   pillItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     borderRadius: 24,
+    flexShrink: 0,
   },
   pillItemActive: {
     backgroundColor: colors.accentBlue, // Royal Blue highlight from logo
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
   },
   pillLabel: {
     fontFamily: fonts.geist.semibold,
-    fontSize: 12.5,
+    fontSize: 13,
     color: colors.textInverse,
-    includeFontPadding: false,
+    flexShrink: 0,
   },
 });

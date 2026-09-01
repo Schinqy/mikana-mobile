@@ -1,6 +1,16 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
+
+function getDefaultRelayUrl(): string {
+  const hostUri = Constants.expoConfig?.hostUri;
+  if (hostUri) {
+    const host = hostUri.split(':')[0];
+    return `http://${host}:3005`;
+  }
+  return 'http://192.168.1.3:3005';
+}
 
 interface SettingsState {
   geminiApiKey: string;
@@ -41,7 +51,7 @@ export const useSettingsStore = create<SettingsState>()(
       revenueCatApiKey: 'appl_mock_revenuecat_key_shipaton_2026',
       isWhatsAppConnected: false,
       whatsappLinkedPhone: '',
-      whatsappRelayUrl: 'http://localhost:3005',
+      whatsappRelayUrl: getDefaultRelayUrl(),
       radarChannels: DEFAULT_RADAR_CHANNELS,
       enableSoundHaptics: true,
       enablePushNotifications: true,

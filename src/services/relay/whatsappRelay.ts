@@ -175,7 +175,24 @@ export async function sendWhatsAppMessage(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ to, message }),
   });
-  if (!res.ok) throw new Error(`Send failed: ${res.status}`);
+/**
+ * Request real 8-digit WhatsApp pairing code for a phone number
+ */
+export async function requestPairingCode(
+  relayUrl: string,
+  sessionId: string,
+  phoneNumber: string
+): Promise<{ ok: boolean; code: string }> {
+  const res = await fetch(`${relayUrl}/api/sessions/${sessionId}/pairing-code`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phoneNumber }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Pairing code request failed: ${res.status}`);
+  }
+  return res.json();
 }
 
 /**
