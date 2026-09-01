@@ -233,11 +233,12 @@ export default function HomeScreen() {
   };
 
   const handleShareWebQR = async () => {
-    const url = `${resolveRelayUrl(whatsappRelayUrl)}/pair`;
+    const sessionParam = sessionIdRef.current || 'session_user_default';
+    const url = `${resolveRelayUrl(whatsappRelayUrl)}/pair?session=${sessionParam}`;
     try {
       await Share.share({
         title: 'Mikana WhatsApp Web QR',
-        message: `Open this link on your PC or second phone to scan the live WhatsApp QR code:\n\n${url}`,
+        message: `Open this link on your PC or second phone to scan your private WhatsApp QR code:\n\n${url}`,
         url: url,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

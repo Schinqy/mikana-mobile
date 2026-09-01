@@ -197,11 +197,26 @@ app.get('/pair', (req, res) => {
       padding: 10px 16px;
       font-size: 13px;
       font-weight: 600;
+    .btn-secondary {
+      background: #27272a;
+      color: #e4e4e7;
+      border: 1px solid #3f3f46;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 600;
       cursor: pointer;
       width: 100%;
+      margin-top: 10px;
       transition: background 0.2s;
     }
-    .btn:hover { background: #1d4ed8; }
+    .btn-secondary:hover { background: #3f3f46; }
+    .session-tag {
+      font-family: monospace;
+      font-size: 11px;
+      color: #71717a;
+      margin-top: 16px;
+    }
     .success-box {
       display: none;
       background: rgba(16, 185, 129, 0.1);
@@ -221,7 +236,8 @@ app.get('/pair', (req, res) => {
 
     <div class="success-box" id="successBox">
       <h2 style="font-size: 16px; margin-bottom: 6px;">WhatsApp Connected!</h2>
-      <p style="font-size: 13px; color: #a1a1aa;" id="connectedPhone"></p>
+      <p style="font-size: 13px; color: #a1a1aa; margin-bottom: 14px;" id="connectedPhone"></p>
+      <button class="btn-secondary" onclick="unlinkSession()">Unlink / Pair Different Device</button>
     </div>
 
     <div class="qr-container" id="qrBox">
@@ -234,12 +250,14 @@ app.get('/pair', (req, res) => {
       <div class="step-item"><span class="step-num">3</span><span>Tap <b>Link a Device</b> and point camera at this screen</span></div>
     </div>
 
-    <button class="btn" onclick="refreshQR()">Refresh QR Code</button>
+    <button class="btn" id="refreshBtn" onclick="refreshQR()">Refresh QR Code</button>
+    <div class="session-tag" id="sessionLabel"></div>
   </div>
 
   <script>
     const sessionId = new URLSearchParams(window.location.search).get('session') || 'session_user_default';
     const userId = sessionId.replace('session_', '');
+    document.getElementById('sessionLabel').innerText = 'Session: ' + sessionId;
     let qrcodeObj = null;
     let ws = null;
 
@@ -276,8 +294,9 @@ app.get('/pair', (req, res) => {
       document.getElementById('statusText').innerText = 'Connected';
       document.getElementById('qrBox').style.display = 'none';
       document.getElementById('stepsBox').style.display = 'none';
+      document.getElementById('refreshBtn').style.display = 'none';
       document.getElementById('successBox').style.display = 'block';
-      document.getElementById('connectedPhone').innerText = phone ? 'Linked Account: +' + phone : 'Active & ready for leads';
+      document.getElementById('connectedPhone').innerText = phone ? 'Linked Account: +' + phone : 'Active & listening for leads';
     }
 
     function connectWS() {
@@ -293,7 +312,12 @@ app.get('/pair', (req, res) => {
         try {
           const msg = JSON.parse(event.data);
           if (msg.type === 'qr' && msg.qr) {
+            document.getElementById('statusBadge').className = 'badge';
             document.getElementById('statusText').innerText = 'Ready to Scan';
+            document.getElementById('qrBox').style.display = 'inline-flex';
+            document.getElementById('stepsBox').style.display = 'flex';
+            document.getElementById('refreshBtn').style.display = 'block';
+            document.getElementById('successBox').style.display = 'none';
             renderQR(msg.qr);
           } else if (msg.type === 'connected') {
             showConnected(msg.phone);
@@ -311,6 +335,16 @@ app.get('/pair', (req, res) => {
       fetch('/api/sessions/' + sessionId + '/restart', { method: 'POST' })
         .then(() => initSession())
         .catch(() => initSession());
+    }
+
+    function unlinkSession() {
+      fetch('/api/sessions/' + sessionId + '/restart', { method: 'POST' })
+        .then(() => {
+          document.getElementById('successBox').style.display = 'none';
+          document.getElementById('statusText').innerText = 'Generating fresh QR...';
+          initSession();
+        })
+        .catch(console.error);
     }
 
     initSession();
