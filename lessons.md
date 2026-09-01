@@ -13,3 +13,11 @@
 - **StatusBar typing:** In `expo-status-bar`, `<StatusBar style="light" />` does not take `backgroundColor` on all platforms; background color should be applied via the root container view.
 - **Reanimated 4.x Android Gradle Dependency:** Under React Native 0.86 / Expo SDK 57, `react-native-reanimated` 4.5.1 strictly requires `react-native-worklets` pinned to version `0.10.0` (Worklets 0.12.x throws `assertWorkletsVersionTask` build failure).
 
+### [2026-09-01] Baileys WhatsApp Relay Architecture
+- **Baileys cannot run inside React Native JS thread.** `@whiskeysockets/baileys` requires Node.js crypto sockets and persistent TCP WebSocket connections. It MUST run as a separate Node.js server process (relay). The mobile app connects to the relay via HTTP REST + WebSocket.
+- **Every WhatsApp-based mobile CRM** (Respond.io, Wati, etc.) uses the same relay architecture. This is not a limitation — it is the standard.
+- **printQRInTerminal is deprecated** in recent Baileys versions. Listen to `connection.update` event for QR strings and handle them yourself (stream to mobile via WebSocket).
+- **Multi-session support:** Each user gets their own Baileys session stored in `server/.auth_sessions/<session_id>/`. Auth credentials persist across restarts via `useMultiFileAuthState`.
+- **Railway deployment:** Use `Dockerfile` with `node:20-slim` base image. Attach a persistent volume at `/app/.auth_sessions` to persist WhatsApp auth across deploys.
+- **Supabase Realtime for instant lead push:** Enable `ALTER PUBLICATION supabase_realtime ADD TABLE leads;` so the mobile app receives new leads instantly via Supabase Realtime subscriptions without polling.
+- **Never build dummy QR codes** — always wire real Baileys QR generation from Day 1. Dummy pairing flows waste time and create false confidence in the product.

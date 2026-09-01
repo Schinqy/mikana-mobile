@@ -43,12 +43,29 @@
 - **Icons:** `lucide-react-native` (paired with `react-native-svg`)
 - **State Management:** Zustand stores with `@react-native-async-storage/async-storage` persistence
 - **Monetization (RevenueCat):** `react-native-purchases` (Pro Monthly $9.99, Pro Annual $79.99, Agency $24.99, Consumable $2.99)
-- **AI Proposal Engine:** Google Gemini (`gemini-2.5-flash` / `gemini-3.5-flash-lite`)
+- **AI Proposal Engine:** Google Gemini (`gemini-2.0-flash` / `gemini-2.5-flash`)
+- **WhatsApp Engine:** `@whiskeysockets/baileys` multi-session relay (Node.js server)
+- **Database:** Supabase (PostgreSQL + Realtime + Auth + RLS)
+- **Deployment:** Railway (Baileys relay) + EAS Build (mobile APK/AAB)
 - **24/7 Offline Autopilot:** Background lead scoring and autonomous WhatsApp proposal dispatching (Pro tier feature)
 
 ---
 
-## 4. Critical File Paths
+## 4. Production Architecture
+
+```
+Mobile App (Expo) ←→ Supabase (DB + Realtime + Auth) ←→ Baileys Relay (Railway)
+                                                              ↕
+                                                    WhatsApp Web Multi-Device
+```
+
+- **Real QR Pairing:** Relay generates real Baileys QR → streams to mobile via WebSocket → user scans with WhatsApp
+- **Group Interception:** Relay listens to monitored WhatsApp groups → classifies with Gemini Flash → stores in Supabase → Realtime push to mobile
+- **Outbound Quotes:** Mobile approves AI quote → relay sends directly through Baileys WhatsApp socket (no deep-link workaround)
+
+---
+
+## 5. Critical File Paths
 
 | Purpose | Path |
 | :--- | :--- |
@@ -60,14 +77,16 @@
 | Release milestones | `changelog.md` |
 | Lead Radar feed | `app/(tabs)/index.tsx` |
 | Deal Pipeline CRM | `app/(tabs)/pipeline.tsx` |
-| 24/7 Offline Autopilot | `app/(tabs)/autopilot.tsx` |
-| Service Catalog & Profile | `app/(tabs)/catalog.tsx` |
-| Settings & API Integrations | `app/(tabs)/settings.tsx` |
+| Business Hub | `app/(tabs)/business.tsx` |
 | AI Pitch Studio modal | `app/modal/pitch.tsx` |
 | RevenueCat Paywall modal | `app/modal/paywall.tsx` |
 | Gemini AI service | `src/services/ai/geminiExtractor.ts` |
 | RevenueCat SDK service | `src/services/purchases/revenueCat.ts` |
-| WhatsApp Deep Link dispatcher | `src/services/dispatcher/whatsappDeepLink.ts` |
+| WhatsApp Relay client | `src/services/relay/whatsappRelay.ts` |
+| Supabase client | `src/services/supabase/client.ts` |
+| **Baileys Relay Server** | `server/index.js` |
+| **Supabase Schema** | `supabase/schema.sql` |
+| **Railway Deploy Config** | `server/railway.json` + `server/Dockerfile` |
 
 ---
 
