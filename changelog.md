@@ -2,6 +2,15 @@
 
 All notable changes to **Mikana Mobile** are documented here.
 
+## [1.3.0] - 2026-09-01
+
+### WhatsApp Phone Pairing, Country Detection & Typography Fixes
+- **WhatsApp Phone Number Pairing:** Replaced camera QR dependency with real 8-digit multi-device phone pairing (`sock.requestPairingCode`) for single-device self-pairing.
+- **195+ Country Database & Auto-Detection:** Built `src/utils/countryCodes.ts` with timezone auto-detection (`Africa/Harare` $\rightarrow$ `🇿🇼 +263`) and safe-area inset padded modal selector.
+- **Resolved Android Font Truncation:** Mapped `fonts.geist` on Android to `Inter` font weights (`Inter_500Medium`, `Inter_600SemiBold`, `Inter_700Bold`) to eliminate Android native OTF advance-width bounding box clipping across all buttons, headings, and tab labels.
+- **Dynamic LAN Relay Resolution:** Dynamically extracts Metro host IP from `expo-constants` for seamless Wi-Fi connection from physical mobile devices.
+- **Keyboard Avoidance:** Integrated `KeyboardAwareScrollView` from `react-native-keyboard-controller` to prevent keyboard overlay during phone number entry.
+
 ## [1.2.0] - 2026-08-31
 
 ### Navigation, Typography & Architecture Refactor

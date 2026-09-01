@@ -111,37 +111,52 @@ app.post('/api/sessions/:sessionId/pairing-code', async (req, res) => {
   const { phoneNumber } = req.body;
   if (!phoneNumber) return res.status(400).json({ error: 'phoneNumber required' });
 
-  let session = sessions.get(sessionId);
-  if (!session || !session.sock) {
-    try {
-      await startBaileysSession(sessionId, sessionId.replace('session_', ''));
-      session = sessions.get(sessionId);
-    } catch (err) {
-      return res.status(500).json({ error: 'Could not initialize session' });
-    }
+  const userId = sessionId.replace('session_', '');
+  const cleanPhone = phoneNumber.replace(/\D/g, '');
+
+  // Always (re)start the session in pairing-code mode for this endpoint.
+  // usePairingCode:true is required — without it requestPairingCode() hangs forever.
+  try {
+    logger.info({ sessionId, cleanPhone }, 'Starting Baileys in pairing-code mode');
+    await startBaileysSession(sessionId, userId, true);
+  } catch (err) {
+    logger.error({ err }, 'Failed to start pairing-code session');
+    return res.status(500).json({ error: 'Could not initialize session' });
+  }
+
+  const session = sessions.get(sessionId);
+  if (!session?.sock) {
+    return res.status(500).json({ error: 'Session not found after init' });
   }
 
   try {
-    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    // Wait up to 10s for the socket to reach a state where pairing code works
     let code = null;
     let attempts = 0;
+    const MAX_ATTEMPTS = 8;
+    const WAIT_MS = 1500;
 
-    while (attempts < 6 && !code) {
+    while (attempts < MAX_ATTEMPTS && !code) {
       try {
         attempts++;
+        logger.info({ sessionId, attempt: attempts }, 'Requesting pairing code...');
         code = await session.sock.requestPairingCode(cleanPhone);
       } catch (err) {
-        logger.warn({ attempt: attempts, err: err.message }, 'Waiting for socket before requesting pairing code...');
-        if (attempts >= 6) throw err;
-        await new Promise((r) => setTimeout(r, 1200));
+        logger.warn({ attempt: attempts, err: err.message }, 'Pairing code attempt failed, retrying...');
+        if (attempts >= MAX_ATTEMPTS) throw err;
+        await new Promise((r) => setTimeout(r, WAIT_MS));
       }
     }
 
-    logger.info({ sessionId, cleanPhone, code }, 'WhatsApp pairing code generated successfully');
+    if (!code) throw new Error('No code returned after all attempts');
+
+    logger.info({ sessionId, cleanPhone, code }, 'WhatsApp pairing code generated');
     res.json({ ok: true, code });
   } catch (err) {
-    logger.error({ err }, 'Failed to request pairing code');
-    res.status(500).json({ error: 'Failed to generate pairing code. Please check your phone number and try again.' });
+    logger.error({ err: err.message }, 'Failed to generate pairing code');
+    res.status(500).json({
+      error: err.message || 'Failed to generate pairing code. Check number format (include country code) and retry.',
+    });
   }
 });
 
@@ -310,7 +325,13 @@ function broadcastToSession(sessionId, payload) {
 
 // ─── Baileys Session Lifecycle ───────────────────────────────────────────────
 
-async function startBaileysSession(sessionId, userId) {
+async function startBaileysSession(sessionId, userId, usePairingCode = false) {
+  // Clean up any existing session sock first
+  const existing = sessions.get(sessionId);
+  if (existing?.sock) {
+    try { existing.sock.end(); } catch (_) {}
+  }
+
   const authPath = path.join(AUTH_DIR, sessionId);
   const { state, saveCreds } = await useMultiFileAuthState(authPath);
   const { version } = await fetchLatestBaileysVersion();
@@ -323,6 +344,9 @@ async function startBaileysSession(sessionId, userId) {
     },
     logger: pino({ level: 'silent' }),
     browser: Browsers.macOS('Desktop'),
+    printQRInTerminal: false,
+    // usePairingCode: true DISABLES qr and enables 8-digit phone pairing
+    ...(usePairingCode ? { usePairingCode: true } : {}),
     syncFullHistory: false,
     generateHighQualityLinkPreview: false,
     connectTimeoutMs: 60000,

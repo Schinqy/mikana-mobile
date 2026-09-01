@@ -218,7 +218,8 @@ export async function sendWhatsAppMessage(
 }
 
 /**
- * Request real 8-digit WhatsApp pairing code for a phone number
+ * Request real 8-digit WhatsApp pairing code for a phone number.
+ * Times out after 25 seconds — server needs up to ~12s to init Baileys + get code.
  */
 export async function requestPairingCode(
   relayUrl: string,
@@ -226,16 +227,28 @@ export async function requestPairingCode(
   phoneNumber: string
 ): Promise<{ ok: boolean; code: string }> {
   const url = resolveRelayUrl(relayUrl);
-  const res = await fetch(`${url}/api/sessions/${sessionId}/pairing-code`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phoneNumber }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || `Pairing code request failed: ${res.status}`);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25000);
+  try {
+    const res = await fetch(`${url}/api/sessions/${sessionId}/pairing-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phoneNumber }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Pairing code request failed: ${res.status}`);
+    }
+    return res.json();
+  } catch (err: any) {
+    if (err.name === 'AbortError') {
+      throw new Error('Timed out waiting for pairing code. Make sure your phone number includes the country code.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
   }
-  return res.json();
 }
 
 /**
