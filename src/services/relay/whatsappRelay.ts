@@ -9,6 +9,27 @@
  * - Outbound quote dispatch
  */
 
+import Constants from 'expo-constants';
+
+/**
+ * Automatically resolves localhost/127.0.0.1 to development host machine IP
+ * so physical devices and emulators connect reliably over Wi-Fi/LAN.
+ */
+export function resolveRelayUrl(inputUrl?: string): string {
+  const hostUri = Constants.expoConfig?.hostUri;
+  const devHost = hostUri ? hostUri.split(':')[0] : '192.168.1.3';
+
+  if (!inputUrl || inputUrl.trim().length === 0) {
+    return `http://${devHost}:3005`;
+  }
+
+  if (inputUrl.includes('localhost') || inputUrl.includes('127.0.0.1')) {
+    return inputUrl.replace(/localhost|127\.0\.0\.1/, devHost);
+  }
+
+  return inputUrl;
+}
+
 type RelayEventHandler = {
   onQR?: (qr: string) => void;
   onConnected?: (phone: string) => void;
@@ -30,12 +51,13 @@ class WhatsAppRelayClient {
    * Connect to the relay server WebSocket
    */
   connect(relayUrl: string, sessionId: string, handlers: RelayEventHandler) {
-    this.relayUrl = relayUrl;
+    const resolvedUrl = resolveRelayUrl(relayUrl);
+    this.relayUrl = resolvedUrl;
     this.sessionId = sessionId;
     this.handlers = handlers;
     this.isIntentionalClose = false;
 
-    const wsUrl = relayUrl.replace(/^http/, 'ws') + '/ws';
+    const wsUrl = resolvedUrl.replace(/^http/, 'ws') + '/ws';
 
     try {
       this.ws = new WebSocket(wsUrl);
@@ -121,7 +143,8 @@ export const relayClient = new WhatsAppRelayClient();
  * Create a new WhatsApp session on the relay server
  */
 export async function createSession(relayUrl: string, userId: string): Promise<{ sessionId: string; status: string }> {
-  const res = await fetch(`${relayUrl}/api/sessions`, {
+  const url = resolveRelayUrl(relayUrl);
+  const res = await fetch(`${url}/api/sessions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId }),
@@ -134,7 +157,8 @@ export async function createSession(relayUrl: string, userId: string): Promise<{
  * Get session connection status
  */
 export async function getSessionStatus(relayUrl: string, sessionId: string): Promise<any> {
-  const res = await fetch(`${relayUrl}/api/sessions/${sessionId}/status`);
+  const url = resolveRelayUrl(relayUrl);
+  const res = await fetch(`${url}/api/sessions/${sessionId}/status`);
   if (!res.ok) throw new Error(`Status check failed: ${res.status}`);
   return res.json();
 }
@@ -143,7 +167,8 @@ export async function getSessionStatus(relayUrl: string, sessionId: string): Pro
  * Fetch all WhatsApp groups for a session
  */
 export async function fetchGroups(relayUrl: string, sessionId: string): Promise<any[]> {
-  const res = await fetch(`${relayUrl}/api/sessions/${sessionId}/groups`);
+  const url = resolveRelayUrl(relayUrl);
+  const res = await fetch(`${url}/api/sessions/${sessionId}/groups`);
   if (!res.ok) throw new Error(`Groups fetch failed: ${res.status}`);
   const data = await res.json();
   return data.groups;
@@ -153,7 +178,8 @@ export async function fetchGroups(relayUrl: string, sessionId: string): Promise<
  * Set which groups to monitor for incoming leads
  */
 export async function setMonitoredGroups(relayUrl: string, sessionId: string, groupIds: string[]): Promise<void> {
-  const res = await fetch(`${relayUrl}/api/sessions/${sessionId}/monitor`, {
+  const url = resolveRelayUrl(relayUrl);
+  const res = await fetch(`${url}/api/sessions/${sessionId}/monitor`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ groupIds }),
@@ -170,7 +196,8 @@ export async function sendWhatsAppMessage(
   to: string,
   message: string
 ): Promise<void> {
-  const res = await fetch(`${relayUrl}/api/sessions/${sessionId}/send`, {
+  const url = resolveRelayUrl(relayUrl);
+  const res = await fetch(`${url}/api/sessions/${sessionId}/send`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ to, message }),
@@ -186,7 +213,8 @@ export async function requestPairingCode(
   sessionId: string,
   phoneNumber: string
 ): Promise<{ ok: boolean; code: string }> {
-  const res = await fetch(`${relayUrl}/api/sessions/${sessionId}/pairing-code`, {
+  const url = resolveRelayUrl(relayUrl);
+  const res = await fetch(`${url}/api/sessions/${sessionId}/pairing-code`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ phoneNumber }),
@@ -202,5 +230,6 @@ export async function requestPairingCode(
  * Disconnect and clean up a session
  */
 export async function disconnectSession(relayUrl: string, sessionId: string): Promise<void> {
-  await fetch(`${relayUrl}/api/sessions/${sessionId}/disconnect`, { method: 'POST' });
+  const url = resolveRelayUrl(relayUrl);
+  await fetch(`${url}/api/sessions/${sessionId}/disconnect`, { method: 'POST' });
 }
