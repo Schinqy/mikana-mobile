@@ -21,10 +21,17 @@ export const PRODUCTION_RELAY_URL = 'https://mikana-relay.onrender.com';
  * Default is the live cloud deployment on Render (https://mikana-relay.onrender.com).
  */
 export function resolveRelayUrl(inputUrl?: string): string {
-  if (inputUrl && inputUrl.trim().length > 0) {
-    return inputUrl.trim().replace(/\/$/, '');
+  // If no URL or stale localhost / local LAN IP from previous dev sessions, use live Render cloud URL
+  if (
+    !inputUrl ||
+    inputUrl.includes('localhost') ||
+    inputUrl.includes('127.0.0.1') ||
+    inputUrl.includes('10.') ||
+    inputUrl.includes('192.168.')
+  ) {
+    return PRODUCTION_RELAY_URL;
   }
-  return PRODUCTION_RELAY_URL;
+  return inputUrl.trim().replace(/\/$/, '');
 }
 
 type RelayEventHandler = {
