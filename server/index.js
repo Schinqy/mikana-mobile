@@ -93,6 +93,247 @@ app.get('/api/logs', (req, res) => {
   res.json({ count: recentLogs.length, logs: recentLogs.slice(-100) });
 });
 
+// ─── Web QR Pairing Portal ──────────────────────────────────────────────────
+
+app.get('/pair', (req, res) => {
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mikana • WhatsApp QR Pairing</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: #09090b;
+      color: #f4f4f5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 440px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: rgba(37, 99, 235, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(37, 99, 235, 0.3);
+      margin-bottom: 16px;
+    }
+    .badge.connected {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    h1 { font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+    p.sub { font-size: 13px; color: #a1a1aa; margin-bottom: 24px; line-height: 1.5; }
+    .qr-container {
+      background: #ffffff;
+      padding: 16px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 256px;
+      min-height: 256px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .steps {
+      text-align: left;
+      background: #09090b;
+      border: 1px solid #27272a;
+      border-radius: 10px;
+      padding: 16px;
+      font-size: 13px;
+      color: #d4d4d8;
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .step-item { display: flex; align-items: flex-start; gap: 10px; }
+    .step-num {
+      background: #27272a;
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 11px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .btn {
+      background: #2563eb;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #1d4ed8; }
+    .success-box {
+      display: none;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge" id="statusBadge"><span class="dot"></span><span id="statusText">Connecting...</span></div>
+    <h1>Mikana WhatsApp Relay</h1>
+    <p class="sub">Scan this QR code from your phone's WhatsApp to connect.</p>
+
+    <div class="success-box" id="successBox">
+      <h2 style="font-size: 16px; margin-bottom: 6px;">WhatsApp Connected!</h2>
+      <p style="font-size: 13px; color: #a1a1aa;" id="connectedPhone"></p>
+    </div>
+
+    <div class="qr-container" id="qrBox">
+      <div id="qrcode"></div>
+    </div>
+
+    <div class="steps" id="stepsBox">
+      <div class="step-item"><span class="step-num">1</span><span>Open <b>WhatsApp</b> on your phone</span></div>
+      <div class="step-item"><span class="step-num">2</span><span>Tap <b>⋮ Menu</b> or <b>Settings</b> &gt; <b>Linked Devices</b></span></div>
+      <div class="step-item"><span class="step-num">3</span><span>Tap <b>Link a Device</b> and point camera at this screen</span></div>
+    </div>
+
+    <button class="btn" onclick="refreshQR()">Refresh QR Code</button>
+  </div>
+
+  <script>
+    const sessionId = new URLSearchParams(window.location.search).get('session') || 'session_user_default';
+    const userId = sessionId.replace('session_', '');
+    let qrcodeObj = null;
+    let ws = null;
+
+    function renderQR(text) {
+      const container = document.getElementById('qrcode');
+      container.innerHTML = '';
+      qrcodeObj = new QRCode(container, {
+        text: text,
+        width: 224,
+        height: 224,
+        colorDark: '#09090b',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+
+    function initSession() {
+      fetch('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: userId })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'connected') {
+          showConnected(data.phone);
+        }
+      })
+      .catch(console.error);
+    }
+
+    function showConnected(phone) {
+      document.getElementById('statusBadge').className = 'badge connected';
+      document.getElementById('statusText').innerText = 'Connected';
+      document.getElementById('qrBox').style.display = 'none';
+      document.getElementById('stepsBox').style.display = 'none';
+      document.getElementById('successBox').style.display = 'block';
+      document.getElementById('connectedPhone').innerText = phone ? 'Linked Account: +' + phone : 'Active & ready for leads';
+    }
+
+    function connectWS() {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(protocol + '//' + window.location.host + '/ws');
+
+      ws.onopen = () => {
+        document.getElementById('statusText').innerText = 'Waiting for QR...';
+        ws.send(JSON.stringify({ type: 'subscribe', sessionId: sessionId }));
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'qr' && msg.qr) {
+            document.getElementById('statusText').innerText = 'Ready to Scan';
+            renderQR(msg.qr);
+          } else if (msg.type === 'connected') {
+            showConnected(msg.phone);
+          }
+        } catch (e) {}
+      };
+
+      ws.onclose = () => {
+        document.getElementById('statusText').innerText = 'Reconnecting...';
+        setTimeout(connectWS, 3000);
+      };
+    }
+
+    function refreshQR() {
+      fetch('/api/sessions/' + sessionId + '/restart', { method: 'POST' })
+        .then(() => initSession())
+        .catch(() => initSession());
+    }
+
+    initSession();
+    connectWS();
+  </script>
+</body>
+</html>`);
+});
+
+// ─── Restart / Reset Session Endpoint ───────────────────────────────────────
+
+app.post('/api/sessions/:sessionId/restart', async (req, res) => {
+  const { sessionId } = req.params;
+  const userId = sessionId.replace('session_', '');
+  try {
+    logger.info({ sessionId }, 'Restarting Baileys session for fresh QR...');
+    await startBaileysSession(sessionId, userId, true);
+    res.json({ ok: true, message: 'Session restarted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── Create Session ──────────────────────────────────────────────────────────
 
 app.post('/api/sessions', async (req, res) => {
@@ -113,7 +354,7 @@ app.post('/api/sessions', async (req, res) => {
 
   // Start new Baileys session
   try {
-    await startBaileysSession(sessionId, userId);
+    await startBaileysSession(sessionId, userId, false);
     res.json({ sessionId, status: 'qr_pending' });
   } catch (err) {
     logger.error({ err }, 'Failed to create session');

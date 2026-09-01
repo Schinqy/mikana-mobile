@@ -7,6 +7,8 @@ import {
   ActivityIndicator,
   ScrollView,
   TextInput,
+  Share,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLeadStore } from '../../src/store/useLeadStore';
@@ -44,6 +46,8 @@ import {
   Copy,
   Check,
   RotateCcw,
+  Monitor,
+  Share2,
 } from 'lucide-react-native';
 import { Country, detectUserCountry } from '../../src/utils/countryCodes';
 import { CountryCodePickerModal } from '../../src/components/ui/CountryCodePickerModal';
@@ -228,6 +232,18 @@ export default function HomeScreen() {
     setTimeout(() => setCopiedCode(false), 2500);
   };
 
+  const handleShareWebQR = async () => {
+    const url = `${resolveRelayUrl(whatsappRelayUrl)}/pair`;
+    try {
+      await Share.share({
+        title: 'Mikana WhatsApp Web QR',
+        message: `Open this link on your PC or second phone to scan the live WhatsApp QR code:\n\n${url}`,
+        url: url,
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {}
+  };
+
   const formattedPairingCode = pairingCode
     ? pairingCode.length === 8
       ? `${pairingCode.slice(0, 4)}-${pairingCode.slice(4)}`
@@ -313,8 +329,19 @@ export default function HomeScreen() {
                     </View>
                   )}
                 </View>
+
+                <TouchableOpacity
+                  style={styles.shareWebQrBtn}
+                  onPress={handleShareWebQR}
+                  activeOpacity={0.7}
+                >
+                  <Monitor size={14} color={colors.accentBlue} />
+                  <Text style={styles.shareWebQrBtnText}>Open / Share Live QR on PC</Text>
+                  <Share2 size={13} color={colors.accentBlue} />
+                </TouchableOpacity>
+
                 <Text style={styles.liveIndicatorText}>
-                  {liveQR ? 'Scan with WhatsApp camera' : 'Connecting to Baileys engine...'}
+                  {liveQR ? 'Open link on PC $\\rightarrow$ scan with WhatsApp' : 'Connecting to Baileys engine...'}
                 </Text>
               </View>
             ) : (
@@ -871,8 +898,28 @@ const styles = StyleSheet.create({
   },
   liveIndicatorText: {
     fontFamily: fonts.inter.medium,
-    fontSize: 12,
+    fontSize: 11.5,
     color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  shareWebQrBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    width: '100%',
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: colors.accentBlueBorder,
+    borderRadius: 9,
+    marginTop: 4,
+  },
+  shareWebQrBtnText: {
+    fontFamily: fonts.geist.semibold,
+    fontSize: 12.5,
+    color: colors.accentBlue,
   },
   codeWrapper: {
     alignItems: 'center',
