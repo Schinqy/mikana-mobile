@@ -21,3 +21,7 @@
 - **Railway deployment:** Use `Dockerfile` with `node:20-slim` base image. Attach a persistent volume at `/app/.auth_sessions` to persist WhatsApp auth across deploys.
 - **Supabase Realtime for instant lead push:** Enable `ALTER PUBLICATION supabase_realtime ADD TABLE leads;` so the mobile app receives new leads instantly via Supabase Realtime subscriptions without polling.
 - **Never build dummy QR codes** — always wire real Baileys QR generation from Day 1. Dummy pairing flows waste time and create false confidence in the product.
+
+### [2026-09-01] Android React Native Custom Font Advance-Width Truncation Bug
+- **`@expo-google-fonts/geist` on Android Native Text Engine:** The font metric tables in Geist cause Android's native `TextView`/Yoga measurement engine to calculate the horizontal advance width narrower than the actual glyph bounding box. This causes the last 1–2 characters to be clipped on all bold/medium text nodes (`Account` -> `Accou`, `Code` -> `Cod`, `Home` -> `Hom`, `Scanner` -> `Scanne`).
+- **Solution:** Map `fonts.geist` on Android to `Inter` font family weights (`Inter_500Medium`, `Inter_600SemiBold`, `Inter_700Bold`) via `src/theme/fonts.ts` while keeping Geist on iOS. Inter has robust, balanced font bounding box metrics and renders with zero character truncation on Android.

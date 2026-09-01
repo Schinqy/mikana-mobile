@@ -20,6 +20,7 @@ const {
   DisconnectReason,
   fetchLatestBaileysVersion,
   makeCacheableSignalKeyStore,
+  Browsers,
 } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const { createClient } = require('@supabase/supabase-js');
@@ -321,8 +322,11 @@ async function startBaileysSession(sessionId, userId) {
       keys: makeCacheableSignalKeyStore(state.keys, logger),
     },
     logger: pino({ level: 'silent' }),
-    browser: ['Ubuntu', 'Chrome', '20.0.04'],
+    browser: Browsers.macOS('Desktop'),
+    syncFullHistory: false,
     generateHighQualityLinkPreview: false,
+    connectTimeoutMs: 60000,
+    keepAliveIntervalMs: 25000,
   });
 
   const session = {

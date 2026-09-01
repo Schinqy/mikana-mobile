@@ -5,15 +5,15 @@ import { Platform } from 'react-native';
 // Secondary: Inter — screen-optimised. Used for body copy and secondary text.
 
 export const fonts = {
-  // Geist — UI chrome, headings, tab labels, stat values
+  // Geist on iOS, Inter on Android (prevents Android OTF advance-width bounding box clipping)
   geist: {
-    thin: 'Geist_100Thin',
-    light: 'Geist_300Light',
-    regular: 'Geist_400Regular',
-    medium: 'Geist_500Medium',
-    semibold: 'Geist_600SemiBold',
-    bold: 'Geist_700Bold',
-    black: 'Geist_900Black',
+    thin: Platform.OS === 'android' ? 'Inter_400Regular' : 'Geist_100Thin',
+    light: Platform.OS === 'android' ? 'Inter_400Regular' : 'Geist_300Light',
+    regular: Platform.OS === 'android' ? 'Inter_400Regular' : 'Geist_400Regular',
+    medium: Platform.OS === 'android' ? 'Inter_500Medium' : 'Geist_500Medium',
+    semibold: Platform.OS === 'android' ? 'Inter_600SemiBold' : 'Geist_600SemiBold',
+    bold: Platform.OS === 'android' ? 'Inter_700Bold' : 'Geist_700Bold',
+    black: Platform.OS === 'android' ? 'Inter_700Bold' : 'Geist_900Black',
   },
   // Inter — body copy, descriptions, secondary metadata
   inter: {
