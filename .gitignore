@@ -39,3 +39,9 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Baileys relay server
+server/.auth_sessions/
+server/node_modules/
+server/.env
+.env

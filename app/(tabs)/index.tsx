@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLeadStore } from '../../src/store/useLeadStore';
@@ -18,6 +19,10 @@ import { FlashList } from '@shopify/flash-list';
 import QRCode from 'react-native-qrcode-svg';
 import * as Haptics from 'expo-haptics';
 import {
+  relayClient,
+  createSession,
+} from '../../src/services/relay/whatsappRelay';
+import {
   Search,
   Plus,
   QrCode,
@@ -28,10 +33,8 @@ import {
   Clock,
   ArrowRight,
   ShieldCheck,
+  Loader,
 } from 'lucide-react-native';
-
-const WHATSAPP_PAIRING_PAYLOAD =
-  '2@J6+p4Wz...MikanaEngineV1,4N7qP==,vQ5L4s9x8K,sK3==';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -43,13 +46,18 @@ export default function HomeScreen() {
     getFilteredLeads,
     setSelectedLeadId,
     leads,
+    addLead,
   } = useLeadStore();
 
-  const { isWhatsAppConnected, radarChannels, setWhatsAppConnected } = useSettingsStore();
+  const { isWhatsAppConnected, radarChannels, setWhatsAppConnected, whatsappRelayUrl } =
+    useSettingsStore();
   const filteredLeads = getFilteredLeads();
 
   const [pairMode, setPairMode] = useState<'qr' | 'code'>('qr');
   const [isLinking, setIsLinking] = useState(false);
+  const [liveQR, setLiveQR] = useState<string | null>(null);
+  const [relayStatus, setRelayStatus] = useState<'idle' | 'connecting' | 'qr_ready' | 'connected' | 'error'>('idle');
+  const sessionIdRef = useRef<string | null>(null);
 
   const filterTabs: Array<{ id: LeadFilter; label: string }> = [
     { id: 'all', label: 'All' },
@@ -64,13 +72,101 @@ export default function HomeScreen() {
     router.push('/modal/pitch');
   };
 
-  const handleSimulatePair = () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  // ─── Real Baileys Relay Connection ─────────────────────────────────────────
+
+  const connectToRelay = useCallback(async () => {
+    if (!whatsappRelayUrl) return;
+
+    setRelayStatus('connecting');
     setIsLinking(true);
-    setTimeout(() => {
-      setWhatsAppConnected(true, '+27 82 194 8831');
+
+    try {
+      // Create session on relay server
+      const userId = 'user_default'; // Replace with real Supabase auth user ID
+      const { sessionId } = await createSession(whatsappRelayUrl, userId);
+      sessionIdRef.current = sessionId;
+
+      // Connect WebSocket for real-time QR + events
+      relayClient.connect(whatsappRelayUrl, sessionId, {
+        onQR: (qr) => {
+          setLiveQR(qr);
+          setRelayStatus('qr_ready');
+          setIsLinking(false);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        },
+        onConnected: (phone) => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setWhatsAppConnected(true, phone);
+          setRelayStatus('connected');
+          setIsLinking(false);
+        },
+        onDisconnected: (reason) => {
+          if (reason === 'logged_out') {
+            setWhatsAppConnected(false);
+            setRelayStatus('idle');
+          }
+        },
+        onNewLead: (lead) => {
+          // Real incoming WhatsApp lead from relay
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          addLead({
+            rawText: lead.raw_text,
+            senderName: lead.sender_name,
+            senderPhone: lead.sender_phone,
+            senderAvatarUrl: lead.sender_avatar_url,
+            channelName: lead.channel_name,
+            category: lead.category || 'General',
+            urgency: lead.urgency || 'medium',
+            budgetEstimate: lead.budget_estimate,
+            location: lead.location,
+            matchScore: lead.match_score || 75,
+            stage: 'captured',
+            aiSummary: lead.ai_summary || lead.raw_text,
+            extractedNeeds: lead.extracted_needs || [],
+            currency: lead.currency || 'USD',
+          });
+        },
+        onError: (msg) => {
+          setRelayStatus('error');
+          setIsLinking(false);
+          console.warn('Relay error:', msg);
+        },
+        onStatus: (status, phone) => {
+          if (status === 'connected' && phone) {
+            setWhatsAppConnected(true, phone);
+            setRelayStatus('connected');
+          }
+        },
+      });
+    } catch (err) {
+      console.warn('Relay connection failed:', err);
+      setRelayStatus('error');
       setIsLinking(false);
-    }, 600);
+    }
+  }, [whatsappRelayUrl, setWhatsAppConnected, addLead]);
+
+  // Auto-connect to relay on mount if relay URL is set and not connected
+  useEffect(() => {
+    if (!isWhatsAppConnected && whatsappRelayUrl && relayStatus === 'idle') {
+      connectToRelay();
+    }
+    return () => {
+      relayClient.disconnect();
+    };
+  }, []);
+
+  // Fallback: Simulate pair for demo mode (no relay)
+  const handleSimulatePair = () => {
+    if (whatsappRelayUrl) {
+      connectToRelay();
+    } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setIsLinking(true);
+      setTimeout(() => {
+        setWhatsAppConnected(true, '+27 82 194 8831');
+        setIsLinking(false);
+      }, 600);
+    }
   };
 
   // ─── Disconnected First-Time Screen (Fits 1 screen, zero scroll) ───────────
@@ -122,14 +218,27 @@ export default function HomeScreen() {
             {pairMode === 'qr' ? (
               <View style={styles.qrWrapper}>
                 <View style={styles.qrFrame}>
-                  <QRCode
-                    value={WHATSAPP_PAIRING_PAYLOAD}
-                    size={160}
-                    color={colors.brandNavy}
-                    backgroundColor={colors.surface}
-                  />
+                  {liveQR ? (
+                    <QRCode
+                      value={liveQR}
+                      size={160}
+                      color={colors.brandNavy}
+                      backgroundColor={colors.surface}
+                    />
+                  ) : (
+                    <View style={styles.qrLoadingBox}>
+                      <ActivityIndicator size="large" color={colors.accentBlue} />
+                      <Text style={styles.qrLoadingText}>
+                        {relayStatus === 'error'
+                          ? 'Connection failed. Tap below to retry.'
+                          : 'Generating QR code...'}
+                      </Text>
+                    </View>
+                  )}
                 </View>
-                <Text style={styles.liveIndicatorText}>Ready for WhatsApp scan</Text>
+                <Text style={styles.liveIndicatorText}>
+                  {liveQR ? 'Scan with WhatsApp' : 'Connecting to relay...'}
+                </Text>
               </View>
             ) : (
               <View style={styles.codeWrapper}>
@@ -470,6 +579,23 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: colors.surface,
     borderRadius: 8,
+    minWidth: 180,
+    minHeight: 180,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qrLoadingBox: {
+    width: 160,
+    height: 160,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  qrLoadingText: {
+    fontFamily: fonts.inter.medium,
+    fontSize: 11,
+    color: colors.textMuted,
+    textAlign: 'center',
   },
   liveIndicatorText: {
     fontFamily: fonts.inter.medium,
