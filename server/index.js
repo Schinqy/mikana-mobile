@@ -110,19 +110,37 @@ app.post('/api/sessions/:sessionId/pairing-code', async (req, res) => {
   const { phoneNumber } = req.body;
   if (!phoneNumber) return res.status(400).json({ error: 'phoneNumber required' });
 
-  const session = sessions.get(sessionId);
+  let session = sessions.get(sessionId);
   if (!session || !session.sock) {
-    return res.status(404).json({ error: 'Session not found. Create session first.' });
+    try {
+      await startBaileysSession(sessionId, sessionId.replace('session_', ''));
+      session = sessions.get(sessionId);
+    } catch (err) {
+      return res.status(500).json({ error: 'Could not initialize session' });
+    }
   }
 
   try {
     const cleanPhone = phoneNumber.replace(/\D/g, '');
-    const code = await session.sock.requestPairingCode(cleanPhone);
-    logger.info({ sessionId, cleanPhone, code }, 'WhatsApp pairing code generated');
+    let code = null;
+    let attempts = 0;
+
+    while (attempts < 6 && !code) {
+      try {
+        attempts++;
+        code = await session.sock.requestPairingCode(cleanPhone);
+      } catch (err) {
+        logger.warn({ attempt: attempts, err: err.message }, 'Waiting for socket before requesting pairing code...');
+        if (attempts >= 6) throw err;
+        await new Promise((r) => setTimeout(r, 1200));
+      }
+    }
+
+    logger.info({ sessionId, cleanPhone, code }, 'WhatsApp pairing code generated successfully');
     res.json({ ok: true, code });
   } catch (err) {
     logger.error({ err }, 'Failed to request pairing code');
-    res.status(500).json({ error: 'Failed to generate pairing code. Ensure phone number is valid.' });
+    res.status(500).json({ error: 'Failed to generate pairing code. Please check your phone number and try again.' });
   }
 });
 
@@ -303,8 +321,7 @@ async function startBaileysSession(sessionId, userId) {
       keys: makeCacheableSignalKeyStore(state.keys, logger),
     },
     logger: pino({ level: 'silent' }),
-    printQRInTerminal: true,
-    browser: ['Mikana', 'Chrome', '127.0'],
+    browser: ['Ubuntu', 'Chrome', '20.0.04'],
     generateHighQualityLinkPreview: false,
   });
 

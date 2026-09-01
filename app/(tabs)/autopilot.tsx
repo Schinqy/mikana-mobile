@@ -120,7 +120,7 @@ export default function AutopilotScreen() {
           {config.isEnabled && status.isPro && (
             <View style={styles.activeMetrics}>
               <View style={styles.metricItem}>
-                <Text style={styles.metricVal}>{config.dailyRepliesSent} / {config.dailyReplyLimit}</Text>
+                <Text style={styles.metricVal}>{config.repliesSentToday} / {config.dailyReplyLimit}</Text>
                 <Text style={styles.metricSub}>Dispatches Today</Text>
               </View>
               <View style={styles.metricDivider} />
@@ -193,10 +193,10 @@ export default function AutopilotScreen() {
             logs.map((log) => (
               <View key={log.id} style={styles.logItem}>
                 <View style={styles.logHeader}>
-                  <Text style={styles.logSender}>{log.leadSender}</Text>
+                  <Text style={styles.logSender}>{log.senderContact || log.channel}</Text>
                   <Badge variant="emerald">{log.matchScore}% Match</Badge>
                 </View>
-                <Text style={styles.logText} numberOfLines={2}>{log.pitchPreview}</Text>
+                <Text style={styles.logText} numberOfLines={2}>{log.dispatchedPitch || log.leadSummary}</Text>
                 <Text style={styles.logTime}>{new Date(log.timestamp).toLocaleTimeString()}</Text>
               </View>
             ))

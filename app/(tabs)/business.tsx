@@ -117,6 +117,7 @@ export default function BusinessScreen() {
     isWhatsAppConnected,
     whatsappLinkedPhone,
     radarChannels,
+    setWhatsAppConnected,
   } = useSettingsStore();
 
   const [autopilotEnabled, setAutopilotEnabled] = React.useState(false);
@@ -127,7 +128,6 @@ export default function BusinessScreen() {
       <ScreenHeader
         title="Business"
         subtitle={isWhatsAppConnected ? `${radarChannels.length} channels monitored` : 'Setup & Integrations'}
-        statusDot={isWhatsAppConnected ? 'active' : 'warning'}
       />
 
       <ScrollView
@@ -143,7 +143,7 @@ export default function BusinessScreen() {
             <Row
               icon={CheckCircle2}
               iconColor={colors.emerald}
-              label={whatsappLinkedPhone || '+27 82 194 8831'}
+              label={whatsappLinkedPhone || 'Connected Account'}
               value="Connected"
               showChevron={false}
             />

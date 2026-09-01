@@ -20,6 +20,7 @@ import { LeadFilter } from '../../src/types/lead';
 import { FlashList } from '@shopify/flash-list';
 import QRCode from 'react-native-qrcode-svg';
 import * as Haptics from 'expo-haptics';
+import * as Clipboard from 'expo-clipboard';
 import {
   relayClient,
   createSession,
@@ -38,7 +39,12 @@ import {
   ArrowRight,
   ShieldCheck,
   RefreshCw,
+  ChevronDown,
+  Copy,
+  Check,
 } from 'lucide-react-native';
+import { Country, detectUserCountry } from '../../src/utils/countryCodes';
+import { CountryCodePickerModal } from '../../src/components/ui/CountryCodePickerModal';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -57,12 +63,15 @@ export default function HomeScreen() {
     useSettingsStore();
   const filteredLeads = getFilteredLeads();
 
-  const [pairMode, setPairMode] = useState<'qr' | 'code'>('qr');
+  const [pairMode, setPairMode] = useState<'qr' | 'code'>('code');
   const [liveQR, setLiveQR] = useState<string | null>(null);
+  const [selectedCountry, setSelectedCountry] = useState<Country>(() => detectUserCountry());
+  const [isCountryModalOpen, setIsCountryModalOpen] = useState(false);
   const [phoneInput, setPhoneInput] = useState('');
   const [pairingCode, setPairingCode] = useState<string | null>(null);
   const [pairingCodeLoading, setPairingCodeLoading] = useState(false);
   const [pairingError, setPairingError] = useState<string | null>(null);
+  const [copiedCode, setCopiedCode] = useState(false);
   const [relayStatus, setRelayStatus] = useState<'idle' | 'connecting' | 'qr_ready' | 'connected' | 'error'>('idle');
   const sessionIdRef = useRef<string | null>(null);
 
@@ -152,30 +161,49 @@ export default function HomeScreen() {
     };
   }, [isWhatsAppConnected]);
 
-  // Real 8-Digit Pairing Code Request
+  // Real 8-Digit Pairing Code Request with WhatsApp style country code auto-prepended
   const handleRequestPairingCode = async () => {
     if (!phoneInput.trim()) {
-      setPairingError('Enter your phone number with country code (e.g. +1234567890)');
+      setPairingError('Please enter your WhatsApp phone number');
       return;
     }
+
+    const cleanLocal = phoneInput.replace(/\D/g, '').replace(/^0+/, '');
+    const cleanCountryCode = selectedCountry.dialCode.replace(/\D/g, '');
+    const fullNumber = `+${cleanCountryCode}${cleanLocal}`;
 
     const targetUrl = resolveRelayUrl(whatsappRelayUrl);
     setPairingCodeLoading(true);
     setPairingError(null);
+    setCopiedCode(false);
 
     try {
       const sessionId = sessionIdRef.current || 'session_user_default';
-      const res = await requestPairingCode(targetUrl, sessionId, phoneInput.trim());
+      const res = await requestPairingCode(targetUrl, sessionId, fullNumber);
       if (res.code) {
         setPairingCode(res.code);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     } catch (err: any) {
-      setPairingError(err.message || 'Failed to request code. Ensure phone number has country code');
+      setPairingError(err.message || 'Failed to request code. Check phone number and retry.');
     } finally {
       setPairingCodeLoading(false);
     }
   };
+
+  const handleCopyCode = async () => {
+    if (!pairingCode) return;
+    await Clipboard.setStringAsync(pairingCode);
+    setCopiedCode(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setTimeout(() => setCopiedCode(false), 2500);
+  };
+
+  const formattedPairingCode = pairingCode
+    ? pairingCode.length === 8
+      ? `${pairingCode.slice(0, 4)} - ${pairingCode.slice(4)}`
+      : pairingCode
+    : '';
 
   // ─── Disconnected First-Time Screen (Fits 1 screen, zero scroll) ───────────
 
@@ -200,23 +228,23 @@ export default function HomeScreen() {
           <View style={styles.modeToggle}>
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={() => setPairMode('qr')}
-              style={[styles.toggleBtn, pairMode === 'qr' && styles.toggleBtnActive]}
-            >
-              <QrCode size={13} color={pairMode === 'qr' ? colors.textInverse : colors.textMuted} />
-              <Text style={[styles.toggleBtnText, pairMode === 'qr' && styles.toggleBtnTextActive]}>
-                QR Scanner
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              activeOpacity={0.7}
               onPress={() => setPairMode('code')}
               style={[styles.toggleBtn, pairMode === 'code' && styles.toggleBtnActive]}
             >
               <Smartphone size={13} color={pairMode === 'code' ? colors.textInverse : colors.textMuted} />
               <Text style={[styles.toggleBtnText, pairMode === 'code' && styles.toggleBtnTextActive]}>
                 Phone Number Code
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => setPairMode('qr')}
+              style={[styles.toggleBtn, pairMode === 'qr' && styles.toggleBtnActive]}
+            >
+              <QrCode size={13} color={pairMode === 'qr' ? colors.textInverse : colors.textMuted} />
+              <Text style={[styles.toggleBtnText, pairMode === 'qr' && styles.toggleBtnTextActive]}>
+                QR Scanner
               </Text>
             </TouchableOpacity>
           </View>
@@ -256,55 +284,108 @@ export default function HomeScreen() {
               </View>
             ) : (
               <View style={styles.codeWrapper}>
-                <Text style={styles.codePrompt}>
-                  Enter your WhatsApp number with country code:
-                </Text>
+                {/* WhatsApp-style Country Selector */}
+                <TouchableOpacity
+                  style={styles.countrySelector}
+                  activeOpacity={0.7}
+                  onPress={() => setIsCountryModalOpen(true)}
+                >
+                  <View style={styles.countryInfoLeft}>
+                    <Text style={styles.countryFlagText}>{selectedCountry.flag}</Text>
+                    <Text style={styles.countryNameLabel} numberOfLines={1}>
+                      {selectedCountry.name}
+                    </Text>
+                  </View>
+                  <ChevronDown size={14} color={colors.textSecondary} />
+                </TouchableOpacity>
 
+                {/* Phone input row with country code prefix */}
                 <View style={styles.phoneInputRow}>
+                  <TouchableOpacity
+                    style={styles.dialCodePill}
+                    activeOpacity={0.7}
+                    onPress={() => setIsCountryModalOpen(true)}
+                  >
+                    <Text style={styles.dialCodePillText}>{selectedCountry.dialCode}</Text>
+                  </TouchableOpacity>
                   <TextInput
                     style={styles.phoneInput}
-                    placeholder="+1 234 567 8900"
+                    placeholder="77 123 4567"
                     placeholderTextColor={colors.textMuted}
                     value={phoneInput}
                     onChangeText={setPhoneInput}
                     keyboardType="phone-pad"
                     autoCapitalize="none"
                   />
-                  <TouchableOpacity
-                    style={styles.getCodeBtn}
-                    onPress={handleRequestPairingCode}
-                    disabled={pairingCodeLoading}
-                  >
-                    {pairingCodeLoading ? (
-                      <ActivityIndicator size="small" color={colors.surface} />
-                    ) : (
-                      <ArrowRight size={16} color={colors.surface} />
-                    )}
-                  </TouchableOpacity>
                 </View>
 
                 {pairingError ? (
                   <Text style={styles.errorText}>{pairingError}</Text>
                 ) : null}
 
-                {pairingCode ? (
+                {/* Next / Get Code Button */}
+                {!pairingCode ? (
+                  <TouchableOpacity
+                    style={[
+                      styles.submitCodeBtn,
+                      (!phoneInput.trim() || pairingCodeLoading) && styles.submitCodeBtnDisabled,
+                    ]}
+                    onPress={handleRequestPairingCode}
+                    disabled={!phoneInput.trim() || pairingCodeLoading}
+                    activeOpacity={0.8}
+                  >
+                    {pairingCodeLoading ? (
+                      <View style={styles.btnLoadingRow}>
+                        <ActivityIndicator size="small" color={colors.textInverse} />
+                        <Text style={styles.submitCodeBtnText}>Connecting to WhatsApp...</Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.submitCodeBtnText}>Get WhatsApp Pairing Code</Text>
+                    )}
+                  </TouchableOpacity>
+                ) : (
                   <View style={styles.pairingCodeBox}>
-                    <Text style={styles.codeLabel}>REAL 8-DIGIT PAIRING CODE</Text>
-                    <Text style={styles.codeDisplay}>{pairingCode}</Text>
-                    <Text style={styles.codeHint}>
-                      WhatsApp &gt; Linked Devices &gt; Link with phone number
-                    </Text>
+                    <Text style={styles.codeLabel}>OFFICIAL WHATSAPP PAIRING CODE</Text>
+                    <Text style={styles.codeDisplay}>{formattedPairingCode}</Text>
+
+                    <TouchableOpacity
+                      style={styles.copyCodeBtn}
+                      onPress={handleCopyCode}
+                      activeOpacity={0.7}
+                    >
+                      {copiedCode ? (
+                        <>
+                          <Check size={13} color={colors.emerald} />
+                          <Text style={[styles.copyCodeBtnText, { color: colors.emerald }]}>
+                            Copied to Clipboard
+                          </Text>
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={13} color={colors.accentBlue} />
+                          <Text style={styles.copyCodeBtnText}>Copy 8-Digit Code</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
                   </View>
-                ) : null}
+                )}
               </View>
             )}
           </View>
 
           {/* Instructions */}
           <Text style={styles.stepInstructions}>
-            Open <Text style={styles.stepBold}>WhatsApp &gt; Linked Devices &gt; Link a Device</Text> to pair.
+            Open <Text style={styles.stepBold}>WhatsApp &gt; Linked Devices &gt; Link with phone number</Text>
           </Text>
         </View>
+
+        {/* Country Code Picker Modal */}
+        <CountryCodePickerModal
+          visible={isCountryModalOpen}
+          selectedCountry={selectedCountry}
+          onSelect={(c) => setSelectedCountry(c)}
+          onClose={() => setIsCountryModalOpen(false)}
+        />
       </View>
     );
   }
@@ -469,7 +550,6 @@ export default function HomeScreen() {
         renderItem={({ item }) => (
           <LeadRow lead={item} onPress={() => handleLeadPress(item.id)} />
         )}
-        estimatedItemSize={72}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         ListFooterComponent={renderOverviewFooter}
@@ -635,7 +715,7 @@ const styles = StyleSheet.create({
   },
   qrConsoleCard: {
     width: '100%',
-    maxWidth: 270,
+    maxWidth: 310,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.accentBlueBorder,
@@ -682,57 +762,109 @@ const styles = StyleSheet.create({
   codeWrapper: {
     alignItems: 'center',
     width: '100%',
-    paddingVertical: 10,
-    gap: 8,
+    paddingVertical: 6,
+    gap: 10,
   },
-  codePrompt: {
-    fontFamily: fonts.inter.regular,
-    fontSize: 11,
-    color: colors.textSecondary,
-    textAlign: 'center',
+  countrySelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    height: 42,
+    backgroundColor: colors.canvas,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+  },
+  countryInfoLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+    marginRight: 8,
+  },
+  countryFlagText: {
+    fontSize: 18,
+  },
+  countryNameLabel: {
+    fontFamily: fonts.inter.medium,
+    fontSize: 13,
+    color: colors.brandNavy,
+    flex: 1,
   },
   phoneInputRow: {
     flexDirection: 'row',
     width: '100%',
-    gap: 6,
+    gap: 8,
     alignItems: 'center',
   },
-  phoneInput: {
-    flex: 1,
-    height: 40,
+  dialCodePill: {
+    height: 42,
+    paddingHorizontal: 12,
     backgroundColor: colors.canvas,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    fontFamily: fonts.inter.medium,
-    fontSize: 13,
-    color: colors.textPrimary,
-  },
-  getCodeBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 6,
-    backgroundColor: colors.accentBlue,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  dialCodePillText: {
+    fontFamily: fonts.geist.medium,
+    fontSize: 13,
+    color: colors.brandNavy,
+  },
+  phoneInput: {
+    flex: 1,
+    height: 42,
+    backgroundColor: colors.canvas,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontFamily: fonts.inter.medium,
+    fontSize: 13.5,
+    color: colors.textPrimary,
+    letterSpacing: 0.5,
+  },
+  submitCodeBtn: {
+    width: '100%',
+    height: 42,
+    backgroundColor: colors.accentBlue,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  submitCodeBtnDisabled: {
+    opacity: 0.6,
+  },
+  submitCodeBtnText: {
+    fontFamily: fonts.geist.semibold,
+    fontSize: 12.5,
+    color: colors.textInverse,
+  },
+  btnLoadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   pairingCodeBox: {
     alignItems: 'center',
     width: '100%',
-    padding: 10,
+    padding: 12,
     backgroundColor: colors.surfaceElevated,
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.accentBlueBorder,
     marginTop: 4,
-    gap: 4,
+    gap: 6,
   },
   codeLabel: {
     fontFamily: fonts.geist.semibold,
-    fontSize: 9.5,
-    letterSpacing: 0.6,
-    color: colors.textMuted,
+    fontSize: 9,
+    letterSpacing: 0.8,
+    color: colors.accentBlue,
   },
   codeDisplay: {
     fontFamily: fonts.geist.bold,
@@ -741,11 +873,22 @@ const styles = StyleSheet.create({
     letterSpacing: 3,
     marginVertical: 2,
   },
-  codeHint: {
-    fontFamily: fonts.inter.regular,
-    fontSize: 10.5,
-    color: colors.textSecondary,
-    textAlign: 'center',
+  copyCodeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    backgroundColor: colors.surface,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginTop: 2,
+  },
+  copyCodeBtnText: {
+    fontFamily: fonts.geist.medium,
+    fontSize: 11,
+    color: colors.accentBlue,
   },
   errorText: {
     fontFamily: fonts.inter.regular,

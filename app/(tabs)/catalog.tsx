@@ -10,6 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { useCatalogStore } from '../../src/store/useCatalogStore';
+import { ServiceItem } from '../../src/types/catalog';
 import { Card } from '../../src/components/ui/Card';
 import { Badge } from '../../src/components/ui/Badge';
 import { Button } from '../../src/components/ui/Button';

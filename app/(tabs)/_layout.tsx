@@ -5,8 +5,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, TrendingUp, Building2 } from 'lucide-react-native';
 import { colors } from '../../src/theme/colors';
 import { fonts } from '../../src/theme/fonts';
-import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
+
+interface TabBarProps {
+  state: {
+    routes: Array<{ key: string; name: string; params?: any }>;
+    index: number;
+  };
+  navigation: {
+    emit: (event: { type: string; target: string; canPreventDefault?: boolean }) => { defaultPrevented: boolean };
+    navigate: (name: string, params?: any) => void;
+  };
+}
 
 const TABS = [
   { name: 'index', label: 'Home', Icon: Home },
@@ -14,23 +24,23 @@ const TABS = [
   { name: 'business', label: 'Business', Icon: Building2 },
 ];
 
-function FloatingGlassTabBar({ state, navigation }: BottomTabBarProps) {
+function FloatingGlassTabBar({ state, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
   const bottomPosition = Math.max(insets.bottom, 16);
 
-  const visibleRoutes = state.routes.filter((r) =>
+  const visibleRoutes = state.routes.filter((r: any) =>
     ['index', 'pipeline', 'business'].includes(r.name)
   );
 
   return (
     <View style={[styles.floatingWrapper, { bottom: bottomPosition }]} pointerEvents="box-none">
       <View style={styles.glassPill}>
-        {visibleRoutes.map((route) => {
+        {visibleRoutes.map((route: any) => {
           const tabDef = TABS.find((t) => t.name === route.name);
           if (!tabDef) return null;
 
           const { label, Icon } = tabDef;
-          const globalIndex = state.routes.findIndex((r) => r.name === route.name);
+          const globalIndex = state.routes.findIndex((r: any) => r.name === route.name);
           const isFocused = state.index === globalIndex;
 
           const onPress = () => {

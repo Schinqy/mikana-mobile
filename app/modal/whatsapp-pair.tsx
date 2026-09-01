@@ -19,6 +19,9 @@ import {
   ExternalLink,
   RefreshCw,
   ArrowRight,
+  ChevronDown,
+  Copy,
+  Check,
 } from 'lucide-react-native';
 import { Card } from '../../src/components/ui/Card';
 import { Button } from '../../src/components/ui/Button';
@@ -27,8 +30,16 @@ import { colors } from '../../src/theme/colors';
 import { fonts } from '../../src/theme/fonts';
 import { useSettingsStore } from '../../src/store/useSettingsStore';
 import { openWhatsAppDM } from '../../src/services/dispatcher/whatsappDeepLink';
-import { relayClient, createSession, requestPairingCode } from '../../src/services/relay/whatsappRelay';
+import {
+  relayClient,
+  createSession,
+  requestPairingCode,
+  resolveRelayUrl,
+} from '../../src/services/relay/whatsappRelay';
 import QRCode from 'react-native-qrcode-svg';
+import * as Clipboard from 'expo-clipboard';
+import { Country, detectUserCountry } from '../../src/utils/countryCodes';
+import { CountryCodePickerModal } from '../../src/components/ui/CountryCodePickerModal';
 
 export default function WhatsAppPairModal() {
   const router = useRouter();
@@ -39,14 +50,17 @@ export default function WhatsAppPairModal() {
     setWhatsAppConnected,
   } = useSettingsStore();
 
-  const relayUrl = whatsappRelayUrl || 'http://192.168.1.3:3005';
+  const relayUrl = resolveRelayUrl(whatsappRelayUrl);
   const [isLoading, setIsLoading] = useState(false);
   const [liveQR, setLiveQR] = useState<string | null>(null);
+  const [selectedCountry, setSelectedCountry] = useState<Country>(() => detectUserCountry());
+  const [isCountryModalOpen, setIsCountryModalOpen] = useState(false);
   const [phoneInput, setPhoneInput] = useState('');
   const [pairingCode, setPairingCode] = useState<string | null>(null);
   const [pairingCodeLoading, setPairingCodeLoading] = useState(false);
   const [pairingError, setPairingError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'qr' | 'code'>('qr');
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [activeTab, setActiveTab] = useState<'code' | 'qr'>('code');
   const [sessionId, setSessionId] = useState<string>('session_user_default');
   const [connectionStatus, setConnectionStatus] = useState<
     'disconnected' | 'qr_ready' | 'connecting' | 'connected'
@@ -105,23 +119,37 @@ export default function WhatsAppPairModal() {
 
   const handleRequestPairingCode = async () => {
     if (!phoneInput.trim()) {
-      setPairingError('Please enter your WhatsApp phone number with country code');
+      setPairingError('Please enter your WhatsApp phone number');
       return;
     }
 
+    const cleanLocal = phoneInput.replace(/\D/g, '').replace(/^0+/, '');
+    const cleanCountryCode = selectedCountry.dialCode.replace(/\D/g, '');
+    const fullNumber = `+${cleanCountryCode}${cleanLocal}`;
+
     setPairingCodeLoading(true);
     setPairingError(null);
+    setCopiedCode(false);
+
     try {
-      const res = await requestPairingCode(relayUrl, sessionId, phoneInput.trim());
+      const res = await requestPairingCode(relayUrl, sessionId, fullNumber);
       if (res.code) {
         setPairingCode(res.code);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     } catch (err: any) {
-      setPairingError(err.message || 'Failed to request code. Ensure phone number has country code (e.g. +1... or +27...)');
+      setPairingError(err.message || 'Failed to request code. Check phone number and retry.');
     } finally {
       setPairingCodeLoading(false);
     }
+  };
+
+  const handleCopyCode = async () => {
+    if (!pairingCode) return;
+    await Clipboard.setStringAsync(pairingCode);
+    setCopiedCode(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setTimeout(() => setCopiedCode(false), 2500);
   };
 
   const handleDisconnect = () => {
