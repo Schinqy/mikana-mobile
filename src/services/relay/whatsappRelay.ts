@@ -175,6 +175,9 @@ export async function sendWhatsAppMessage(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ to, message }),
   });
+  if (!res.ok) throw new Error(`Send failed: ${res.status}`);
+}
+
 /**
  * Request real 8-digit WhatsApp pairing code for a phone number
  */
