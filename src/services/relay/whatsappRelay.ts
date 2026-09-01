@@ -11,14 +11,34 @@
 
 
 
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
+
 /**
  * Resolves the relay URL for the current environment.
- *
- * On physical Android devices we use ADB reverse (adb reverse tcp:3005 tcp:3005),
- * which means localhost:3005 on the device routes directly to the host PC.
- * Always return localhost:3005 — do NOT substitute a LAN IP.
+ * Dynamically resolves the Metro dev server IP on physical devices over Wi-Fi,
+ * falling back to active host IP or localhost.
  */
-export function resolveRelayUrl(_inputUrl?: string): string {
+export function resolveRelayUrl(inputUrl?: string): string {
+  // If user provided a remote production / Railway URL, keep it
+  if (inputUrl && !inputUrl.includes('localhost') && !inputUrl.includes('127.0.0.1')) {
+    return inputUrl;
+  }
+
+  // Dynamic host extraction from Metro dev server hostUri (works on physical Wi-Fi devices)
+  const hostUri = Constants.expoConfig?.hostUri || (Constants as any).manifest2?.extra?.expoGo?.debuggerHost;
+  if (hostUri) {
+    const host = hostUri.split(':')[0];
+    if (host && host !== 'localhost' && host !== '127.0.0.1') {
+      return `http://${host}:3005`;
+    }
+  }
+
+  // Android emulator fallback
+  if (Platform.OS === 'android') {
+    return 'http://10.207.186.145:3005';
+  }
+
   return 'http://localhost:3005';
 }
 
