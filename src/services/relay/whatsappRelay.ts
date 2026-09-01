@@ -24,7 +24,25 @@ export function resolveRelayUrl(inputUrl?: string): string {
   if (inputUrl && !inputUrl.includes('localhost') && !inputUrl.includes('127.0.0.1')) {
     return inputUrl;
   }
-  // ADB reverse tcp:3005 tcp:3005 tunnels localhost:3005 on the phone to the PC.
+
+  // On Android physical devices, try to extract the LAN IP from Metro's hostUri.
+  // When USB + ADB reverse is active, hostUri resolves to the actual LAN IP of the PC,
+  // and the ADB tunnel makes localhost:3005 work anyway.
+  // When on Wi-Fi only, this gives us the correct LAN IP directly.
+  if (Platform.OS === 'android') {
+    const hostUri =
+      Constants.expoConfig?.hostUri ||
+      (Constants as any).manifest2?.extra?.expoGo?.debuggerHost;
+    if (hostUri) {
+      const host = hostUri.split(':')[0];
+      if (host && host !== 'localhost' && host !== '127.0.0.1') {
+        // Use the actual LAN IP for wireless; ADB reverse makes this work on USB too.
+        return `http://${host}:3005`;
+      }
+    }
+  }
+
+  // iOS simulator and fallback
   return 'http://localhost:3005';
 }
 
