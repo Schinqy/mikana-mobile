@@ -450,15 +450,13 @@ async function startBaileysSession(sessionId, userId, usePairingCode = false) {
     if (connection === 'close') {
       const statusCode = lastDisconnect?.error?.output?.statusCode;
       const isRestart = statusCode === DisconnectReason.restartRequired || statusCode === 515;
-      // 401 is only a real user logout if the session was previously authenticated and connected.
-      // During pairing/linking, 401 is a pre-auth response from WhatsApp and credentials MUST be kept!
       const isRealLogout = statusCode === DisconnectReason.loggedOut && session.wasConnected;
-      const shouldReconnect = !isRealLogout;
 
-      logger.info({ sessionId, statusCode, isRestart, isRealLogout, shouldReconnect }, 'Connection closed');
+      logger.info({ sessionId, statusCode, isRestart, isRealLogout }, 'Connection closed');
       addLog('info', 'Connection closed', { sessionId, statusCode, isRestart, isRealLogout });
 
       if (isRestart) {
+        // WhatsApp completes pairing by closing with 515 — reconnect immediately with saved keys!
         logger.info({ sessionId }, 'Pairing handshake restart required (515) — reconnecting immediately (0ms)...');
         addLog('info', 'Pairing handshake 515 received, reconnecting immediately with saved credentials...', { sessionId });
         startBaileysSession(sessionId, userId, false);
@@ -471,15 +469,19 @@ async function startBaileysSession(sessionId, userId, usePairingCode = false) {
         reason: isRealLogout ? 'logged_out' : 'connection_lost',
       });
 
-      if (shouldReconnect) {
-        addLog('info', 'Keeping credentials alive, reconnecting socket for pairing...', { sessionId });
-        setTimeout(() => startBaileysSession(sessionId, userId, false), 1500);
-      } else {
+      // ONLY auto-reconnect if session was ALREADY connected (active monitoring).
+      // During pairing, DO NOT spawn infinite new sockets — each new socket kills the previous pairing code!
+      if (session.wasConnected && !isRealLogout) {
+        addLog('info', 'Active session dropped, auto-reconnecting...', { sessionId });
+        setTimeout(() => startBaileysSession(sessionId, userId, false), 2000);
+      } else if (isRealLogout) {
         addLog('warn', 'Active session logged out by user, removing credentials', { sessionId });
         sessions.delete(sessionId);
         if (fs.existsSync(authPath)) {
           fs.rmSync(authPath, { recursive: true, force: true });
         }
+      } else {
+        addLog('info', 'Pairing socket closed by WhatsApp — awaiting user code submission or retry', { sessionId, statusCode });
       }
     }
   });
