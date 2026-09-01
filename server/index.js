@@ -745,12 +745,11 @@ async function startBaileysSession(sessionId, userId, usePairingCode = false) {
     fs.rmSync(authPath, { recursive: true, force: true });
   }
 
-  const { state, saveCreds } = await useMultiFileAuthState(authPath);
-  
-  // If creds are not registered, clean directory so Baileys starts in fresh QR emission mode
-  if (!state.creds?.registered && fs.existsSync(authPath)) {
-    fs.rmSync(authPath, { recursive: true, force: true });
+  if (!fs.existsSync(authPath)) {
+    fs.mkdirSync(authPath, { recursive: true });
   }
+
+  const { state, saveCreds } = await useMultiFileAuthState(authPath);
   const { version } = await fetchLatestBaileysVersion();
 
   const sock = makeWASocket({
