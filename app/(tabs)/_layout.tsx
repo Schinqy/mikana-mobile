@@ -8,14 +8,10 @@ import { fonts } from '../../src/theme/fonts';
 import * as Haptics from 'expo-haptics';
 
 interface TabBarProps {
-  state: {
-    routes: Array<{ key: string; name: string; params?: any }>;
-    index: number;
-  };
-  navigation: {
-    emit: (event: { type: string; target: string; canPreventDefault?: boolean }) => { defaultPrevented: boolean };
-    navigate: (name: string, params?: any) => void;
-  };
+  state: any;
+  navigation: any;
+  descriptors?: any;
+  insets?: any;
 }
 
 const TABS = [
