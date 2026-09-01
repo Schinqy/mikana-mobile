@@ -8,6 +8,7 @@ import {
   Switch,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { useSettingsStore } from '../../src/store/useSettingsStore';
 import { ScreenHeader } from '../../src/components/ui/ScreenHeader';
 import {

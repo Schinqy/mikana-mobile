@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image,
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
@@ -15,20 +14,18 @@ import {
   QrCode,
   Smartphone,
   CheckCircle2,
-  RefreshCw,
   X,
-  Radio,
   ExternalLink,
-  ShieldCheck,
   Zap,
 } from 'lucide-react-native';
 import { Card } from '../../src/components/ui/Card';
 import { Button } from '../../src/components/ui/Button';
 import { Badge } from '../../src/components/ui/Badge';
-import { Input } from '../../src/components/ui/Input';
 import { colors } from '../../src/theme/colors';
+import { fonts } from '../../src/theme/fonts';
 import { useSettingsStore } from '../../src/store/useSettingsStore';
 import { openWhatsAppDM } from '../../src/services/dispatcher/whatsappDeepLink';
+import { relayClient, createSession } from '../../src/services/relay/whatsappRelay';
 import QRCode from 'react-native-qrcode-svg';
 
 export default function WhatsAppPairModal() {
@@ -38,13 +35,12 @@ export default function WhatsAppPairModal() {
     whatsappLinkedPhone,
     whatsappRelayUrl,
     setWhatsAppConnected,
-    setWhatsappRelayUrl,
   } = useSettingsStore();
 
-  const [relayUrl, setRelayUrl] = useState(whatsappRelayUrl || 'http://localhost:3005');
+  const [relayUrl] = useState(whatsappRelayUrl || 'http://localhost:3005');
   const [isLoading, setIsLoading] = useState(false);
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
-  const [pairingCode, setPairingCode] = useState<string>('8391-7294');
+  const [liveQR, setLiveQR] = useState<string | null>(null);
+  const [pairingCode] = useState<string>('8391-7294');
   const [activeTab, setActiveTab] = useState<'qr' | 'code'>('qr');
   const [connectionStatus, setConnectionStatus] = useState<
     'disconnected' | 'qr_ready' | 'connecting' | 'connected'
@@ -58,31 +54,46 @@ export default function WhatsAppPairModal() {
       : null
   );
 
-  const fetchStatus = async (isBackground = false) => {
-    if (!isBackground) setIsLoading(true);
-    try {
-      const response = await fetch(`${relayUrl.replace(/\/$/, '')}/api/whatsapp`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      });
+  useEffect(() => {
+    if (!isWhatsAppConnected && relayUrl) {
+      connectToLiveRelay();
+    }
+    return () => {
+      // Keep background connection if needed
+    };
+  }, [isWhatsAppConnected, relayUrl]);
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.status) {
-          setConnectionStatus(data.status);
-          if (data.qrDataUrl) {
-            setQrDataUrl(data.qrDataUrl);
-          }
-          if (data.user) {
-            setConnectedAccount(data.user);
-            setWhatsAppConnected(true, data.user.phone || '');
-          }
-        }
-      }
-    } catch (e) {
-      // Offline fallback
-    } finally {
-      if (!isBackground) setIsLoading(false);
+  const connectToLiveRelay = async () => {
+    setIsLoading(true);
+    setConnectionStatus('connecting');
+    try {
+      const { sessionId } = await createSession(relayUrl, 'user_default');
+      relayClient.connect(relayUrl, sessionId, {
+        onQR: (qr) => {
+          setLiveQR(qr);
+          setConnectionStatus('qr_ready');
+          setIsLoading(false);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        },
+        onConnected: (phone) => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setConnectionStatus('connected');
+          const user = { name: 'WhatsApp Business', phone: phone || '+27 82 194 8831' };
+          setConnectedAccount(user);
+          setWhatsAppConnected(true, user.phone);
+          setIsLoading(false);
+        },
+        onDisconnected: () => {
+          setConnectionStatus('disconnected');
+        },
+        onError: () => {
+          setConnectionStatus('disconnected');
+          setIsLoading(false);
+        },
+      });
+    } catch {
+      setIsLoading(false);
+      setConnectionStatus('disconnected');
     }
   };
 
@@ -98,15 +109,16 @@ export default function WhatsAppPairModal() {
       setConnectedAccount(mockUser);
       setWhatsAppConnected(true, mockUser.phone);
       setIsLoading(false);
-    }, 800);
+    }, 600);
   };
 
   const handleDisconnect = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     setConnectionStatus('disconnected');
     setConnectedAccount(null);
-    setQrDataUrl(null);
+    setLiveQR(null);
     setWhatsAppConnected(false, '');
+    connectToLiveRelay();
   };
 
   const handleTestWhatsAppDM = async () => {
@@ -126,7 +138,7 @@ export default function WhatsAppPairModal() {
           <Text style={styles.headerSub}>Baileys Multi-Device Synchronization</Text>
         </View>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
-          <X size={20} color={colors.textPrimary} />
+          <X size={20} color={colors.brandNavy} />
         </TouchableOpacity>
       </View>
 
@@ -189,7 +201,7 @@ export default function WhatsAppPairModal() {
                 onPress={handleDisconnect}
                 style={styles.disconnectBtn}
               >
-                Disconnect WhatsApp Session
+                Disconnect & Scan New QR
               </Button>
             </Card>
           </View>
@@ -222,19 +234,21 @@ export default function WhatsAppPairModal() {
             <Card style={styles.qrContainerCard}>
               {activeTab === 'qr' ? (
                 <View style={styles.qrInner}>
-                  {qrDataUrl ? (
-                    <Image source={{ uri: qrDataUrl }} style={styles.qrImage} resizeMode="contain" />
-                  ) : (
-                    <View style={styles.mockQrBox}>
+                  <View style={styles.qrBox}>
+                    {liveQR ? (
                       <QRCode
-                        value="2@J6+p4Wz...MikanaEngineV1,4N7qP==,vQ5L4s9x8K,sK3=="
-                        size={150}
+                        value={liveQR}
+                        size={170}
                         color={colors.brandNavy}
                         backgroundColor={colors.surface}
                       />
-                      <Text style={styles.qrHint}>Baileys Multi-Device Pairing Ready</Text>
-                    </View>
-                  )}
+                    ) : (
+                      <View style={styles.loadingBox}>
+                        <ActivityIndicator size="large" color={colors.accentBlue} />
+                        <Text style={styles.loadingText}>Generating live WhatsApp QR...</Text>
+                      </View>
+                    )}
+                  </View>
                   <Text style={styles.instructionsText}>
                     1. Open WhatsApp on your phone{'\n'}
                     2. Go to Settings &gt; Linked Devices &gt; Link a Device{'\n'}
@@ -254,13 +268,13 @@ export default function WhatsAppPairModal() {
 
               <Button
                 size="sm"
-                variant="primary"
-                icon={<Zap size={14} color={colors.textInverse} />}
+                variant="outline"
+                icon={<Zap size={14} color={colors.accentBlue} />}
                 onPress={handleSimulatePair}
                 loading={isLoading}
                 style={styles.instantSimBtn}
               >
-                Simulate Successful WhatsApp Link
+                Demo Fast-Forward (Instant Connect)
               </Button>
             </Card>
           </View>
@@ -273,7 +287,7 @@ export default function WhatsAppPairModal() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.canvas,
+    backgroundColor: colors.surface,
   },
   header: {
     flexDirection: 'row',
@@ -286,11 +300,12 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   headerTitle: {
+    fontFamily: fonts.geist.bold,
     fontSize: 18,
-    fontWeight: '700',
-    color: colors.textPrimary,
+    color: colors.brandNavy,
   },
   headerSub: {
+    fontFamily: fonts.inter.regular,
     fontSize: 12,
     color: colors.textMuted,
     marginTop: 2,
@@ -330,11 +345,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.emerald,
   },
   statusTitle: {
+    fontFamily: fonts.geist.semibold,
     fontSize: 14,
-    fontWeight: '700',
-    color: colors.textPrimary,
+    color: colors.brandNavy,
   },
   statusSub: {
+    fontFamily: fonts.inter.regular,
     fontSize: 11,
     color: colors.textMuted,
     marginTop: 2,
@@ -349,12 +365,13 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   connectedTitle: {
+    fontFamily: fonts.geist.bold,
     fontSize: 17,
-    fontWeight: '700',
-    color: colors.textPrimary,
+    color: colors.brandNavy,
     marginBottom: 6,
   },
   connectedDesc: {
+    fontFamily: fonts.inter.regular,
     fontSize: 13,
     color: colors.textSecondary,
     textAlign: 'center',
@@ -365,23 +382,26 @@ const styles = StyleSheet.create({
     width: '100%',
     padding: 12,
     borderRadius: 8,
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: colors.canvas,
     alignItems: 'center',
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   accountLabel: {
+    fontFamily: fonts.geist.medium,
     fontSize: 10,
-    fontWeight: '700',
     color: colors.textMuted,
     letterSpacing: 0.5,
   },
   accountName: {
+    fontFamily: fonts.geist.semibold,
     fontSize: 14,
-    fontWeight: '700',
-    color: colors.textPrimary,
+    color: colors.brandNavy,
     marginTop: 4,
   },
   accountPhone: {
+    fontFamily: fonts.inter.regular,
     fontSize: 12,
     color: colors.textSecondary,
     marginTop: 2,
@@ -414,12 +434,12 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   activeTabBtn: {
-    backgroundColor: colors.brandNavy,
-    borderColor: colors.brandNavy,
+    backgroundColor: colors.accentBlue,
+    borderColor: colors.accentBlue,
   },
   tabBtnText: {
+    fontFamily: fonts.geist.medium,
     fontSize: 12,
-    fontWeight: '600',
     color: colors.textSecondary,
   },
   activeTabBtnText: {
@@ -435,26 +455,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
-  qrImage: {
-    width: 200,
-    height: 200,
-    marginBottom: 16,
-  },
-  mockQrBox: {
-    width: 180,
-    height: 180,
+  qrBox: {
+    width: 190,
+    height: 190,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
+    padding: 10,
   },
-  qrHint: {
+  loadingBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  loadingText: {
+    fontFamily: fonts.inter.medium,
     fontSize: 11,
     color: colors.textMuted,
-    marginTop: 8,
   },
   codeInner: {
     alignItems: 'center',
@@ -462,19 +483,20 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   codeLabel: {
+    fontFamily: fonts.geist.medium,
     fontSize: 11,
-    fontWeight: '700',
     color: colors.textMuted,
     letterSpacing: 0.5,
   },
   codeValue: {
+    fontFamily: fonts.geist.bold,
     fontSize: 28,
-    fontWeight: '800',
     color: colors.brandNavy,
     letterSpacing: 4,
     marginVertical: 12,
   },
   instructionsText: {
+    fontFamily: fonts.inter.regular,
     fontSize: 12,
     color: colors.textSecondary,
     lineHeight: 18,

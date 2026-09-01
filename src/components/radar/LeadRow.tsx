@@ -279,7 +279,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.geist.semibold,
     fontSize: 13,
     color: colors.brandNavyDark,
-    letterSpacing: -0.1,
   },
   channelText: {
     fontFamily: fonts.inter.regular,
@@ -302,7 +301,6 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     color: colors.textPrimary,
     lineHeight: 19,
-    letterSpacing: -0.1,
     marginBottom: 4,
   },
   footerRow: {
@@ -313,7 +311,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.geist.bold,
     fontSize: 12,
     color: colors.emerald,
-    letterSpacing: -0.2,
   },
   locationText: {
     fontFamily: fonts.inter.regular,
@@ -361,6 +358,5 @@ const styles = StyleSheet.create({
     fontFamily: fonts.geist.semibold,
     fontSize: 11,
     color: colors.surface,
-    letterSpacing: -0.1,
   },
 });

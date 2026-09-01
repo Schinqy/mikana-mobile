@@ -466,7 +466,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.geist.medium,
     fontSize: 13,
     color: colors.textMuted,
-    letterSpacing: -0.1,
   },
   activeFilterTabText: {
     fontFamily: fonts.geist.semibold,
@@ -486,7 +485,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.textPrimary,
     marginBottom: 4,
-    letterSpacing: -0.2,
   },
   emptySubtitle: {
     fontFamily: fonts.inter.regular,
@@ -517,7 +515,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.geist.bold,
     fontSize: 20,
     color: colors.brandNavy,
-    letterSpacing: -0.4,
   },
   terminalSub: {
     fontFamily: fonts.inter.regular,
@@ -657,7 +654,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.geist.semibold,
     fontSize: 14,
     color: colors.surface,
-    letterSpacing: -0.1,
   },
   demoLinkBtn: {
     paddingVertical: 4,
@@ -721,7 +717,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.geist.bold,
     fontSize: 20,
     color: colors.brandNavy,
-    letterSpacing: -0.4,
     marginTop: 2,
   },
   metricSubtext: {
@@ -757,7 +752,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.geist.bold,
     fontSize: 14,
     color: colors.surface,
-    letterSpacing: -0.2,
   },
   proCardDesc: {
     fontFamily: fonts.inter.regular,
@@ -779,7 +773,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.geist.semibold,
     fontSize: 13,
     color: colors.surface,
-    letterSpacing: -0.1,
   },
 
   // Monitored Channels Snapshot

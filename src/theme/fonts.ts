@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 // Mikana Font System
 // Primary: Geist — sharp, purposeful, Vercel-grade. Used for UI chrome, labels, metadata.
 // Secondary: Inter — screen-optimised. Used for body copy and secondary text.
@@ -22,21 +24,24 @@ export const fonts = {
   },
 };
 
+// Safe letter spacing for Android to prevent text truncation
+const ls = (val: number) => (Platform.OS === 'android' ? 0 : val);
+
 // Type scale
 export const type = {
   // Headings — Geist
-  displayLg: { fontFamily: fonts.geist.bold, fontSize: 28, lineHeight: 34, letterSpacing: -0.5 },
-  displayMd: { fontFamily: fonts.geist.semibold, fontSize: 22, lineHeight: 28, letterSpacing: -0.4 },
-  heading: { fontFamily: fonts.geist.semibold, fontSize: 17, lineHeight: 22, letterSpacing: -0.3 },
-  subheading: { fontFamily: fonts.geist.medium, fontSize: 15, lineHeight: 20, letterSpacing: -0.2 },
+  displayLg: { fontFamily: fonts.geist.bold, fontSize: 28, lineHeight: 34, letterSpacing: ls(-0.5) },
+  displayMd: { fontFamily: fonts.geist.semibold, fontSize: 22, lineHeight: 28, letterSpacing: ls(-0.4) },
+  heading: { fontFamily: fonts.geist.semibold, fontSize: 17, lineHeight: 22, letterSpacing: ls(-0.3) },
+  subheading: { fontFamily: fonts.geist.medium, fontSize: 15, lineHeight: 20, letterSpacing: ls(-0.2) },
 
   // Body — Inter
-  bodyLg: { fontFamily: fonts.inter.regular, fontSize: 16, lineHeight: 24, letterSpacing: -0.1 },
-  body: { fontFamily: fonts.inter.regular, fontSize: 14, lineHeight: 20, letterSpacing: -0.1 },
-  bodyMedium: { fontFamily: fonts.inter.medium, fontSize: 14, lineHeight: 20, letterSpacing: -0.1 },
+  bodyLg: { fontFamily: fonts.inter.regular, fontSize: 16, lineHeight: 24, letterSpacing: 0 },
+  body: { fontFamily: fonts.inter.regular, fontSize: 14, lineHeight: 20, letterSpacing: 0 },
+  bodyMedium: { fontFamily: fonts.inter.medium, fontSize: 14, lineHeight: 20, letterSpacing: 0 },
 
   // UI Labels — Geist
-  label: { fontFamily: fonts.geist.medium, fontSize: 13, lineHeight: 18, letterSpacing: -0.1 },
+  label: { fontFamily: fonts.geist.medium, fontSize: 13, lineHeight: 18, letterSpacing: 0 },
   labelSm: { fontFamily: fonts.geist.medium, fontSize: 11, lineHeight: 16, letterSpacing: 0 },
 
   // Metadata — Inter
@@ -44,6 +49,6 @@ export const type = {
   captionMedium: { fontFamily: fonts.inter.medium, fontSize: 12, lineHeight: 16, letterSpacing: 0 },
 
   // Mono values (prices, IDs) — Geist Bold
-  value: { fontFamily: fonts.geist.semibold, fontSize: 14, lineHeight: 20, letterSpacing: -0.2 },
-  valueLg: { fontFamily: fonts.geist.bold, fontSize: 20, lineHeight: 26, letterSpacing: -0.4 },
+  value: { fontFamily: fonts.geist.semibold, fontSize: 14, lineHeight: 20, letterSpacing: 0 },
+  valueLg: { fontFamily: fonts.geist.bold, fontSize: 20, lineHeight: 26, letterSpacing: 0 },
 };

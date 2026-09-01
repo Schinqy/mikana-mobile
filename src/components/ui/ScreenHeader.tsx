@@ -67,13 +67,11 @@ const styles = StyleSheet.create({
     fontFamily: fonts.geist.bold,
     fontSize: 24,
     color: colors.brandNavy,
-    letterSpacing: -0.6,
   },
   subtitle: {
     fontFamily: fonts.inter.regular,
     fontSize: 12,
     color: colors.textSecondary,
-    letterSpacing: -0.1,
   },
   actionBtn: {
     flexDirection: 'row',
@@ -88,7 +86,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.geist.semibold,
     fontSize: 12,
     color: colors.textInverse,
-    letterSpacing: -0.1,
   },
   divider: {
     height: StyleSheet.hairlineWidth,

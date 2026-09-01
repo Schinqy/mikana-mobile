@@ -129,7 +129,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.geist.semibold,
     fontSize: 12.5,
     color: colors.textInverse,
-    letterSpacing: -0.1,
     includeFontPadding: false,
   },
 });
