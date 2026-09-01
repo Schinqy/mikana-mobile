@@ -35,3 +35,8 @@
 - **WhatsApp 515 Restart Handshake:** When WhatsApp accepts an 8-digit pairing code, it transmits auth keys and immediately closes the socket with status `515` (`DisconnectReason.restartRequired`) expecting the server to reconnect instantly.
 - **The Timeout Trap:** If the server uses standard backoff delays (e.g. 3000ms `setTimeout`), the WhatsApp client on the phone times out (strict ~1.5s tolerance) and aborts with *"Couldn't link device"*.
 - **The Fix:** Explicitly check for `statusCode === 515` or `DisconnectReason.restartRequired` in `connection.update` and invoke `startBaileysSession(sessionId, userId, false)` immediately with **0ms delay**, while suppressing the disconnect broadcast to the UI.
+
+### [2026-09-01] Baileys Pre-Auth 401 Credential Preservation
+- **The Pre-Auth 401 Trap:** When generating an 8-digit pairing code, WhatsApp's servers emit `statusCode: 401` during the initial challenge before the user types the code.
+- **The Bug:** If the server interprets all `401` status codes as a user logout and deletes `authPath`, the session keys generated for the pairing code are deleted immediately, making the code invalid before the user can type it into WhatsApp.
+- **The Fix:** Only treat `401` as a logout if the session was previously authenticated (`session.wasConnected === true`). During the pairing phase, keep credentials intact and maintain the reconnect loop.
