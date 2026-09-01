@@ -330,9 +330,19 @@ async function startBaileysSession(sessionId, userId, usePairingCode = false) {
   const existing = sessions.get(sessionId);
   if (existing?.sock) {
     try { existing.sock.end(); } catch (_) {}
+    sessions.delete(sessionId);
   }
 
   const authPath = path.join(AUTH_DIR, sessionId);
+
+  // When requesting a new pairing code, ALWAYS wipe stale auth credentials.
+  // Reusing creds from a previous incomplete pairing causes WhatsApp to send 401 (logged out),
+  // making the new code immediately invalid.
+  if (usePairingCode && fs.existsSync(authPath)) {
+    logger.info({ sessionId }, 'Wiping stale auth for fresh pairing-code session...');
+    fs.rmSync(authPath, { recursive: true, force: true });
+  }
+
   const { state, saveCreds } = await useMultiFileAuthState(authPath);
   const { version } = await fetchLatestBaileysVersion();
 
