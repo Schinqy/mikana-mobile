@@ -38,6 +38,7 @@ import {
 } from '../../src/services/relay/whatsappRelay';
 import QRCode from 'react-native-qrcode-svg';
 import * as Clipboard from 'expo-clipboard';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Country, detectUserCountry } from '../../src/utils/countryCodes';
 import { CountryCodePickerModal } from '../../src/components/ui/CountryCodePickerModal';
 
@@ -185,7 +186,12 @@ export default function WhatsAppPairModal() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={50}
+      >
         {/* Status Card */}
         <Card style={styles.statusCard}>
           <View style={styles.statusRow}>
@@ -351,7 +357,7 @@ export default function WhatsAppPairModal() {
             </Card>
           </View>
         )}
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

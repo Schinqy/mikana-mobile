@@ -21,6 +21,7 @@ import { FlashList } from '@shopify/flash-list';
 import QRCode from 'react-native-qrcode-svg';
 import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import {
   relayClient,
   createSession,
@@ -215,7 +216,13 @@ export default function HomeScreen() {
           subtitle="Where Opportunities Meet You"
         />
 
-        <View style={styles.terminalBody}>
+        <KeyboardAwareScrollView
+          style={styles.keyboardScroll}
+          contentContainerStyle={styles.terminalBody}
+          keyboardShouldPersistTaps="handled"
+          bottomOffset={60}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Headline */}
           <View style={styles.titleSection}>
             <Text style={styles.terminalTitle}>Link WhatsApp Account</Text>
@@ -257,7 +264,7 @@ export default function HomeScreen() {
                   {liveQR ? (
                     <QRCode
                       value={liveQR}
-                      size={160}
+                      size={180}
                       color={colors.brandNavy}
                       backgroundColor={colors.surface}
                     />
@@ -279,7 +286,7 @@ export default function HomeScreen() {
                   )}
                 </View>
                 <Text style={styles.liveIndicatorText}>
-                  {liveQR ? 'Scan with WhatsApp' : 'Connecting to Baileys engine...'}
+                  {liveQR ? 'Scan with WhatsApp camera' : 'Connecting to Baileys engine...'}
                 </Text>
               </View>
             ) : (
@@ -296,7 +303,7 @@ export default function HomeScreen() {
                       {selectedCountry.name}
                     </Text>
                   </View>
-                  <ChevronDown size={14} color={colors.textSecondary} />
+                  <ChevronDown size={15} color={colors.textSecondary} />
                 </TouchableOpacity>
 
                 {/* Phone input row with country code prefix */}
@@ -355,14 +362,14 @@ export default function HomeScreen() {
                     >
                       {copiedCode ? (
                         <>
-                          <Check size={13} color={colors.emerald} />
+                          <Check size={14} color={colors.emerald} />
                           <Text style={[styles.copyCodeBtnText, { color: colors.emerald }]}>
                             Copied to Clipboard
                           </Text>
                         </>
                       ) : (
                         <>
-                          <Copy size={13} color={colors.accentBlue} />
+                          <Copy size={14} color={colors.accentBlue} />
                           <Text style={styles.copyCodeBtnText}>Copy 8-Digit Code</Text>
                         </>
                       )}
@@ -373,11 +380,52 @@ export default function HomeScreen() {
             )}
           </View>
 
-          {/* Instructions */}
-          <Text style={styles.stepInstructions}>
-            Open <Text style={styles.stepBold}>WhatsApp &gt; Linked Devices &gt; Link with phone number</Text>
-          </Text>
-        </View>
+          {/* Structured Step-by-Step Instructions Below Card */}
+          <View style={styles.instructionsCard}>
+            <Text style={styles.instructionsHeading}>HOW TO PAIR ON WHATSAPP</Text>
+
+            <View style={styles.instructionStep}>
+              <View style={styles.stepNumberBadge}>
+                <Text style={styles.stepNumberText}>1</Text>
+              </View>
+              <Text style={styles.stepText}>
+                Open <Text style={styles.stepBold}>WhatsApp</Text> on this phone
+              </Text>
+            </View>
+
+            <View style={styles.instructionStep}>
+              <View style={styles.stepNumberBadge}>
+                <Text style={styles.stepNumberText}>2</Text>
+              </View>
+              <Text style={styles.stepText}>
+                Go to <Text style={styles.stepBold}>Settings</Text> (or ⋮) &gt; <Text style={styles.stepBold}>Linked Devices</Text>
+              </Text>
+            </View>
+
+            <View style={styles.instructionStep}>
+              <View style={styles.stepNumberBadge}>
+                <Text style={styles.stepNumberText}>3</Text>
+              </View>
+              <Text style={styles.stepText}>
+                Tap <Text style={styles.stepBold}>Link a Device</Text> &gt;{' '}
+                <Text style={styles.stepBold}>
+                  {pairMode === 'code' ? 'Link with phone number instead' : 'Point camera at QR code'}
+                </Text>
+              </Text>
+            </View>
+
+            {pairMode === 'code' && (
+              <View style={styles.instructionStep}>
+                <View style={styles.stepNumberBadge}>
+                  <Text style={styles.stepNumberText}>4</Text>
+                </View>
+                <Text style={styles.stepText}>
+                  Enter the <Text style={styles.stepBold}>8-character code</Text> generated above
+                </Text>
+              </View>
+            )}
+          </View>
+        </KeyboardAwareScrollView>
 
         {/* Country Code Picker Modal */}
         <CountryCodePickerModal
@@ -659,13 +707,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surface,
   },
-  terminalBody: {
+  keyboardScroll: {
     flex: 1,
+    backgroundColor: colors.surface,
+  },
+  terminalBody: {
     paddingHorizontal: 24,
     paddingTop: 12,
-    paddingBottom: 84,
-    justifyContent: 'space-between',
+    paddingBottom: 110,
     alignItems: 'center',
+    gap: 14,
   },
   titleSection: {
     alignItems: 'center',
@@ -715,12 +766,11 @@ const styles = StyleSheet.create({
   },
   qrConsoleCard: {
     width: '100%',
-    maxWidth: 310,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.accentBlueBorder,
     borderRadius: 16,
-    padding: 16,
+    padding: 18,
     alignItems: 'center',
     shadowColor: '#0B2545',
     shadowOffset: { width: 0, height: 4 },
@@ -730,108 +780,109 @@ const styles = StyleSheet.create({
   },
   qrWrapper: {
     alignItems: 'center',
-    gap: 10,
+    width: '100%',
+    gap: 12,
   },
   qrFrame: {
-    padding: 10,
+    padding: 12,
     backgroundColor: colors.surface,
-    borderRadius: 8,
-    minWidth: 180,
-    minHeight: 180,
+    borderRadius: 12,
+    minWidth: 200,
+    minHeight: 200,
     alignItems: 'center',
     justifyContent: 'center',
   },
   qrLoadingBox: {
-    width: 160,
-    height: 160,
+    width: 180,
+    height: 180,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
   },
   qrLoadingText: {
     fontFamily: fonts.inter.medium,
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textMuted,
     textAlign: 'center',
   },
   liveIndicatorText: {
     fontFamily: fonts.inter.medium,
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textSecondary,
   },
   codeWrapper: {
     alignItems: 'center',
     width: '100%',
-    paddingVertical: 6,
-    gap: 10,
+    paddingVertical: 4,
+    gap: 12,
   },
   countrySelector: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
-    height: 42,
+    height: 48,
     backgroundColor: colors.canvas,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderRadius: 10,
+    paddingHorizontal: 14,
   },
   countryInfoLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     flex: 1,
     marginRight: 8,
   },
   countryFlagText: {
-    fontSize: 18,
+    fontSize: 20,
   },
   countryNameLabel: {
     fontFamily: fonts.inter.medium,
-    fontSize: 13,
+    fontSize: 14,
     color: colors.brandNavy,
     flex: 1,
   },
   phoneInputRow: {
     flexDirection: 'row',
     width: '100%',
-    gap: 8,
+    gap: 10,
     alignItems: 'center',
   },
   dialCodePill: {
-    height: 42,
-    paddingHorizontal: 12,
+    height: 48,
+    paddingHorizontal: 14,
     backgroundColor: colors.canvas,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dialCodePillText: {
     fontFamily: fonts.geist.medium,
-    fontSize: 13,
+    fontSize: 14,
     color: colors.brandNavy,
   },
   phoneInput: {
     flex: 1,
-    height: 42,
+    height: 48,
     backgroundColor: colors.canvas,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderRadius: 10,
+    paddingHorizontal: 14,
     fontFamily: fonts.inter.medium,
-    fontSize: 13.5,
+    fontSize: 14.5,
     color: colors.textPrimary,
     letterSpacing: 0.5,
   },
   submitCodeBtn: {
     width: '100%',
-    height: 42,
+    height: 48,
     backgroundColor: colors.accentBlue,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,
@@ -841,7 +892,7 @@ const styles = StyleSheet.create({
   },
   submitCodeBtnText: {
     fontFamily: fonts.geist.semibold,
-    fontSize: 12.5,
+    fontSize: 13.5,
     color: colors.textInverse,
   },
   btnLoadingRow: {
@@ -852,47 +903,47 @@ const styles = StyleSheet.create({
   pairingCodeBox: {
     alignItems: 'center',
     width: '100%',
-    padding: 12,
+    padding: 14,
     backgroundColor: colors.surfaceElevated,
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.accentBlueBorder,
     marginTop: 4,
-    gap: 6,
+    gap: 8,
   },
   codeLabel: {
     fontFamily: fonts.geist.semibold,
-    fontSize: 9,
+    fontSize: 9.5,
     letterSpacing: 0.8,
     color: colors.accentBlue,
   },
   codeDisplay: {
     fontFamily: fonts.geist.bold,
-    fontSize: 22,
+    fontSize: 24,
     color: colors.brandNavy,
-    letterSpacing: 3,
+    letterSpacing: 3.5,
     marginVertical: 2,
   },
   copyCodeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingVertical: 5,
-    paddingHorizontal: 12,
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
     backgroundColor: colors.surface,
-    borderRadius: 6,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,
     marginTop: 2,
   },
   copyCodeBtnText: {
     fontFamily: fonts.geist.medium,
-    fontSize: 11,
+    fontSize: 12,
     color: colors.accentBlue,
   },
   errorText: {
     fontFamily: fonts.inter.regular,
-    fontSize: 10.5,
+    fontSize: 11,
     color: colors.rose,
     textAlign: 'center',
   },
@@ -908,13 +959,46 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.accentBlue,
   },
-  stepInstructions: {
-    fontFamily: fonts.inter.regular,
+  instructionsCard: {
+    width: '100%',
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+    gap: 10,
+  },
+  instructionsHeading: {
+    fontFamily: fonts.geist.semibold,
+    fontSize: 9.5,
+    letterSpacing: 0.8,
+    color: colors.textMuted,
+    marginBottom: 2,
+  },
+  instructionStep: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  stepNumberBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.accentBlueTint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepNumberText: {
+    fontFamily: fonts.geist.bold,
     fontSize: 11,
-    lineHeight: 16,
+    color: colors.accentBlue,
+  },
+  stepText: {
+    flex: 1,
+    fontFamily: fonts.inter.regular,
+    fontSize: 12.5,
     color: colors.textSecondary,
-    textAlign: 'center',
-    maxWidth: 290,
+    lineHeight: 18,
   },
   stepBold: {
     fontFamily: fonts.inter.semibold,
