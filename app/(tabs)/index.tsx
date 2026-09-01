@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLeadStore } from '../../src/store/useLeadStore';
@@ -22,6 +23,8 @@ import * as Haptics from 'expo-haptics';
 import {
   relayClient,
   createSession,
+  requestPairingCode,
+  resolveRelayUrl,
 } from '../../src/services/relay/whatsappRelay';
 import {
   Search,
@@ -34,7 +37,7 @@ import {
   Clock,
   ArrowRight,
   ShieldCheck,
-  Loader,
+  RefreshCw,
 } from 'lucide-react-native';
 
 export default function HomeScreen() {
@@ -55,8 +58,11 @@ export default function HomeScreen() {
   const filteredLeads = getFilteredLeads();
 
   const [pairMode, setPairMode] = useState<'qr' | 'code'>('qr');
-  const [isLinking, setIsLinking] = useState(false);
   const [liveQR, setLiveQR] = useState<string | null>(null);
+  const [phoneInput, setPhoneInput] = useState('');
+  const [pairingCode, setPairingCode] = useState<string | null>(null);
+  const [pairingCodeLoading, setPairingCodeLoading] = useState(false);
+  const [pairingError, setPairingError] = useState<string | null>(null);
   const [relayStatus, setRelayStatus] = useState<'idle' | 'connecting' | 'qr_ready' | 'connected' | 'error'>('idle');
   const sessionIdRef = useRef<string | null>(null);
 
@@ -76,39 +82,32 @@ export default function HomeScreen() {
   // ─── Real Baileys Relay Connection ─────────────────────────────────────────
 
   const connectToRelay = useCallback(async () => {
-    if (!whatsappRelayUrl) return;
-
+    const targetUrl = resolveRelayUrl(whatsappRelayUrl);
     setRelayStatus('connecting');
-    setIsLinking(true);
+    setPairingError(null);
 
     try {
-      // Create session on relay server
-      const userId = 'user_default'; // Replace with real Supabase auth user ID
-      const { sessionId } = await createSession(whatsappRelayUrl, userId);
+      const { sessionId } = await createSession(targetUrl, 'user_default');
       sessionIdRef.current = sessionId;
 
-      // Connect WebSocket for real-time QR + events
-      relayClient.connect(whatsappRelayUrl, sessionId, {
+      relayClient.connect(targetUrl, sessionId, {
         onQR: (qr) => {
           setLiveQR(qr);
           setRelayStatus('qr_ready');
-          setIsLinking(false);
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         },
         onConnected: (phone) => {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          setWhatsAppConnected(true, phone);
+          setWhatsAppConnected(true, phone || '');
           setRelayStatus('connected');
-          setIsLinking(false);
         },
         onDisconnected: (reason) => {
           if (reason === 'logged_out') {
-            setWhatsAppConnected(false);
+            setWhatsAppConnected(false, '');
             setRelayStatus('idle');
           }
         },
         onNewLead: (lead) => {
-          // Real incoming WhatsApp lead from relay
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           addLead({
             rawText: lead.raw_text,
@@ -129,7 +128,6 @@ export default function HomeScreen() {
         },
         onError: (msg) => {
           setRelayStatus('error');
-          setIsLinking(false);
           console.warn('Relay error:', msg);
         },
         onStatus: (status, phone) => {
@@ -142,31 +140,40 @@ export default function HomeScreen() {
     } catch (err) {
       console.warn('Relay connection failed:', err);
       setRelayStatus('error');
-      setIsLinking(false);
     }
   }, [whatsappRelayUrl, setWhatsAppConnected, addLead]);
 
-  // Auto-connect to relay on mount if relay URL is set and not connected
   useEffect(() => {
-    if (!isWhatsAppConnected && whatsappRelayUrl && relayStatus === 'idle') {
+    if (!isWhatsAppConnected && relayStatus === 'idle') {
       connectToRelay();
     }
     return () => {
       relayClient.disconnect();
     };
-  }, []);
+  }, [isWhatsAppConnected]);
 
-  // Fallback: Simulate pair for demo mode (no relay)
-  const handleSimulatePair = () => {
-    if (whatsappRelayUrl) {
-      connectToRelay();
-    } else {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setIsLinking(true);
-      setTimeout(() => {
-        setWhatsAppConnected(true, '+27 82 194 8831');
-        setIsLinking(false);
-      }, 600);
+  // Real 8-Digit Pairing Code Request
+  const handleRequestPairingCode = async () => {
+    if (!phoneInput.trim()) {
+      setPairingError('Enter your phone number with country code (e.g. +1234567890)');
+      return;
+    }
+
+    const targetUrl = resolveRelayUrl(whatsappRelayUrl);
+    setPairingCodeLoading(true);
+    setPairingError(null);
+
+    try {
+      const sessionId = sessionIdRef.current || 'session_user_default';
+      const res = await requestPairingCode(targetUrl, sessionId, phoneInput.trim());
+      if (res.code) {
+        setPairingCode(res.code);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch (err: any) {
+      setPairingError(err.message || 'Failed to request code. Ensure phone number has country code');
+    } finally {
+      setPairingCodeLoading(false);
     }
   };
 
@@ -185,7 +192,7 @@ export default function HomeScreen() {
           <View style={styles.titleSection}>
             <Text style={styles.terminalTitle}>Link WhatsApp Account</Text>
             <Text style={styles.terminalSub}>
-              Scan to monitor incoming buyer inquiries across your business groups.
+              Connect your WhatsApp to monitor incoming buyer RFQs across your business groups.
             </Text>
           </View>
 
@@ -209,7 +216,7 @@ export default function HomeScreen() {
             >
               <Smartphone size={13} color={pairMode === 'code' ? colors.textInverse : colors.textMuted} />
               <Text style={[styles.toggleBtnText, pairMode === 'code' && styles.toggleBtnTextActive]}>
-                Phone Code
+                Phone Number Code
               </Text>
             </TouchableOpacity>
           </View>
@@ -231,53 +238,72 @@ export default function HomeScreen() {
                       <ActivityIndicator size="large" color={colors.accentBlue} />
                       <Text style={styles.qrLoadingText}>
                         {relayStatus === 'error'
-                          ? 'Connection failed. Tap below to retry.'
-                          : 'Generating QR code...'}
+                          ? 'Relay server unreachable'
+                          : 'Generating live WhatsApp QR...'}
                       </Text>
+                      {relayStatus === 'error' && (
+                        <TouchableOpacity onPress={connectToRelay} style={styles.inlineRetryBtn}>
+                          <RefreshCw size={12} color={colors.accentBlue} />
+                          <Text style={styles.inlineRetryText}>Retry Connection</Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
                 </View>
                 <Text style={styles.liveIndicatorText}>
-                  {liveQR ? 'Scan with WhatsApp' : 'Connecting to relay...'}
+                  {liveQR ? 'Scan with WhatsApp' : 'Connecting to Baileys engine...'}
                 </Text>
               </View>
             ) : (
               <View style={styles.codeWrapper}>
-                <Text style={styles.codeLabel}>8-DIGIT PAIRING CODE</Text>
-                <Text style={styles.codeDisplay}>8391 - 7294</Text>
-                <Text style={styles.codeHint}>
-                  WhatsApp &gt; Linked Devices &gt; Link with phone number
+                <Text style={styles.codePrompt}>
+                  Enter your WhatsApp number with country code:
                 </Text>
+
+                <View style={styles.phoneInputRow}>
+                  <TextInput
+                    style={styles.phoneInput}
+                    placeholder="+1 234 567 8900"
+                    placeholderTextColor={colors.textMuted}
+                    value={phoneInput}
+                    onChangeText={setPhoneInput}
+                    keyboardType="phone-pad"
+                    autoCapitalize="none"
+                  />
+                  <TouchableOpacity
+                    style={styles.getCodeBtn}
+                    onPress={handleRequestPairingCode}
+                    disabled={pairingCodeLoading}
+                  >
+                    {pairingCodeLoading ? (
+                      <ActivityIndicator size="small" color={colors.surface} />
+                    ) : (
+                      <ArrowRight size={16} color={colors.surface} />
+                    )}
+                  </TouchableOpacity>
+                </View>
+
+                {pairingError ? (
+                  <Text style={styles.errorText}>{pairingError}</Text>
+                ) : null}
+
+                {pairingCode ? (
+                  <View style={styles.pairingCodeBox}>
+                    <Text style={styles.codeLabel}>REAL 8-DIGIT PAIRING CODE</Text>
+                    <Text style={styles.codeDisplay}>{pairingCode}</Text>
+                    <Text style={styles.codeHint}>
+                      WhatsApp &gt; Linked Devices &gt; Link with phone number
+                    </Text>
+                  </View>
+                ) : null}
               </View>
             )}
           </View>
 
           {/* Instructions */}
           <Text style={styles.stepInstructions}>
-            Open <Text style={styles.stepBold}>WhatsApp &gt; Linked Devices &gt; Link a Device</Text> and scan this code.
+            Open <Text style={styles.stepBold}>WhatsApp &gt; Linked Devices &gt; Link a Device</Text> to pair.
           </Text>
-
-          {/* Actions */}
-          <View style={styles.actionGroup}>
-            <TouchableOpacity
-              style={styles.connectPrimaryBtn}
-              activeOpacity={0.8}
-              onPress={handleSimulatePair}
-            >
-              <Zap size={16} color={colors.surface} strokeWidth={2.5} />
-              <Text style={styles.connectPrimaryBtnText}>
-                {isLinking ? 'Linking Account...' : 'Connect WhatsApp Account'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.demoLinkBtn}
-              activeOpacity={0.7}
-              onPress={() => setWhatsAppConnected(true, '+27 82 194 8831')}
-            >
-              <Text style={styles.demoLinkText}>Explore with Sample Inquiries</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </View>
     );
@@ -655,27 +681,89 @@ const styles = StyleSheet.create({
   },
   codeWrapper: {
     alignItems: 'center',
-    paddingVertical: 18,
+    width: '100%',
+    paddingVertical: 10,
+    gap: 8,
+  },
+  codePrompt: {
+    fontFamily: fonts.inter.regular,
+    fontSize: 11,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  phoneInputRow: {
+    flexDirection: 'row',
+    width: '100%',
     gap: 6,
+    alignItems: 'center',
+  },
+  phoneInput: {
+    flex: 1,
+    height: 40,
+    backgroundColor: colors.canvas,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    fontFamily: fonts.inter.medium,
+    fontSize: 13,
+    color: colors.textPrimary,
+  },
+  getCodeBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 6,
+    backgroundColor: colors.accentBlue,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pairingCodeBox: {
+    alignItems: 'center',
+    width: '100%',
+    padding: 10,
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginTop: 4,
+    gap: 4,
   },
   codeLabel: {
     fontFamily: fonts.geist.semibold,
-    fontSize: 10,
+    fontSize: 9.5,
     letterSpacing: 0.6,
     color: colors.textMuted,
   },
   codeDisplay: {
     fontFamily: fonts.geist.bold,
-    fontSize: 28,
+    fontSize: 22,
     color: colors.brandNavy,
     letterSpacing: 3,
-    marginVertical: 4,
+    marginVertical: 2,
   },
   codeHint: {
     fontFamily: fonts.inter.regular,
-    fontSize: 11,
+    fontSize: 10.5,
     color: colors.textSecondary,
     textAlign: 'center',
+  },
+  errorText: {
+    fontFamily: fonts.inter.regular,
+    fontSize: 10.5,
+    color: colors.rose,
+    textAlign: 'center',
+  },
+  inlineRetryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  inlineRetryText: {
+    fontFamily: fonts.inter.medium,
+    fontSize: 11,
+    color: colors.accentBlue,
   },
   stepInstructions: {
     fontFamily: fonts.inter.regular,
