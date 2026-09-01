@@ -357,7 +357,22 @@ export default function WhatsAppPairModal() {
             </Card>
           </View>
         )}
+
+        {/* Legal / Privacy Agreement */}
+        <Text style={styles.legalNotice}>
+          By linking your WhatsApp, you agree to our{' '}
+          <Text style={styles.legalLink}>Terms of Service</Text> and{' '}
+          <Text style={styles.legalLink}>Privacy Policy</Text>.
+        </Text>
       </KeyboardAwareScrollView>
+
+      {/* Country Code Picker Modal */}
+      <CountryCodePickerModal
+        visible={isCountryModalOpen}
+        selectedCountry={selectedCountry}
+        onSelect={(c) => setSelectedCountry(c)}
+        onClose={() => setIsCountryModalOpen(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -645,5 +660,20 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 16,
+  },
+  legalNotice: {
+    fontFamily: fonts.inter.regular,
+    fontSize: 11,
+    lineHeight: 16,
+    color: colors.textMuted,
+    textAlign: 'center',
+    maxWidth: 300,
+    alignSelf: 'center',
+    marginTop: 14,
+    marginBottom: 8,
+  },
+  legalLink: {
+    fontFamily: fonts.inter.medium,
+    color: colors.accentBlue,
   },
 });

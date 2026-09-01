@@ -152,9 +152,6 @@ export function CountryCodePickerModal({
                       <Text style={[styles.countryName, isSelected && styles.countryNameSelected]}>
                         {item.name}
                       </Text>
-                      {isDetectedItem && (
-                        <Text style={styles.detectedBadge}>Auto-detected</Text>
-                      )}
                     </View>
                     <Text style={styles.dialCode}>{item.dialCode}</Text>
                     {isSelected && (

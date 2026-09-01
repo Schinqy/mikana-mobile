@@ -425,6 +425,13 @@ export default function HomeScreen() {
               </View>
             )}
           </View>
+
+          {/* Legal / Privacy Agreement */}
+          <Text style={styles.legalNotice}>
+            By linking your WhatsApp, you agree to our{' '}
+            <Text style={styles.legalLink}>Terms of Service</Text> and{' '}
+            <Text style={styles.legalLink}>Privacy Policy</Text>.
+          </Text>
         </KeyboardAwareScrollView>
 
         {/* Country Code Picker Modal */}
@@ -1003,6 +1010,19 @@ const styles = StyleSheet.create({
   stepBold: {
     fontFamily: fonts.inter.semibold,
     color: colors.brandNavy,
+  },
+  legalNotice: {
+    fontFamily: fonts.inter.regular,
+    fontSize: 11,
+    lineHeight: 16,
+    color: colors.textMuted,
+    textAlign: 'center',
+    maxWidth: 300,
+    marginTop: 2,
+  },
+  legalLink: {
+    fontFamily: fonts.inter.medium,
+    color: colors.accentBlue,
   },
   actionGroup: {
     width: '100%',
