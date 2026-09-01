@@ -43,6 +43,7 @@ import {
   ChevronDown,
   Copy,
   Check,
+  RotateCcw,
 } from 'lucide-react-native';
 import { Country, detectUserCountry } from '../../src/utils/countryCodes';
 import { CountryCodePickerModal } from '../../src/components/ui/CountryCodePickerModal';
@@ -320,7 +321,10 @@ export default function HomeScreen() {
                     placeholder="77 123 4567"
                     placeholderTextColor={colors.textMuted}
                     value={phoneInput}
-                    onChangeText={setPhoneInput}
+                    onChangeText={(text) => {
+                      setPhoneInput(text);
+                      if (pairingCode) setPairingCode(null);
+                    }}
                     keyboardType="phone-pad"
                     autoCapitalize="none"
                   />
@@ -355,25 +359,39 @@ export default function HomeScreen() {
                     <Text style={styles.codeLabel}>OFFICIAL WHATSAPP PAIRING CODE</Text>
                     <Text style={styles.codeDisplay}>{formattedPairingCode}</Text>
 
-                    <TouchableOpacity
-                      style={styles.copyCodeBtn}
-                      onPress={handleCopyCode}
-                      activeOpacity={0.7}
-                    >
-                      {copiedCode ? (
-                        <>
-                          <Check size={14} color={colors.emerald} />
-                          <Text style={[styles.copyCodeBtnText, { color: colors.emerald }]}>
-                            Copied to Clipboard
-                          </Text>
-                        </>
-                      ) : (
-                        <>
-                          <Copy size={14} color={colors.accentBlue} />
-                          <Text style={styles.copyCodeBtnText}>Copy 8-Digit Code</Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
+                    <View style={styles.codeActionRow}>
+                      <TouchableOpacity
+                        style={styles.copyCodeBtn}
+                        onPress={handleCopyCode}
+                        activeOpacity={0.7}
+                      >
+                        {copiedCode ? (
+                          <>
+                            <Check size={13} color={colors.emerald} />
+                            <Text style={[styles.copyCodeBtnText, { color: colors.emerald }]}>
+                              Copied
+                            </Text>
+                          </>
+                        ) : (
+                          <>
+                            <Copy size={13} color={colors.accentBlue} />
+                            <Text style={styles.copyCodeBtnText}>Copy Code</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.resetCodeBtn}
+                        onPress={() => {
+                          setPairingCode(null);
+                          setPairingError(null);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <RotateCcw size={12} color={colors.textSecondary} />
+                        <Text style={styles.resetCodeBtnText}>Change Number</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 )}
               </View>
@@ -936,22 +954,43 @@ const styles = StyleSheet.create({
     letterSpacing: 3.5,
     marginVertical: 2,
   },
+  codeActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
   copyCodeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 14,
+    paddingVertical: 7,
+    paddingHorizontal: 13,
     backgroundColor: colors.surface,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: colors.border,
-    marginTop: 2,
+    borderColor: colors.accentBlueBorder,
   },
   copyCodeBtnText: {
     fontFamily: fonts.geist.medium,
     fontSize: 12,
     color: colors.accentBlue,
+  },
+  resetCodeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  resetCodeBtnText: {
+    fontFamily: fonts.geist.medium,
+    fontSize: 12,
+    color: colors.textSecondary,
   },
   errorText: {
     fontFamily: fonts.inter.regular,

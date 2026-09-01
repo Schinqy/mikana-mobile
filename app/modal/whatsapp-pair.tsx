@@ -22,6 +22,7 @@ import {
   ChevronDown,
   Copy,
   Check,
+  RotateCcw,
 } from 'lucide-react-native';
 import { Card } from '../../src/components/ui/Card';
 import { Button } from '../../src/components/ui/Button';
@@ -322,7 +323,10 @@ export default function WhatsAppPairModal() {
                       placeholder="+1 234 567 8900"
                       placeholderTextColor={colors.textMuted}
                       value={phoneInput}
-                      onChangeText={setPhoneInput}
+                      onChangeText={(text) => {
+                        setPhoneInput(text);
+                        if (pairingCode) setPairingCode(null);
+                      }}
                       keyboardType="phone-pad"
                       autoCapitalize="none"
                     />
@@ -350,6 +354,18 @@ export default function WhatsAppPairModal() {
                       <Text style={styles.codeHint}>
                         Open WhatsApp &gt; Linked Devices &gt; Link with phone number &gt; Enter this code.
                       </Text>
+
+                      <TouchableOpacity
+                        style={[styles.resetCodeBtn, { marginTop: 8 }]}
+                        onPress={() => {
+                          setPairingCode(null);
+                          setPairingError(null);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <RotateCcw size={12} color={colors.textSecondary} />
+                        <Text style={styles.resetCodeBtnText}>Change Number / Regenerate Code</Text>
+                      </TouchableOpacity>
                     </View>
                   ) : null}
                 </View>
@@ -660,6 +676,22 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 16,
+  },
+  resetCodeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  resetCodeBtnText: {
+    fontFamily: fonts.geist.medium,
+    fontSize: 11.5,
+    color: colors.textSecondary,
   },
   legalNotice: {
     fontFamily: fonts.inter.regular,
