@@ -168,7 +168,7 @@ export default function BusinessScreen() {
               onPress={() => {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
                 setWhatsAppConnected(false, '');
-                router.push('/modal/whatsapp-pair');
+                router.replace('/(tabs)');
               }}
             />
           </>
@@ -176,7 +176,7 @@ export default function BusinessScreen() {
           <TouchableOpacity
             style={styles.connectCard}
             activeOpacity={0.8}
-            onPress={() => router.push('/modal/whatsapp-pair')}
+            onPress={() => router.replace('/(tabs)')}
           >
             <View style={styles.connectCardInner}>
               <AlertCircle size={18} color={colors.amber} strokeWidth={2} />

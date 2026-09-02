@@ -168,7 +168,7 @@ const SIMULATED_LEAD_POOL: Array<Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>> =
 export const useLeadStore = create<LeadState>()(
   persist(
     (set, get) => ({
-      leads: INITIAL_SAMPLE_LEADS,
+      leads: [],
       filter: 'all',
       searchQuery: '',
       selectedLeadId: null,
