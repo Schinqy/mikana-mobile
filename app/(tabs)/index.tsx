@@ -173,6 +173,9 @@ export default function HomeScreen() {
           if (status === 'connected' && phone) {
             setWhatsAppConnected(true, phone);
             setRelayStatus('connected');
+          } else if (status !== 'connected' && status !== 'pairing_syncing') {
+            setWhatsAppConnected(false, '');
+            setRelayStatus(status as any);
           }
         },
       });
