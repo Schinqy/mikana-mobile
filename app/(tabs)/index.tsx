@@ -183,13 +183,11 @@ export default function HomeScreen() {
   }, [whatsappRelayUrl, setWhatsAppConnected, addLead]);
 
   useEffect(() => {
-    if (!isWhatsAppConnected && relayStatus === 'idle') {
-      connectToRelay();
-    }
+    connectToRelay();
     return () => {
       relayClient.disconnect();
     };
-  }, [isWhatsAppConnected]);
+  }, [whatsappRelayUrl, connectToRelay]);
 
   // Real 8-Digit Pairing Code Request with WhatsApp style country code auto-prepended
   const handleRequestPairingCode = async () => {
