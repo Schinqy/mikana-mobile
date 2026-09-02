@@ -10,6 +10,9 @@ import {
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useSettingsStore } from '../../src/store/useSettingsStore';
+import { useCatalogStore } from '../../src/store/useCatalogStore';
+import { useSubscriptionStore } from '../../src/store/useSubscriptionStore';
+import { useAutopilotStore } from '../../src/store/useAutopilotStore';
 import { ScreenHeader } from '../../src/components/ui/ScreenHeader';
 import {
   Building2,
@@ -120,8 +123,9 @@ export default function BusinessScreen() {
     setWhatsAppConnected,
   } = useSettingsStore();
 
-  const [autopilotEnabled, setAutopilotEnabled] = React.useState(false);
-  const [quietHours, setQuietHours] = React.useState(true);
+  const { services, profile } = useCatalogStore();
+  const { status } = useSubscriptionStore();
+  const { config, toggleAutopilot, updateConfig } = useAutopilotStore();
 
   return (
     <View style={styles.container}>
@@ -164,11 +168,16 @@ export default function BusinessScreen() {
               onPress={() => {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
                 setWhatsAppConnected(false, '');
+                router.push('/modal/whatsapp-pair');
               }}
             />
           </>
         ) : (
-          <TouchableOpacity style={styles.connectCard} activeOpacity={0.8} onPress={() => {}}>
+          <TouchableOpacity
+            style={styles.connectCard}
+            activeOpacity={0.8}
+            onPress={() => router.push('/modal/whatsapp-pair')}
+          >
             <View style={styles.connectCardInner}>
               <AlertCircle size={18} color={colors.amber} strokeWidth={2} />
               <View style={{ flex: 1 }}>
@@ -193,16 +202,16 @@ export default function BusinessScreen() {
           icon={Package}
           iconColor={colors.accentBlue}
           label="Products & Services"
-          value="0 items"
-          onPress={() => {}}
+          value={`${services.length} items`}
+          onPress={() => router.push('/(tabs)/catalog')}
         />
         <Divider />
         <Row
           icon={Building2}
           iconColor={colors.brandNavy}
           label="Business Profile"
-          value="Incomplete"
-          onPress={() => {}}
+          value={profile.businessName || 'Configure'}
+          onPress={() => router.push('/(tabs)/catalog')}
         />
       </View>
 
@@ -214,19 +223,19 @@ export default function BusinessScreen() {
           iconColor={colors.amber}
           label="Autopilot"
           sublabel="Auto-draft quotes while you're offline"
-          value={autopilotEnabled}
-          onValueChange={setAutopilotEnabled}
+          value={config.isEnabled}
+          onValueChange={(val) => toggleAutopilot(val)}
         />
-        {autopilotEnabled && (
+        {config.isEnabled && (
           <>
             <Divider />
             <SwitchRow
               icon={Zap}
               iconColor={colors.textMuted}
-              label="Quiet Hours"
-              sublabel="Pause between 10pm – 7am"
-              value={quietHours}
-              onValueChange={setQuietHours}
+              label="Auto Quote Dispatch"
+              sublabel="Instant response to high-matching RFQs"
+              value={config.autoQuoteAllowed}
+              onValueChange={(val) => updateConfig({ autoQuoteAllowed: val })}
             />
           </>
         )}
@@ -239,8 +248,8 @@ export default function BusinessScreen() {
           icon={Crown}
           iconColor={colors.amber}
           label="Mikana Pro"
-          value="Free Plan"
-          onPress={() => {}}
+          value={status.isPro ? 'Pro Active' : 'Free Plan'}
+          onPress={() => router.push('/modal/paywall')}
         />
       </View>
 
@@ -250,8 +259,8 @@ export default function BusinessScreen() {
         <Row
           icon={User}
           iconColor={colors.textSecondary}
-          label="Account Settings"
-          onPress={() => {}}
+          label="System & AI Settings"
+          onPress={() => router.push('/(tabs)/settings')}
         />
         <Divider />
         <Row
@@ -260,7 +269,10 @@ export default function BusinessScreen() {
           label="Sign Out"
           danger
           showChevron={false}
-          onPress={() => {}}
+          onPress={() => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            setWhatsAppConnected(false, '');
+          }}
         />
       </View>
 
