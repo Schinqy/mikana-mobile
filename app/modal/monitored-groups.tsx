@@ -21,9 +21,9 @@ import {
   Check,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { colors, typography, spacing } from '@/theme';
-import { useSettingsStore } from '@/store/useSettingsStore';
-import { fetchGroups, setMonitoredGroups } from '@/services/relay/whatsappRelay';
+import { colors, typography, spacing } from '../../src/theme';
+import { useSettingsStore } from '../../src/store/useSettingsStore';
+import { fetchGroups, setMonitoredGroups } from '../../src/services/relay/whatsappRelay';
 
 interface WhatsAppGroup {
   id: string;
@@ -52,7 +52,7 @@ export default function MonitoredGroupsModal() {
 
       // Pre-select groups that match existing radar channels
       const matchingIds = new Set<string>();
-      liveGroups.forEach((g) => {
+      liveGroups.forEach((g: WhatsAppGroup) => {
         if (radarChannels.includes(g.subject) || radarChannels.includes(g.id)) {
           matchingIds.add(g.id);
         }
@@ -60,7 +60,7 @@ export default function MonitoredGroupsModal() {
 
       // If none explicitly matched, select all by default so user monitors all
       if (matchingIds.size === 0) {
-        liveGroups.forEach((g) => matchingIds.add(g.id));
+        liveGroups.forEach((g: WhatsAppGroup) => matchingIds.add(g.id));
       }
 
       setSelectedGroupIds(matchingIds);
