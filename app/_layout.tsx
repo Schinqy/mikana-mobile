@@ -38,16 +38,21 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     const inOnboarding = segments[0] === 'onboarding';
 
     if (!onboardingCompleted && !inOnboarding) {
-      // First-time user — show value screen before any auth
       router.replace('/onboarding/welcome');
     } else if (onboardingCompleted && inOnboarding) {
-      // Already completed onboarding — go straight to app
       router.replace('/(tabs)');
     }
   }, [session, onboardingCompleted, isLoading, segments]);
 
+  // Prevent flash of tabs screen while loading or if first-time user hasn't redirected yet
+  const inOnboarding = segments[0] === 'onboarding';
+  if (isLoading || (!onboardingCompleted && !inOnboarding)) {
+    return <View style={{ flex: 1, backgroundColor: colors.canvas }} />;
+  }
+
   return <>{children}</>;
 }
+
 
 export default function RootLayout() {
   const { revenueCatApiKey } = useSettingsStore();

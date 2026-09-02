@@ -86,27 +86,48 @@ export const useAuthStore = create<AuthState>()(
 
       initialize: async () => {
         set({ isLoading: true });
-        const { data: { session } } = await supabase.auth.getSession();
-        set({
-          session,
-          userId: session?.user?.id ?? null,
-          isLoading: false,
-        });
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            set({
+              session,
+              userId: session.user?.id ?? null,
+              isLoading: false,
+            });
+          } else {
+            // Option 2: Automatic seamless anonymous sign-in
+            const { data, error } = await supabase.auth.signInAnonymously();
+            if (!error && data?.session) {
+              set({
+                session: data.session,
+                userId: data.session.user?.id ?? null,
+                isLoading: false,
+              });
+            } else {
+              set({ isLoading: false });
+            }
+          }
+        } catch (e) {
+          console.warn('Auth initialization error:', e);
+          set({ isLoading: false });
+        }
 
         // Listen for auth state changes (sign in/out, token refresh)
-        supabase.auth.onAuthStateChange((_event, session) => {
-          set({
-            session,
-            userId: session?.user?.id ?? null,
-            isLoading: false,
+        try {
+          supabase.auth.onAuthStateChange((_event, session) => {
+            set({
+              session,
+              userId: session?.user?.id ?? null,
+              isLoading: false,
+            });
           });
-        });
+        } catch (_) {}
       },
     }),
     {
       name: 'mikana-auth-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      // Only persist onboarding state — session is re-fetched from Supabase on mount
+      // Only persist onboarding state â€” session is re-fetched from Supabase on mount
       partialize: (state) => ({
         onboardingStage: state.onboardingStage,
         onboardingCompleted: state.onboardingCompleted,

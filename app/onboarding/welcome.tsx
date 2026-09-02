@@ -1,161 +1,442 @@
-import React, { useEffect, useRef } from 'react';
+ï»¿import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
   Animated,
-  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowRight, Zap, Clock } from 'lucide-react-native';
+import { ArrowRight, Zap, Shield, Globe, MessageSquare } from 'lucide-react-native';
 import { colors, spacing, radius } from '../../src/theme/colors';
 
 export default function WelcomeScreen() {
   const router = useRouter();
 
-  const heroOpacity = useRef(new Animated.Value(0)).current;
-  const heroY = useRef(new Animated.Value(18)).current;
-  const cardOpacity = useRef(new Animated.Value(0)).current;
-  const cardY = useRef(new Animated.Value(24)).current;
-  const ctaOpacity = useRef(new Animated.Value(0)).current;
+  // Staggered fade and slide animations
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(14)).current;
+  const cardScale = useRef(new Animated.Value(0.97)).current;
 
   useEffect(() => {
-    Animated.sequence([
-      Animated.parallel([
-        Animated.timing(heroOpacity, { toValue: 1, duration: 480, useNativeDriver: true }),
-        Animated.timing(heroY, { toValue: 0, duration: 480, useNativeDriver: true }),
-      ]),
-      Animated.delay(80),
-      Animated.parallel([
-        Animated.timing(cardOpacity, { toValue: 1, duration: 420, useNativeDriver: true }),
-        Animated.timing(cardY, { toValue: 0, duration: 420, useNativeDriver: true }),
-      ]),
-      Animated.delay(60),
-      Animated.timing(ctaOpacity, { toValue: 1, duration: 340, useNativeDriver: true }),
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 450,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 450,
+        useNativeDriver: true,
+      }),
+      Animated.spring(cardScale, {
+        toValue: 1,
+        damping: 24,
+        stiffness: 220,
+        useNativeDriver: true,
+      }),
     ]).start();
   }, []);
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-      >
-        <View style={styles.wordmarkRow}>
-          <Text style={styles.wordmark}>Mikana</Text>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      {/* 1. Header Wordmark + Status Pill */}
+      <View style={styles.header}>
+        <Text style={styles.brandTitle}>MIKANA</Text>
+        <View style={styles.statusPill}>
+          <View style={styles.statusDot} />
+          <Text style={styles.statusText}>AI LEAD RADAR</Text>
         </View>
+      </View>
 
-        <Animated.View style={[styles.heroSection, { opacity: heroOpacity, transform: [{ translateY: heroY }] }]}>
-          <Text style={styles.heroHeading}>{"Your WhatsApp groups are full of\npaying customers."}</Text>
-          <Text style={styles.heroSubtext}>
-            Mikana watches your groups and surfaces the opportunities that match what you offer — before anyone else replies.
-          </Text>
-        </Animated.View>
+      {/* 2. Headline & Value Proposition */}
+      <Animated.View
+        style={[
+          styles.heroBlock,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}
+      >
+        <Text style={styles.headline}>
+          {"Never miss a customer\nin your WhatsApp groups."}
+        </Text>
+        <Text style={styles.subtext}>
+          Mikana watches your chosen group chats 24/7. The moment someone asks for what you offer, you get alerted first.
+        </Text>
+      </Animated.View>
 
-        <Animated.View style={[styles.demoSection, { opacity: cardOpacity, transform: [{ translateY: cardY }] }]}>
-          <View style={styles.rawMessageCard}>
-            <View style={styles.rawMessageHeader}>
-              <View style={styles.groupDot} />
-              <Text style={styles.rawMessageGroupName}>Harare Business Hub</Text>
-              <Text style={styles.rawMessageTime}>2 min ago</Text>
+      {/* 3. The Central Signal Artifact (Transformation Showcase) */}
+      <Animated.View
+        style={[
+          styles.artifactWrapper,
+          {
+            opacity: fadeAnim,
+            transform: [{ scale: cardScale }],
+          },
+        ]}
+      >
+        <View style={styles.artifactCard}>
+          {/* Top: Incoming WhatsApp Noise */}
+          <View style={styles.noiseSection}>
+            <View style={styles.chatMetaRow}>
+              <View style={styles.chatIconBadge}>
+                <MessageSquare size={12} color="#15803D" strokeWidth={2} />
+              </View>
+              <Text style={styles.chatGroupName} numberOfLines={1}>
+                Commercial Suppliers & Trade
+              </Text>
+              <Text style={styles.chatTime}>Just now</Text>
             </View>
-            <Text style={styles.rawMessageSender}>Tatenda M.</Text>
-            <Text style={styles.rawMessageText}>
-              {'"Guys anyone know someone who can install a 5kVA inverter in Avondale today? Urgent pls"'}
+            <Text style={styles.chatSender}>David K.</Text>
+            <Text style={styles.chatSnippet} numberOfLines={2}>
+              {'"Looking for a verified supplier who can dispatch 50 commercial units by Friday. Immediate PO ready."'}
             </Text>
           </View>
 
-          <View style={styles.arrowRow}>
-            <View style={styles.arrowLine} />
-            <Zap size={14} color={colors.accentBlue} strokeWidth={2} />
-            <View style={styles.arrowLine} />
+          {/* Central AI Bridge */}
+          <View style={styles.bridgeRow}>
+            <View style={styles.bridgeLine} />
+            <View style={styles.bridgeBadge}>
+              <Zap size={11} color={colors.accentBlue} strokeWidth={2.5} />
+              <Text style={styles.bridgeText}>AI MATCHED Â· 0.4s</Text>
+            </View>
+            <View style={styles.bridgeLine} />
           </View>
 
-          <View style={styles.matchCard}>
-            <View style={styles.matchHeader}>
-              <View style={styles.urgentPill}>
-                <Text style={styles.urgentPillText}>URGENT</Text>
+          {/* Bottom: Extracted Opportunity Signal */}
+          <View style={styles.signalSection}>
+            <View style={styles.signalHeader}>
+              <View style={styles.matchPill}>
+                <Text style={styles.matchPillText}>98% MATCH</Text>
               </View>
-              <Text style={styles.matchScore}>96% match</Text>
+              <View style={styles.urgencyPill}>
+                <Text style={styles.urgencyPillText}>HIGH INTENT</Text>
+              </View>
             </View>
-            <Text style={styles.matchTitle}>5kVA Inverter Installation</Text>
-            <Text style={styles.matchMeta}>Avondale · Solar & Electrical · 2 min ago</Text>
-            <View style={styles.matchDivider} />
-            <View style={styles.matchFooter}>
-              <Clock size={12} color={colors.textMuted} strokeWidth={1.5} />
-              <Text style={styles.matchFooterText}>Reply within 5 min to be first</Text>
-            </View>
+
+            <Text style={styles.signalTitle} numberOfLines={1}>
+              50 Commercial Units Required
+            </Text>
+            <Text style={styles.signalDetails} numberOfLines={1}>
+              Equipment & Supplies Â· Deadline: Friday Â· PO Ready
+            </Text>
           </View>
-        </Animated.View>
+        </View>
+      </Animated.View>
 
-        <Animated.View style={[styles.valueList, { opacity: ctaOpacity }]}>
-          {[
-            'Monitors your selected groups 24/7',
-            'Understands Shona, Ndebele & English',
-            'Alerts you the moment a match appears',
-          ].map((line, i) => (
-            <View key={i} style={styles.valueRow}>
-              <View style={styles.valueDot} />
-              <Text style={styles.valueText}>{line}</Text>
-            </View>
-          ))}
-        </Animated.View>
-      </ScrollView>
+      {/* 4. Three Universal Signal Highlights (Compact single-line grid) */}
+      <View style={styles.featuresRow}>
+        <View style={styles.featureItem}>
+          <Globe size={14} color={colors.textSecondary} strokeWidth={1.75} />
+          <Text style={styles.featureLabel}>Any Language</Text>
+        </View>
+        <View style={styles.featureDivider} />
+        <View style={styles.featureItem}>
+          <Shield size={14} color={colors.textSecondary} strokeWidth={1.75} />
+          <Text style={styles.featureLabel}>Whitelisted Only</Text>
+        </View>
+        <View style={styles.featureDivider} />
+        <View style={styles.featureItem}>
+          <Zap size={14} color={colors.textSecondary} strokeWidth={1.75} />
+          <Text style={styles.featureLabel}>Instant Alerts</Text>
+        </View>
+      </View>
 
-      <Animated.View style={[styles.ctaContainer, { opacity: ctaOpacity }]}>
+      {/* 5. Docked Action Zone */}
+      <View style={styles.actionZone}>
         <Pressable
-          style={({ pressed }) => [styles.ctaButton, pressed && styles.ctaButtonPressed]}
+          style={({ pressed }) => [
+            styles.primaryButton,
+            pressed && styles.primaryButtonPressed,
+          ]}
           onPress={() => router.push('/onboarding/discover')}
           accessibilityRole="button"
-          accessibilityLabel="Find opportunities like this"
+          accessibilityLabel="Start Capturing Opportunities"
         >
-          <Text style={styles.ctaButtonText}>Find opportunities like this</Text>
-          <ArrowRight size={18} color={colors.textInverse} strokeWidth={2} />
+          <Text style={styles.primaryButtonText}>Start Capturing Opportunities</Text>
+          <ArrowRight size={17} color={colors.textInverse} strokeWidth={2} />
         </Pressable>
-        <Text style={styles.ctaDisclaimer}>Free to start · No credit card required</Text>
-      </Animated.View>
+        <Text style={styles.disclaimerText}>
+          Free tier included Â· Connects in 60 seconds
+        </Text>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.canvas },
-  scroll: { paddingHorizontal: spacing.xxl, paddingBottom: 130 },
-  wordmarkRow: { paddingTop: spacing.xl, paddingBottom: spacing.xxl },
-  wordmark: { fontFamily: 'Geist_700Bold', fontSize: 15, color: colors.brandNavy, letterSpacing: 0.5 },
-  heroSection: { marginBottom: spacing.xxxl },
-  heroHeading: { fontFamily: 'Geist_700Bold', fontSize: 26, lineHeight: 33, color: colors.textHeading, marginBottom: spacing.md, letterSpacing: -0.4 },
-  heroSubtext: { fontFamily: 'Inter_400Regular', fontSize: 15, lineHeight: 22, color: colors.textSecondary },
-  demoSection: { marginBottom: spacing.xxxl },
-  rawMessageCard: { backgroundColor: colors.surfaceSubtle, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.lg, marginBottom: spacing.md },
-  rawMessageHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs, gap: spacing.xs },
-  groupDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#25D366' },
-  rawMessageGroupName: { fontFamily: 'Geist_500Medium', fontSize: 11, color: colors.textMuted, flex: 1, letterSpacing: 0.2 },
-  rawMessageTime: { fontFamily: 'Inter_400Regular', fontSize: 11, color: colors.textMuted },
-  rawMessageSender: { fontFamily: 'Geist_600SemiBold', fontSize: 13, color: colors.textPrimary, marginBottom: spacing.xs },
-  rawMessageText: { fontFamily: 'Inter_400Regular', fontSize: 14, lineHeight: 20, color: colors.textSecondary, fontStyle: 'italic' },
-  arrowRow: { flexDirection: 'row', alignItems: 'center', marginVertical: spacing.sm, paddingHorizontal: spacing.xl },
-  arrowLine: { flex: 1, height: 1, backgroundColor: colors.accentBlueBorder },
-  matchCard: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.accentBlueBorder, borderRadius: radius.md, padding: spacing.lg },
-  matchHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
-  urgentPill: { backgroundColor: colors.roseBg, borderWidth: 1, borderColor: colors.roseBorder, borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: 2 },
-  urgentPillText: { fontFamily: 'Geist_600SemiBold', fontSize: 10, color: colors.rose, letterSpacing: 0.5 },
-  matchScore: { fontFamily: 'Geist_600SemiBold', fontSize: 13, color: colors.accentBlue },
-  matchTitle: { fontFamily: 'Geist_600SemiBold', fontSize: 15, color: colors.textPrimary, marginBottom: spacing.xs },
-  matchMeta: { fontFamily: 'Inter_400Regular', fontSize: 13, color: colors.textSecondary },
-  matchDivider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },
-  matchFooter: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  matchFooterText: { fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.textMuted },
-  valueList: { gap: spacing.md, marginBottom: spacing.xxxl },
-  valueRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  valueDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: colors.accentBlue },
-  valueText: { fontFamily: 'Inter_400Regular', fontSize: 14, color: colors.textSecondary, lineHeight: 20 },
-  ctaContainer: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: colors.canvas, borderTopWidth: 1, borderTopColor: colors.border, paddingHorizontal: spacing.xxl, paddingTop: spacing.lg, paddingBottom: spacing.xxxl, alignItems: 'center', gap: spacing.md },
-  ctaButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, backgroundColor: colors.brandNavy, paddingVertical: 15, borderRadius: radius.md, width: '100%' },
-  ctaButtonPressed: { opacity: 0.88 },
-  ctaButtonText: { fontFamily: 'Geist_600SemiBold', fontSize: 15, color: colors.textInverse, letterSpacing: 0.1 },
-  ctaDisclaimer: { fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.textMuted, textAlign: 'center' },
+  container: {
+    flex: 1,
+    backgroundColor: colors.canvas,
+    paddingHorizontal: spacing.xxl,
+    justifyContent: 'space-between',
+    paddingVertical: spacing.lg,
+  },
+
+  // 1. Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: spacing.xs,
+  },
+  brandTitle: {
+    fontFamily: 'Geist_700Bold',
+    fontSize: 16,
+    color: colors.brandNavy,
+    letterSpacing: 1.5,
+  },
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.full,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.emerald,
+  },
+  statusText: {
+    fontFamily: 'Geist_600SemiBold',
+    fontSize: 10,
+    color: colors.textSecondary,
+    letterSpacing: 0.6,
+  },
+
+  // 2. Hero Typography
+  heroBlock: {
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  headline: {
+    fontFamily: 'Geist_700Bold',
+    fontSize: 25,
+    lineHeight: 31,
+    color: colors.textHeading,
+    letterSpacing: -0.5,
+    marginBottom: spacing.sm,
+  },
+  subtext: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 14,
+    lineHeight: 21,
+    color: colors.textSecondary,
+  },
+
+  // 3. Central Signal Artifact
+  artifactWrapper: {
+    marginVertical: spacing.sm,
+  },
+  artifactCard: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    shadowColor: '#07182E',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  noiseSection: {
+    padding: spacing.md,
+    backgroundColor: colors.surfaceSubtle,
+  },
+  chatMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: 4,
+  },
+  chatIconBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#DCFCE7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chatGroupName: {
+    flex: 1,
+    fontFamily: 'Geist_600SemiBold',
+    fontSize: 12,
+    color: colors.textPrimary,
+  },
+  chatTime: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 11,
+    color: colors.textMuted,
+  },
+  chatSender: {
+    fontFamily: 'Geist_500Medium',
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginBottom: 2,
+  },
+  chatSnippet: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+  },
+
+  // Bridge
+  bridgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+    height: 24,
+  },
+  bridgeLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  bridgeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.accentBlueTint,
+    borderWidth: 1,
+    borderColor: colors.accentBlueBorder,
+    borderRadius: radius.full,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  bridgeText: {
+    fontFamily: 'Geist_600SemiBold',
+    fontSize: 9,
+    color: colors.accentBlue,
+    letterSpacing: 0.4,
+  },
+
+  // Signal
+  signalSection: {
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+  },
+  signalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  matchPill: {
+    backgroundColor: colors.accentBlueTint,
+    borderWidth: 1,
+    borderColor: colors.accentBlueBorder,
+    borderRadius: radius.sm,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  matchPillText: {
+    fontFamily: 'Geist_700Bold',
+    fontSize: 10,
+    color: colors.accentBlue,
+    letterSpacing: 0.4,
+  },
+  urgencyPill: {
+    backgroundColor: colors.amberBg,
+    borderWidth: 1,
+    borderColor: colors.amberBorder,
+    borderRadius: radius.sm,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  urgencyPillText: {
+    fontFamily: 'Geist_600SemiBold',
+    fontSize: 10,
+    color: colors.amber,
+    letterSpacing: 0.4,
+  },
+  signalTitle: {
+    fontFamily: 'Geist_600SemiBold',
+    fontSize: 14,
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
+  signalDetails: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+
+  // 4. Feature Highlights
+  featuresRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingVertical: 10,
+    paddingHorizontal: spacing.md,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  featureLabel: {
+    fontFamily: 'Geist_500Medium',
+    fontSize: 11,
+    color: colors.textSecondary,
+  },
+  featureDivider: {
+    width: 1,
+    height: 14,
+    backgroundColor: colors.border,
+  },
+
+  // 5. Action Zone
+  actionZone: {
+    gap: spacing.xs,
+    paddingBottom: spacing.xs,
+  },
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.brandNavy,
+    paddingVertical: 15,
+    borderRadius: radius.md,
+    shadowColor: colors.brandNavy,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  primaryButtonPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.99 }],
+  },
+  primaryButtonText: {
+    fontFamily: 'Geist_600SemiBold',
+    fontSize: 15,
+    color: colors.textInverse,
+    letterSpacing: 0.2,
+  },
+  disclaimerText: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: 2,
+  },
 });

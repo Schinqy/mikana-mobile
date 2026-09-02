@@ -12,8 +12,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // These come from your Supabase project dashboard
 // Settings > API > Project URL & anon/public key
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+const SUPABASE_URL =
+  process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://pxdprchczhegglaknydn.supabase.co';
+const SUPABASE_ANON_KEY =
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4ZHByY2hjemhlZ2dsYWtueWRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgzNzEyMjQsImV4cCI6MjEwMzk0NzIyNH0.b_gxZ8Jv0ZaE-swH8dY-RA_Q48xBdkKpmjDAnLnh9v8';
+
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {

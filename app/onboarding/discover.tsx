@@ -19,21 +19,22 @@ import { useAuthStore } from '../../src/store/useAuthStore';
 // -- Example prompts and location quick-picks ----------------------------------
 
 const EXAMPLE_PROMPTS = [
-  'I repair fridges and washing machines',
-  'I sell maize, beans and fertilizer',
-  'I build mobile apps and websites',
-  'I install solar panels and inverters',
-  'I do plumbing � geysers, pipes & toilets',
-  'I buy and sell second-hand cars',
+  'I repair commercial equipment and appliances',
+  'I supply wholesale grain, foodstuff and commodities',
+  'I build mobile apps, websites and software',
+  'I install commercial solar systems and inverters',
+  'I provide plumbing, electrical and maintenance services',
+  'I wholesale automotive parts and vehicles',
 ];
 
 const QUICK_LOCATIONS = [
-  'Harare', 'Bulawayo', 'Chitungwiza',
-  'Mutare', 'Gweru', 'Masvingo',
-  'Nationwide', 'Remote',
+  'Worldwide / Remote',
+  'Nationwide',
+  'Local Metro Area',
+  'Multi-Region',
 ];
 
-// -- Gemini-powered capability extractor (inline, no extra service file needed) -
+// ── Gemini-powered capability extractor (inline, no extra service file needed) ─
 
 const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || '';
 
@@ -44,30 +45,30 @@ async function extractCapabilities(description: string): Promise<{
   followUpChips: string[];
 }> {
   if (!GEMINI_API_KEY) {
-    // Offline fallback � simple heuristic chips
+    // Offline fallback — simple heuristic chips
     return {
-      categories: ['General Services'],
+      categories: ['Commercial Services'],
       capabilities: [description.slice(0, 40)],
       products: [],
-      followUpChips: ['Installation', 'Repairs', 'Sales', 'Consultation', 'Maintenance'],
+      followUpChips: ['Installation', 'Repairs', 'Supply & Distribution', 'Consulting', 'Maintenance'],
     };
   }
 
-  const prompt = `A user described their work/trade in these words: "${description}"
+  const prompt = `A user described their business, work, or trade in these words: "${description}"
 
 Extract a structured capability profile in JSON:
 {
   "categories": ["up to 2 relevant industry categories"],
-  "capabilities": ["3-5 specific services or capabilities they offer"],
-  "products": ["any physical products they sell, or empty array"],
+  "capabilities": ["3-5 specific commercial services or offerings"],
+  "products": ["any physical goods they sell, or empty array"],
   "followUpChips": ["5-7 short chip options for the user to refine what they offer, tailored to their industry"]
 }
 
 Rules:
-- categories should be short 2-4 word industry labels (e.g. "Solar & Electrical", "Agriculture & Trading", "Software Development")
-- capabilities should be specific action phrases (e.g. "inverter installation", "maize supply", "React Native development")
-- followUpChips should be concise 1-3 word options specific to their stated profession
-- Understand Shona, Ndebele, English and mixed code-switching naturally
+- categories should be concise 2-4 word industry labels (e.g. "Solar & Renewable Energy", "Commodity Trading", "Software Engineering")
+- capabilities should be actionable offering phrases (e.g. "commercial inverter installation", "bulk grain supply", "React Native development")
+- followUpChips should be concise 1-3 word options specific to their stated trade
+- Multilingual: understand any language globally (English, Spanish, Portuguese, Arabic, French, Swahili, Hindi, etc.) naturally
 - Return ONLY valid JSON, no markdown`;
 
   const res = await fetch(
@@ -107,7 +108,7 @@ export default function DiscoverScreen() {
   const [selectedChips, setSelectedChips] = useState<string[]>([]);
 
   // Location
-  const [selectedLocations, setSelectedLocations] = useState<string[]>(['Harare']);
+  const [selectedLocations, setSelectedLocations] = useState<string[]>(['Worldwide / Remote']);
   const [customLocation, setCustomLocation] = useState('');
 
   const inputRef = useRef<TextInput>(null);
@@ -154,7 +155,7 @@ export default function DiscoverScreen() {
     const profile = {
       displayName: '',
       description: description.trim(),
-      location: locations[0] || 'Harare',
+      location: locations[0] || 'Worldwide',
       serviceAreas: locations,
       categories: extractedCategories,
       capabilities: selectedChips,
@@ -215,7 +216,7 @@ export default function DiscoverScreen() {
                 style={styles.textInput}
                 value={description}
                 onChangeText={setDescription}
-                placeholder="I fix fridges and washing machines in Harare..."
+                placeholder="e.g. I supply commercial solar systems, inverters and batteries..."
                 placeholderTextColor={colors.textMuted}
                 multiline
                 numberOfLines={3}
