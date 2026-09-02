@@ -156,7 +156,7 @@ export default function BusinessScreen() {
               icon={MessageCircle}
               iconColor={colors.accentBlue}
               label="Monitored Groups"
-              value={`${radarChannels.length} active`}
+              value={radarChannels.length > 0 ? `${radarChannels.length} selected` : 'All Groups (Default)'}
               onPress={() => router.push('/modal/monitored-groups')}
             />
             <Divider />

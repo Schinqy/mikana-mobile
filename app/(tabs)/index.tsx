@@ -597,21 +597,30 @@ export default function HomeScreen() {
       {/* Monitored Channels Snapshot */}
       <View style={styles.channelsSnapshot}>
         <View style={styles.channelsTitleRow}>
-          <Text style={styles.channelsSectionTitle}>MONITORED GROUPS ({radarChannels.length})</Text>
+          <Text style={styles.channelsSectionTitle}>
+            MONITORED GROUPS ({radarChannels.length > 0 ? radarChannels.length : 'ALL ACTIVE'})
+          </Text>
           <TouchableOpacity onPress={() => router.push('/modal/monitored-groups')}>
             <Text style={styles.manageChannelsText}>Manage</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.channelChipsContainer}>
-          {radarChannels.map((channel, idx) => (
-            <View key={idx} style={styles.channelChip}>
+          {radarChannels.length > 0 ? (
+            radarChannels.map((channel, idx) => (
+              <View key={idx} style={styles.channelChip}>
+                <View style={styles.channelStatusDot} />
+                <Text style={styles.channelChipText} numberOfLines={1}>
+                  {channel}
+                </Text>
+              </View>
+            ))
+          ) : (
+            <View style={styles.channelChip}>
               <View style={styles.channelStatusDot} />
-              <Text style={styles.channelChipText} numberOfLines={1}>
-                {channel}
-              </Text>
+              <Text style={styles.channelChipText}>All Linked WhatsApp Groups</Text>
             </View>
-          ))}
+          )}
         </View>
       </View>
     </View>
