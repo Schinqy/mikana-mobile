@@ -25,6 +25,7 @@ interface SettingsState {
   setWhatsappRelayUrl: (url: string) => void;
   addRadarChannel: (channel: string) => void;
   removeRadarChannel: (channel: string) => void;
+  setRadarChannels: (channels: string[]) => void;
   toggleHaptics: () => void;
   togglePushNotifications: () => void;
 }
@@ -64,6 +65,7 @@ export const useSettingsStore = create<SettingsState>()(
         set((state) => ({
           radarChannels: state.radarChannels.filter((c) => c !== channel),
         })),
+      setRadarChannels: (radarChannels) => set({ radarChannels }),
       toggleHaptics: () =>
         set((state) => ({ enableSoundHaptics: !state.enableSoundHaptics })),
       togglePushNotifications: () =>

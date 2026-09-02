@@ -153,7 +153,7 @@ export default function BusinessScreen() {
               iconColor={colors.accentBlue}
               label="Monitored Groups"
               value={`${radarChannels.length} active`}
-              onPress={() => {}}
+              onPress={() => router.push('/modal/monitored-groups')}
             />
             <Divider />
             <Row

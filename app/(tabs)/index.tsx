@@ -597,7 +597,7 @@ export default function HomeScreen() {
       <View style={styles.channelsSnapshot}>
         <View style={styles.channelsTitleRow}>
           <Text style={styles.channelsSectionTitle}>MONITORED GROUPS ({radarChannels.length})</Text>
-          <TouchableOpacity onPress={() => router.push('/(tabs)/business')}>
+          <TouchableOpacity onPress={() => router.push('/modal/monitored-groups')}>
             <Text style={styles.manageChannelsText}>Manage</Text>
           </TouchableOpacity>
         </View>
