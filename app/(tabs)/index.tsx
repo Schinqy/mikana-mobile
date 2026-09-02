@@ -48,6 +48,7 @@ import {
   RotateCcw,
   Monitor,
   Share2,
+  Sliders,
 } from 'lucide-react-native';
 import { Country, detectUserCountry } from '../../src/utils/countryCodes';
 import { CountryCodePickerModal } from '../../src/components/ui/CountryCodePickerModal';
@@ -626,9 +627,15 @@ export default function HomeScreen() {
             : 'WhatsApp disconnected'
         }
         rightAction={{
-          label: isWhatsAppConnected ? 'Pair WhatsApp' : 'Scan QR',
-          icon: QrCode,
-          onPress: () => router.push('/modal/whatsapp-pair'),
+          label: isWhatsAppConnected ? 'Channels' : 'Connect',
+          icon: isWhatsAppConnected ? Sliders : QrCode,
+          onPress: () => {
+            if (isWhatsAppConnected) {
+              router.push('/modal/monitored-groups');
+            } else {
+              connectToRelay();
+            }
+          },
         }}
       />
 
