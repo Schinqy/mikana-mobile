@@ -29,6 +29,7 @@ import {
   createSession,
   requestPairingCode,
   resolveRelayUrl,
+  getSessionStatus,
 } from '../../src/services/relay/whatsappRelay';
 import {
   Search,
@@ -186,8 +187,32 @@ export default function HomeScreen() {
   }, [whatsappRelayUrl, setWhatsAppConnected, addLead]);
 
   useEffect(() => {
+    let isMounted = true;
+    const verifyLiveStatus = async () => {
+      try {
+        const targetUrl = resolveRelayUrl(whatsappRelayUrl);
+        const res = await getSessionStatus(targetUrl, 'session_user_default');
+        if (isMounted) {
+          if (res.status === 'connected' && res.phone) {
+            setWhatsAppConnected(true, res.phone);
+            setRelayStatus('connected');
+          } else {
+            setWhatsAppConnected(false, '');
+            setRelayStatus(res.status || 'idle');
+          }
+        }
+      } catch (_) {
+        if (isMounted) {
+          setWhatsAppConnected(false, '');
+        }
+      }
+    };
+
+    verifyLiveStatus();
     connectToRelay();
+
     return () => {
+      isMounted = false;
       relayClient.disconnect();
     };
   }, [whatsappRelayUrl, connectToRelay]);
@@ -636,17 +661,6 @@ export default function HomeScreen() {
             ? `${radarChannels.length} channels monitored • ${leads.length} inquiries`
             : 'WhatsApp disconnected'
         }
-        rightAction={{
-          label: isWhatsAppConnected ? 'Channels' : 'Connect',
-          icon: isWhatsAppConnected ? Sliders : QrCode,
-          onPress: () => {
-            if (isWhatsAppConnected) {
-              router.push('/modal/monitored-groups');
-            } else {
-              connectToRelay();
-            }
-          },
-        }}
       />
 
       {!isWhatsAppConnected && (

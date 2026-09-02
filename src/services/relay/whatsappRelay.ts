@@ -193,9 +193,13 @@ export async function createSession(relayUrl: string, userId: string): Promise<{
  */
 export async function getSessionStatus(relayUrl: string, sessionId: string): Promise<any> {
   const url = resolveRelayUrl(relayUrl);
-  const res = await fetch(`${url}/api/sessions/${sessionId}/status`);
-  if (!res.ok) throw new Error(`Status check failed: ${res.status}`);
-  return res.json();
+  try {
+    const res = await fetch(`${url}/api/sessions/${sessionId}/status`);
+    if (!res.ok) return { status: 'disconnected', phone: null };
+    return res.json();
+  } catch (_) {
+    return { status: 'disconnected', phone: null };
+  }
 }
 
 /**
