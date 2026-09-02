@@ -270,7 +270,9 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   headerSub: {
-    ...type.bodySm,
+    ...type.body,
+    fontSize: 13,
+    lineHeight: 18,
     color: colors.textSecondary,
     paddingHorizontal: 20,
     marginBottom: 16,
