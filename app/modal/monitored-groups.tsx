@@ -21,7 +21,8 @@ import {
   Check,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { colors, typography, spacing } from '../../src/theme';
+import { colors } from '../../src/theme/colors';
+import { fonts, type } from '../../src/theme/fonts';
 import { useSettingsStore } from '../../src/store/useSettingsStore';
 import { fetchGroups, setMonitoredGroups } from '../../src/services/relay/whatsappRelay';
 
@@ -89,7 +90,7 @@ export default function MonitoredGroupsModal() {
   const selectAll = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const next = new Set<string>();
-    groups.forEach((g) => next.add(g.id));
+    groups.forEach((g: WhatsAppGroup) => next.add(g.id));
     setSelectedGroupIds(next);
   };
 
@@ -107,8 +108,8 @@ export default function MonitoredGroupsModal() {
 
       // Map selected IDs to subjects for UI chips
       const selectedSubjects = groups
-        .filter((g) => selectedGroupIds.has(g.id))
-        .map((g) => g.subject);
+        .filter((g: WhatsAppGroup) => selectedGroupIds.has(g.id))
+        .map((g: WhatsAppGroup) => g.subject);
 
       if (setRadarChannels) {
         setRadarChannels(selectedSubjects.length > 0 ? selectedSubjects : ['All WhatsApp Groups']);
@@ -123,7 +124,7 @@ export default function MonitoredGroupsModal() {
     }
   };
 
-  const filteredGroups = groups.filter((g) =>
+  const filteredGroups = groups.filter((g: WhatsAppGroup) =>
     g.subject.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -189,7 +190,7 @@ export default function MonitoredGroupsModal() {
         </View>
       ) : (
         <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
-          {filteredGroups.map((group) => {
+          {filteredGroups.map((group: WhatsAppGroup) => {
             const isSelected = selectedGroupIds.has(group.id);
             return (
               <TouchableOpacity
@@ -246,40 +247,40 @@ export default function MonitoredGroupsModal() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.canvas,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.xs,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 4,
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: 8,
   },
   headerTitle: {
-    ...typography.h3,
-    color: colors.text,
+    ...type.heading,
+    color: colors.textPrimary,
   },
   closeBtn: {
-    padding: spacing.xs,
+    padding: 6,
   },
   headerSub: {
-    ...typography.bodySm,
-    color: colors.textMuted,
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.md,
+    ...type.bodySm,
+    color: colors.textSecondary,
+    paddingHorizontal: 20,
+    marginBottom: 16,
   },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.md,
+    gap: 8,
+    paddingHorizontal: 20,
+    marginBottom: 16,
   },
   searchBar: {
     flex: 1,
@@ -289,71 +290,71 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 8,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: 12,
     height: 38,
-    gap: spacing.xs,
+    gap: 8,
   },
   searchInput: {
     flex: 1,
-    ...typography.bodySm,
-    color: colors.text,
+    ...type.body,
+    color: colors.textPrimary,
   },
   bulkBtn: {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 8,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: 14,
     height: 38,
     alignItems: 'center',
     justifyContent: 'center',
   },
   bulkBtnText: {
-    ...typography.caption,
-    color: colors.text,
-    fontWeight: '600',
+    fontFamily: fonts.geist.semibold,
+    fontSize: 12,
+    color: colors.textPrimary,
   },
   centerBox: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.xl,
-    gap: spacing.md,
+    padding: 24,
+    gap: 12,
   },
   loadingText: {
-    ...typography.bodySm,
-    color: colors.textMuted,
+    ...type.body,
+    color: colors.textSecondary,
   },
   errorText: {
-    ...typography.bodySm,
+    ...type.body,
     color: colors.rose,
     textAlign: 'center',
   },
   retryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: 6,
     backgroundColor: colors.accentBlue,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 8,
   },
   retryBtnText: {
-    ...typography.bodySm,
+    fontFamily: fonts.geist.semibold,
+    fontSize: 14,
     color: colors.surface,
-    fontWeight: '600',
   },
   emptyText: {
-    ...typography.bodySm,
-    color: colors.textMuted,
+    ...type.body,
+    color: colors.textSecondary,
   },
   list: {
     flex: 1,
   },
   listContent: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
-    gap: spacing.sm,
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+    gap: 8,
   },
   groupCard: {
     flexDirection: 'row',
@@ -363,20 +364,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 10,
-    padding: spacing.md,
+    padding: 14,
   },
   groupCardSelected: {
     borderColor: colors.accentBlue,
-    backgroundColor: 'rgba(37, 99, 235, 0.05)',
+    backgroundColor: colors.accentBlueTint,
   },
   groupInfo: {
     flex: 1,
-    marginRight: spacing.md,
+    marginRight: 12,
   },
   groupSubject: {
-    ...typography.body,
-    fontWeight: '600',
-    color: colors.text,
+    fontFamily: fonts.geist.semibold,
+    fontSize: 14,
+    color: colors.textPrimary,
     marginBottom: 4,
   },
   metaRow: {
@@ -385,21 +386,21 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   metaText: {
-    ...typography.caption,
+    ...type.caption,
     color: colors.textMuted,
   },
   footer: {
-    padding: spacing.lg,
+    padding: 20,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
   saveBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.accentBlue,
+    gap: 8,
+    backgroundColor: colors.brandNavy,
     height: 48,
     borderRadius: 10,
   },
@@ -407,8 +408,8 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   saveBtnText: {
-    ...typography.button,
+    fontFamily: fonts.geist.semibold,
+    fontSize: 15,
     color: colors.surface,
-    fontWeight: '700',
   },
 });
