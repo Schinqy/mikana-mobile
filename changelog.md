@@ -2,7 +2,35 @@
 
 All notable changes to **Mikana Mobile** are documented here.
 
+## [1.5.0] - 2026-09-02
+
+### Conversational Onboarding, Supabase Schema & AuthGate Routing
+- **4-Stage Value-First Onboarding:** Replaced login-gate-first approach with value-first conversational onboarding. Users see the WhatsApp→Radar transformation demo before any credential prompt.
+- **Stage 1 — Welcome (`welcome.tsx`):** Staggered animated hero screen showing raw WhatsApp noise converting to a 96% match Radar card. No credentials required to proceed.
+- **Stage 2 — Adaptive Discovery (`discover.tsx`):** 3-step conversational flow: free-text description → real-time Gemini AI chip extraction (categories, capabilities) → location picker. Handles Shona, Ndebele, and English code-switching natively.
+- **Stage 3 — Dual-Mode Pairing (`pair.tsx`):** 8-digit pairing code as primary method (no camera required). QR code as graceful fallback. 60-second countdown with auto-expire and one-tap code copy.
+- **Stage 4 — Group Whitelist (`groups.tsx`):** Fetches live WhatsApp groups from relay. 2-group free tier gate triggers paywall on selection of group #3.
+- **AuthGate Routing (`_layout.tsx`):** `AuthGate` component auto-redirects first-time users to onboarding and returning users to `/(tabs)` based on `onboardingCompleted` in persisted store.
+- **`useAuthStore`:** New Zustand store managing Supabase session, `onboardingStage`, `onboardingCompleted`, and `capabilityProfile`. Persisted to AsyncStorage (session re-fetched from Supabase on mount).
+- **Supabase Schema (`supabase/schema.sql`):** Complete 8-table DDL — `profiles`, `capabilities`, `whatsapp_sessions`, `monitored_groups`, `opportunities`, `opportunity_matches`, `subscriptions`, `usage_meters`. Full RLS policies. `handle_new_user` trigger auto-creates profile + subscription rows on Auth sign-up.
+
+## [1.4.0] - 2026-09-02
+
+### 5-Layer Opportunity Detection Pipeline
+- **Layer 0 (Local Noise Gate):** Drops reactions, stickers, emoji-only messages, and WhatsApp noise patterns (greetings, one-word responses) in 0ms with pure regex.
+- **Layer 1 (Cheap AI Gate):** `gemini-2.0-flash-lite` binary opportunity classifier. Conservative drop threshold — only rejects if >75% confident the message is NOT an opportunity (recall bias to avoid false negatives).
+- **Layer 2 (Context Grouper):** 60-second configurable debounce window groups fragmented messages from the same sender (*"Anyone know a plumber?" + "In Borrowdale" + "Today"*) into a single context.
+- **Layer 3 (Full Extraction):** `gemini-2.0-flash` extracts structured opportunity JSON: type, category, title, summary, requirements, quantity, budget, location, deadline, urgency, confidence.
+- **Layer 4 (Capability Matching):** Local TypeScript engine matches extracted opportunity against user's capability profile using configurable per-type weights (category, capability, product, location, keywords).
+- **Layer 5 (Notification Tiers):** `critical/high/medium/low` tiers. Only surfaces matches above threshold via `broadcastToSession`.
+- **Opportunity ↔ Lead Shim:** Backward-compatible `opportunityToLead()` mapper ensures existing app WebSocket listeners (`new_lead` events) continue working.
+- **Deduplication Engine:** FNV-style hash deduplication with configurable 30-minute window per group.
+- **AutoPilot Hook:** Architecture stub ready for V2 auto-response generation.
+- **`pushCapabilityProfile` (relay client):** App pushes compact capability profile to relay on WhatsApp connect so matching is personalized from first message.
+- **`/api/metrics` endpoint:** Relay exposes pipeline counters, Gemini token usage, and estimated USD cost.
+
 ## [1.3.0] - 2026-09-01
+
 
 ### WhatsApp Phone Pairing, Country Detection & Typography Fixes
 - **WhatsApp Phone Number Pairing:** Replaced camera QR dependency with real 8-digit multi-device phone pairing (`sock.requestPairingCode`) for single-device self-pairing.
