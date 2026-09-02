@@ -30,7 +30,9 @@ import {
   requestPairingCode,
   resolveRelayUrl,
   getSessionStatus,
+  pushCapabilityProfile,
 } from '../../src/services/relay/whatsappRelay';
+import { useCatalogStore } from '../../src/store/useCatalogStore';
 import {
   Search,
   Plus,
@@ -140,6 +142,26 @@ export default function HomeScreen() {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           setWhatsAppConnected(true, phone || '');
           setRelayStatus('connected');
+          // Push compact capability profile to relay so matching has user context
+          const { profile, services } = useCatalogStore.getState();
+          const categories = [...new Set(services.filter(s => s.isActive).map(s => s.category))];
+          const capabilities = services.filter(s => s.isActive).flatMap(s => s.keyDeliverables || []);
+          const products = services.filter(s => s.isActive).map(s => s.title);
+          const keywords = [
+            ...categories,
+            ...capabilities,
+            profile.industry,
+          ].filter(Boolean).map(k => k.toLowerCase());
+          pushCapabilityProfile(targetUrl, sessionId, {
+            displayName: profile.businessName || profile.contactName || '',
+            description: profile.tagline || '',
+            location: profile.whatsappNumber ? '' : '',  // TODO: add location field to profile
+            serviceAreas: [],
+            categories,
+            capabilities,
+            products,
+            keywords,
+          });
         },
         onDisconnected: (reason) => {
           if (reason === 'logged_out') {

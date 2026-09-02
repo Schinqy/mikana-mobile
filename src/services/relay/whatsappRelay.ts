@@ -292,3 +292,59 @@ export async function disconnectSession(relayUrl: string, sessionId: string): Pr
   const url = resolveRelayUrl(relayUrl);
   await fetch(`${url}/api/sessions/${sessionId}/disconnect`, { method: 'POST' });
 }
+
+/**
+ * Push compact user capability profile to relay server.
+ * Called after connecting so the matching engine has user context.
+ */
+export interface UserCapabilityProfile {
+  displayName: string;
+  description: string;
+  location: string;
+  serviceAreas: string[];
+  categories: string[];
+  capabilities: string[];
+  products: string[];
+  keywords: string[];
+  autopilot?: {
+    enabled: boolean;
+    minMatchScore: number;
+    requireApproval: boolean;
+    maxAutoPerHour: number;
+    businessHoursOnly: boolean;
+    businessHoursStart: number;
+    businessHoursEnd: number;
+    neverRespondAboveBudget: number | null;
+  };
+}
+
+export async function pushCapabilityProfile(
+  relayUrl: string,
+  sessionId: string,
+  profile: UserCapabilityProfile
+): Promise<void> {
+  const url = resolveRelayUrl(relayUrl);
+  try {
+    await fetch(`${url}/api/sessions/${sessionId}/profile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(profile),
+    });
+  } catch (_) {
+    // Non-fatal — matching will use empty profile until next successful push
+  }
+}
+
+/**
+ * Fetch pipeline metrics from relay server
+ */
+export async function fetchMetrics(relayUrl: string): Promise<any> {
+  const url = resolveRelayUrl(relayUrl);
+  try {
+    const res = await fetch(`${url}/api/metrics`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch (_) {
+    return null;
+  }
+}
