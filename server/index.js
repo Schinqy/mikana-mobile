@@ -567,8 +567,17 @@ app.post('/api/sessions/:sessionId/pairing-code', async (req, res) => {
 
 // ─── Get Session Status ──────────────────────────────────────────────────────
 
-app.get('/api/sessions/:sessionId/status', (req, res) => {
+app.get('/api/sessions/:sessionId/status', async (req, res) => {
   const { sessionId } = req.params;
+  const userId = sessionId.replace('session_', '');
+  const authPath = path.join(AUTH_DIR, sessionId);
+
+  if (!sessions.has(sessionId) && fs.existsSync(path.join(authPath, 'creds.json'))) {
+    try {
+      await startBaileysSession(sessionId, userId, false);
+    } catch (_) {}
+  }
+
   const session = sessions.get(sessionId);
   if (!session) return res.status(404).json({ error: 'Session not found' });
 
@@ -584,6 +593,15 @@ app.get('/api/sessions/:sessionId/status', (req, res) => {
 
 app.get('/api/sessions/:sessionId/groups', async (req, res) => {
   const { sessionId } = req.params;
+  const userId = sessionId.replace('session_', '');
+  const authPath = path.join(AUTH_DIR, sessionId);
+
+  if (!sessions.has(sessionId) && fs.existsSync(path.join(authPath, 'creds.json'))) {
+    try {
+      await startBaileysSession(sessionId, userId, false);
+    } catch (_) {}
+  }
+
   const session = sessions.get(sessionId);
   if (!session || !session.sock) {
     return res.status(404).json({ error: 'Session not found or not connected' });
@@ -1078,10 +1096,29 @@ function defaultClassification(text, senderName, senderPhone, groupName) {
 
 // ─── Start Server ────────────────────────────────────────────────────────────
 
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   logger.info({ port: PORT }, 'Mikana Relay Server running');
   console.log(`\n  Mikana Relay Server`);
   console.log(`  → HTTP:  http://localhost:${PORT}`);
   console.log(`  → WS:    ws://localhost:${PORT}/ws`);
   console.log(`  → Supabase: ${SUPABASE_URL ? 'Connected' : 'Not configured (in-memory mode)'}\n`);
+
+  // Auto-resume saved authenticated sessions from disk on boot
+  if (fs.existsSync(AUTH_DIR)) {
+    try {
+      const folders = fs.readdirSync(AUTH_DIR).filter((f) => f.startsWith('session_'));
+      for (const sid of folders) {
+        const credsFile = path.join(AUTH_DIR, sid, 'creds.json');
+        if (fs.existsSync(credsFile)) {
+          const uid = sid.replace('session_', '');
+          logger.info({ sessionId: sid }, 'Auto-resuming session from disk on boot...');
+          startBaileysSession(sid, uid, false).catch((e) => {
+            logger.warn({ sessionId: sid, err: e.message }, 'Failed to auto-resume session on boot');
+          });
+        }
+      }
+    } catch (e) {
+      logger.error({ err: e.message }, 'Error reading auth sessions directory on boot');
+    }
+  }
 });
