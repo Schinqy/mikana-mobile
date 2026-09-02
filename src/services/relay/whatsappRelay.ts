@@ -203,10 +203,17 @@ export async function getSessionStatus(relayUrl: string, sessionId: string): Pro
  */
 export async function fetchGroups(relayUrl: string, sessionId: string): Promise<any[]> {
   const url = resolveRelayUrl(relayUrl);
-  const res = await fetch(`${url}/api/sessions/${sessionId}/groups`);
-  if (!res.ok) throw new Error(`Groups fetch failed: ${res.status}`);
-  const data = await res.json();
-  return data.groups;
+  try {
+    const res = await fetch(`${url}/api/sessions/${sessionId}/groups`);
+    if (!res.ok) {
+      if (res.status === 404) return [];
+      throw new Error(`Groups fetch failed: ${res.status}`);
+    }
+    const data = await res.json();
+    return data.groups || [];
+  } catch (err) {
+    return [];
+  }
 }
 
 /**

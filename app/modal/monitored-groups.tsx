@@ -183,6 +183,26 @@ export default function MonitoredGroupsModal() {
             <Text style={styles.retryBtnText}>Retry</Text>
           </TouchableOpacity>
         </View>
+      ) : groups.length === 0 ? (
+        <View style={styles.centerBox}>
+          <Users size={36} color={colors.textMuted} />
+          <Text style={[styles.emptyText, { fontWeight: '600', color: colors.textPrimary }]}>
+            No WhatsApp Groups Found
+          </Text>
+          <Text style={[styles.emptyText, { textAlign: 'center', marginHorizontal: 20 }]}>
+            Connect your WhatsApp account to automatically discover your business and buyer channels.
+          </Text>
+          <TouchableOpacity
+            style={styles.retryBtn}
+            onPress={() => {
+              router.back();
+              router.push('/modal/whatsapp-pair');
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.retryBtnText}>Link WhatsApp Account</Text>
+          </TouchableOpacity>
+        </View>
       ) : filteredGroups.length === 0 ? (
         <View style={styles.centerBox}>
           <Users size={32} color={colors.textMuted} />

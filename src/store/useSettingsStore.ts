@@ -30,13 +30,7 @@ interface SettingsState {
   togglePushNotifications: () => void;
 }
 
-const DEFAULT_RADAR_CHANNELS = [
-  'B2B Contractors & Commerce Network',
-  'Tech Startups & Founders Hub',
-  'Creative Marketplace & Freelancers',
-  'FMCG & Wholesale Buyers Hub',
-  'Commercial Solar & Energy Leads',
-];
+const DEFAULT_RADAR_CHANNELS: string[] = [];
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
