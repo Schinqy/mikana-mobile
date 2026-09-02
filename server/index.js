@@ -899,13 +899,10 @@ async function startBaileysSession(sessionId, userId, usePairingCode = false) {
   // ─── Message Handler (Group Interception) ────────────────────────────────
 
   sock.ev.on('messages.upsert', async ({ messages, type }) => {
-    if (type !== 'notify') return;
+    if (type !== 'notify' && type !== 'append') return;
 
     for (const msg of messages) {
-      // Skip own messages
-      if (msg.key.fromMe) continue;
-
-      // Only process group messages from monitored groups
+      // Only process group messages
       const remoteJid = msg.key.remoteJid;
       if (!remoteJid?.endsWith('@g.us')) continue;
 
@@ -922,24 +919,25 @@ async function startBaileysSession(sessionId, userId, usePairingCode = false) {
         msg.message?.documentMessage?.caption ||
         '';
 
-      if (!text || text.length < 15) continue; // Skip very short messages / media-only
+      if (!text || text.trim().length < 8) continue; // Skip empty or ultra-short reactions
 
       const senderJid = msg.key.participant || remoteJid;
       const senderPhone = senderJid.split('@')[0];
 
       // Get sender name from contacts or pushName
-      const senderName = msg.pushName || senderPhone;
+      const senderName = msg.pushName || (msg.key.fromMe ? 'You (Test)' : senderPhone);
 
       // Get group name
       let groupName = remoteJid;
       try {
         const groupMeta = await sock.groupMetadata(remoteJid);
-        groupName = groupMeta.subject;
+        groupName = groupMeta.subject || remoteJid;
       } catch {
         // use JID as fallback
       }
 
-      logger.info({ sessionId, sender: senderName, group: groupName }, 'New group message intercepted');
+      logger.info({ sessionId, sender: senderName, group: groupName, text: text.slice(0, 60) }, 'Group message intercepted');
+      addLog('info', 'Group message intercepted', { sender: senderName, group: groupName, preview: text.slice(0, 70) });
 
       // Classify with Gemini Flash (if API key available)
       let classification = defaultClassification(text, senderName, senderPhone, groupName);
@@ -948,8 +946,16 @@ async function startBaileysSession(sessionId, userId, usePairingCode = false) {
           classification = await classifyWithGemini(text, senderName, senderPhone, groupName);
         } catch (err) {
           logger.warn({ err }, 'Gemini classification failed, using heuristic');
+          addLog('warn', 'Gemini classification failed, using fallback parser', { err: err.message });
         }
       }
+
+      addLog('info', 'Lead classified & broadcasting to app', {
+        category: classification.category,
+        urgency: classification.urgency,
+        matchScore: classification.matchScore,
+        group: groupName,
+      });
 
       // Store in Supabase
       if (supabase) {
