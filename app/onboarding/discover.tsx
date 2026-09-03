@@ -1,8 +1,7 @@
-import React, { useState, useRef, useCallback } from 'react';
+﻿import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   Pressable,
   TextInput,
   ScrollView,
@@ -13,10 +12,9 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowRight, ArrowLeft, MapPin, X, Plus } from 'lucide-react-native';
-import { colors, spacing, radius } from '../../src/theme/colors';
 import { useAuthStore } from '../../src/store/useAuthStore';
 
-// -- Example prompts and location quick-picks ----------------------------------
+// ── Example prompts and location quick-picks ──────────────────────────────────
 
 const EXAMPLE_PROMPTS = [
   'I repair commercial equipment and appliances',
@@ -34,7 +32,7 @@ const QUICK_LOCATIONS = [
   'Multi-Region',
 ];
 
-// ── Gemini-powered capability extractor (inline, no extra service file needed) ─
+// ── Gemini-powered capability extractor ───────────────────────────────────────
 
 const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || '';
 
@@ -45,7 +43,6 @@ async function extractCapabilities(description: string): Promise<{
   followUpChips: string[];
 }> {
   if (!GEMINI_API_KEY) {
-    // Offline fallback — simple heuristic chips
     return {
       categories: ['Commercial Services'],
       capabilities: [description.slice(0, 40)],
@@ -89,7 +86,7 @@ Rules:
   return JSON.parse(raw || '{}');
 }
 
-// -- Screen --------------------------------------------------------------------
+// ── Screen ────────────────────────────────────────────────────────────────────
 
 type Step = 'input' | 'refine' | 'location';
 
@@ -113,7 +110,7 @@ export default function DiscoverScreen() {
 
   const inputRef = useRef<TextInput>(null);
 
-  // -- Handlers --------------------------------------------------------------
+  // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleDescriptionSubmit = useCallback(async () => {
     if (description.trim().length < 3) return;
@@ -172,18 +169,18 @@ export default function DiscoverScreen() {
     router.push('/onboarding/pair');
   }, [description, extractedCategories, selectedChips, selectedLocations, customLocation]);
 
-  // -- Render ----------------------------------------------------------------
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-canvas" edges={['top', 'bottom']}>
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {/* Header */}
-        <View style={styles.header}>
+        <View className="flex-row items-center justify-between px-6 py-3.5 border-b border-border">
           <Pressable
-            style={styles.backButton}
+            className="p-1"
             onPress={() => {
               if (step === 'refine') { setStep('input'); return; }
               if (step === 'location') { setStep('refine'); return; }
@@ -191,124 +188,149 @@ export default function DiscoverScreen() {
             }}
             accessibilityRole="button"
           >
-            <ArrowLeft size={20} color={colors.textSecondary} strokeWidth={1.5} />
+            <ArrowLeft size={20} color="#486581" strokeWidth={1.5} />
           </Pressable>
-          <Text style={styles.stepIndicator}>
+          <Text className="font-geist-medium text-xs text-content-muted">
             {step === 'input' ? '1 of 3' : step === 'refine' ? '2 of 3' : '3 of 3'}
           </Text>
         </View>
 
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          contentContainerClassName="px-6 pt-5 pb-32"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* -- STEP 1: Free-text description ------------------------------- */}
+          {/* ── STEP 1: Free-text description ─────────────────────────────── */}
           {step === 'input' && (
             <View>
-              <Text style={styles.heading}>What do you do?</Text>
-              <Text style={styles.subtext}>
-                Describe what you sell, offer, or trade in plain words. Any language is fine.
+              <Text className="font-geist-bold text-xl leading-7 text-content-heading mb-1 tracking-tight">
+                What do you offer?
+              </Text>
+              <Text className="font-inter text-sm leading-5 text-content-secondary mb-4">
+                Describe what you sell, supply, or trade in plain words. Any language is fine.
               </Text>
 
               <TextInput
                 ref={inputRef}
-                style={styles.textInput}
+                className="bg-surface border border-border rounded-xl p-3.5 font-inter text-sm text-content-primary leading-5 min-h-[90px] mb-2"
                 value={description}
                 onChangeText={setDescription}
                 placeholder="e.g. I supply commercial solar systems, inverters and batteries..."
-                placeholderTextColor={colors.textMuted}
+                placeholderTextColor="#829AB1"
                 multiline
                 numberOfLines={3}
                 autoFocus
+                textAlignVertical="top"
                 returnKeyType="done"
                 blurOnSubmit
                 onSubmitEditing={handleDescriptionSubmit}
               />
 
-              {error && <Text style={styles.errorText}>{error}</Text>}
+              {error && <Text className="font-inter text-xs text-status-rose mb-3">{error}</Text>}
 
               {/* Quick-tap examples */}
-              <Text style={styles.examplesLabel}>Examples</Text>
-              <View style={styles.examplesList}>
+              <Text className="font-geist-medium text-[11px] text-content-muted uppercase tracking-wider mb-2.5 mt-4">
+                EXAMPLES
+              </Text>
+              <View className="gap-2">
                 {EXAMPLE_PROMPTS.map((ex, i) => (
                   <Pressable
                     key={i}
-                    style={({ pressed }) => [styles.examplePill, pressed && styles.examplePillPressed]}
+                    className="bg-surface border border-border rounded-xl px-3.5 py-2.5 active:bg-surface-elevated"
                     onPress={() => setDescription(ex)}
                   >
-                    <Text style={styles.examplePillText}>{ex}</Text>
+                    <Text className="font-inter text-xs text-content-secondary">{ex}</Text>
                   </Pressable>
                 ))}
               </View>
             </View>
           )}
 
-          {/* -- STEP 2: Refine chips ---------------------------------------- */}
+          {/* ── STEP 2: Refine chips ──────────────────────────────────────── */}
           {step === 'refine' && (
             <View>
-              <Text style={styles.heading}>What do you offer?</Text>
-              <Text style={styles.subtext}>
-                Select everything that applies to you. Tap to toggle.
+              <Text className="font-geist-bold text-xl leading-7 text-content-heading mb-1 tracking-tight">
+                Refine your offerings
+              </Text>
+              <Text className="font-inter text-sm leading-5 text-content-secondary mb-4">
+                Select everything that applies to your business. Tap to toggle.
               </Text>
 
               {extractedCategories.length > 0 && (
-                <View style={styles.categoryRow}>
+                <View className="flex-row flex-wrap gap-2 mb-3.5">
                   {extractedCategories.map(cat => (
-                    <View key={cat} style={styles.categoryBadge}>
-                      <Text style={styles.categoryBadgeText}>{cat}</Text>
+                    <View key={cat} className="bg-brand-blue-tint border border-brand-blue-border rounded-md px-2.5 py-1">
+                      <Text className="font-geist-semibold text-xs text-brand-blue">{cat}</Text>
                     </View>
                   ))}
                 </View>
               )}
 
-              <View style={styles.chipsGrid}>
+              <View className="flex-row flex-wrap gap-2 mb-3">
                 {allChips.map(chip => {
                   const selected = selectedChips.includes(chip);
                   return (
                     <Pressable
                       key={chip}
-                      style={[styles.chip, selected && styles.chipSelected]}
+                      className={`flex-row items-center gap-1.5 border rounded-full px-3 py-1.5 ${
+                        selected
+                          ? 'bg-brand-blue-tint border-brand-blue'
+                          : 'bg-surface border-border'
+                      }`}
                       onPress={() => toggleChip(chip)}
                     >
-                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                      <Text
+                        className={`font-geist-medium text-xs ${
+                          selected ? 'text-brand-blue' : 'text-content-secondary'
+                        }`}
+                      >
                         {chip}
                       </Text>
-                      {selected && <X size={12} color={colors.accentBlue} strokeWidth={2} />}
+                      {selected && <X size={12} color="#1E56A0" strokeWidth={2} />}
                     </Pressable>
                   );
                 })}
               </View>
 
-              <Text style={styles.selectionNote}>
+              <Text className="font-inter text-xs text-content-muted mt-1">
                 {selectedChips.length} selected
               </Text>
             </View>
           )}
 
-          {/* -- STEP 3: Location ------------------------------------------- */}
+          {/* ── STEP 3: Location ─────────────────────────────────────────── */}
           {step === 'location' && (
             <View>
-              <Text style={styles.heading}>Where do you operate?</Text>
-              <Text style={styles.subtext}>
-                Mikana will prioritise opportunities in your service areas.
+              <Text className="font-geist-bold text-xl leading-7 text-content-heading mb-1 tracking-tight">
+                Where do you operate?
+              </Text>
+              <Text className="font-inter text-sm leading-5 text-content-secondary mb-4">
+                Mikana will prioritize opportunities in your operating areas.
               </Text>
 
-              <View style={styles.chipsGrid}>
+              <View className="flex-row flex-wrap gap-2 mb-3">
                 {QUICK_LOCATIONS.map(loc => {
                   const selected = selectedLocations.includes(loc);
                   return (
                     <Pressable
                       key={loc}
-                      style={[styles.chip, selected && styles.chipSelected]}
+                      className={`flex-row items-center gap-1.5 border rounded-full px-3.5 py-2 ${
+                        selected
+                          ? 'bg-brand-blue-tint border-brand-blue'
+                          : 'bg-surface border-border'
+                      }`}
                       onPress={() => toggleLocation(loc)}
                     >
                       <MapPin
                         size={12}
-                        color={selected ? colors.accentBlue : colors.textMuted}
+                        color={selected ? '#1E56A0' : '#829AB1'}
                         strokeWidth={1.5}
                       />
-                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                      <Text
+                        className={`font-geist-medium text-xs ${
+                          selected ? 'text-brand-blue' : 'text-content-secondary'
+                        }`}
+                      >
                         {loc}
                       </Text>
                     </Pressable>
@@ -316,24 +338,24 @@ export default function DiscoverScreen() {
                 })}
               </View>
 
-              <View style={styles.customLocationRow}>
+              <View className="flex-row items-center gap-2 mt-3">
                 <TextInput
-                  style={styles.customLocationInput}
+                  className="flex-1 bg-surface border border-border rounded-xl px-3.5 py-2 font-inter text-sm text-content-primary"
                   value={customLocation}
                   onChangeText={setCustomLocation}
-                  placeholder="Add another area..."
-                  placeholderTextColor={colors.textMuted}
+                  placeholder="Add specific country, city or region..."
+                  placeholderTextColor="#829AB1"
                   returnKeyType="done"
                 />
                 {customLocation.trim().length > 0 && (
                   <Pressable
-                    style={styles.addLocationButton}
+                    className="bg-brand-blue-tint border border-brand-blue-border rounded-xl p-2.5"
                     onPress={() => {
                       toggleLocation(customLocation.trim());
                       setCustomLocation('');
                     }}
                   >
-                    <Plus size={16} color={colors.accentBlue} strokeWidth={2} />
+                    <Plus size={16} color="#1E56A0" strokeWidth={2} />
                   </Pressable>
                 )}
               </View>
@@ -342,24 +364,22 @@ export default function DiscoverScreen() {
         </ScrollView>
 
         {/* Bottom CTA */}
-        <View style={styles.ctaContainer}>
+        <View className="px-6 pb-6 pt-3 border-t border-border bg-canvas">
           {step === 'input' && (
             <Pressable
-              style={({ pressed }) => [
-                styles.ctaButton,
-                description.trim().length < 3 && styles.ctaButtonDisabled,
-                pressed && styles.ctaButtonPressed,
-              ]}
+              className={`flex-row items-center justify-center gap-2 bg-brand-navy py-3.5 rounded-xl ${
+                description.trim().length < 3 ? 'opacity-40' : 'active:opacity-90'
+              }`}
               onPress={handleDescriptionSubmit}
               disabled={loading || description.trim().length < 3}
               accessibilityRole="button"
             >
               {loading ? (
-                <ActivityIndicator color={colors.textInverse} size="small" />
+                <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
                 <>
-                  <Text style={styles.ctaButtonText}>Continue</Text>
-                  <ArrowRight size={18} color={colors.textInverse} strokeWidth={2} />
+                  <Text className="font-geist-semibold text-sm text-content-inverse">Continue</Text>
+                  <ArrowRight size={17} color="#FFFFFF" strokeWidth={2} />
                 </>
               )}
             </Pressable>
@@ -367,33 +387,29 @@ export default function DiscoverScreen() {
 
           {step === 'refine' && (
             <Pressable
-              style={({ pressed }) => [
-                styles.ctaButton,
-                selectedChips.length === 0 && styles.ctaButtonDisabled,
-                pressed && styles.ctaButtonPressed,
-              ]}
+              className={`flex-row items-center justify-center gap-2 bg-brand-navy py-3.5 rounded-xl ${
+                selectedChips.length === 0 ? 'opacity-40' : 'active:opacity-90'
+              }`}
               onPress={() => setStep('location')}
               disabled={selectedChips.length === 0}
               accessibilityRole="button"
             >
-              <Text style={styles.ctaButtonText}>Looks good</Text>
-              <ArrowRight size={18} color={colors.textInverse} strokeWidth={2} />
+              <Text className="font-geist-semibold text-sm text-content-inverse">Looks good</Text>
+              <ArrowRight size={17} color="#FFFFFF" strokeWidth={2} />
             </Pressable>
           )}
 
           {step === 'location' && (
             <Pressable
-              style={({ pressed }) => [
-                styles.ctaButton,
-                selectedLocations.length === 0 && styles.ctaButtonDisabled,
-                pressed && styles.ctaButtonPressed,
-              ]}
+              className={`flex-row items-center justify-center gap-2 bg-brand-navy py-3.5 rounded-xl ${
+                selectedLocations.length === 0 ? 'opacity-40' : 'active:opacity-90'
+              }`}
               onPress={handleContinue}
               disabled={selectedLocations.length === 0}
               accessibilityRole="button"
             >
-              <Text style={styles.ctaButtonText}>Connect WhatsApp</Text>
-              <ArrowRight size={18} color={colors.textInverse} strokeWidth={2} />
+              <Text className="font-geist-semibold text-sm text-content-inverse">Connect WhatsApp</Text>
+              <ArrowRight size={17} color="#FFFFFF" strokeWidth={2} />
             </Pressable>
           )}
         </View>
@@ -401,37 +417,3 @@ export default function DiscoverScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.canvas },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.xxl, paddingVertical: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border },
-  backButton: { padding: spacing.xs },
-  stepIndicator: { fontFamily: 'Geist_500Medium', fontSize: 13, color: colors.textMuted },
-  scroll: { paddingHorizontal: spacing.xxl, paddingTop: spacing.xxl, paddingBottom: 120 },
-  heading: { fontFamily: 'Geist_700Bold', fontSize: 22, lineHeight: 28, color: colors.textHeading, marginBottom: spacing.sm, letterSpacing: -0.3 },
-  subtext: { fontFamily: 'Inter_400Regular', fontSize: 14, lineHeight: 21, color: colors.textSecondary, marginBottom: spacing.xl },
-  textInput: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.lg, fontFamily: 'Inter_400Regular', fontSize: 15, color: colors.textPrimary, lineHeight: 22, minHeight: 90, textAlignVertical: 'top', marginBottom: spacing.sm },
-  errorText: { fontFamily: 'Inter_400Regular', fontSize: 13, color: colors.rose, marginBottom: spacing.md },
-  examplesLabel: { fontFamily: 'Geist_500Medium', fontSize: 12, color: colors.textMuted, letterSpacing: 0.4, textTransform: 'uppercase', marginBottom: spacing.md, marginTop: spacing.lg },
-  examplesList: { gap: spacing.sm },
-  examplePill: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  examplePillPressed: { backgroundColor: colors.surfaceElevated },
-  examplePillText: { fontFamily: 'Inter_400Regular', fontSize: 14, color: colors.textSecondary },
-  categoryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg },
-  categoryBadge: { backgroundColor: colors.accentBlueTint, borderWidth: 1, borderColor: colors.accentBlueBorder, borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
-  categoryBadgeText: { fontFamily: 'Geist_600SemiBold', fontSize: 12, color: colors.accentBlue },
-  chipsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  chipSelected: { backgroundColor: colors.accentBlueTint, borderColor: colors.accentBlue },
-  chipText: { fontFamily: 'Geist_500Medium', fontSize: 13, color: colors.textSecondary },
-  chipTextSelected: { color: colors.accentBlue },
-  selectionNote: { fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.textMuted, marginTop: spacing.sm },
-  customLocationRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md },
-  customLocationInput: { flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, fontFamily: 'Inter_400Regular', fontSize: 14, color: colors.textPrimary },
-  addLocationButton: { backgroundColor: colors.accentBlueTint, borderWidth: 1, borderColor: colors.accentBlueBorder, borderRadius: radius.md, padding: spacing.sm },
-  ctaContainer: { paddingHorizontal: spacing.xxl, paddingBottom: spacing.xxxl, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.canvas },
-  ctaButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, backgroundColor: colors.brandNavy, paddingVertical: 15, borderRadius: radius.md },
-  ctaButtonDisabled: { opacity: 0.45 },
-  ctaButtonPressed: { opacity: 0.88 },
-  ctaButtonText: { fontFamily: 'Geist_600SemiBold', fontSize: 15, color: colors.textInverse },
-});

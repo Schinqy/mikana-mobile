@@ -26,34 +26,6 @@ import { useSettingsStore } from '../src/store/useSettingsStore';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { colors } from '../src/theme/colors';
 
-// Redirect first-time users to onboarding, authenticated/returning users to tabs
-function AuthGate({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
-  const segments = useSegments();
-  const { session, onboardingCompleted, isLoading } = useAuthStore();
-
-  useEffect(() => {
-    if (isLoading) return;
-
-    const inOnboarding = segments[0] === 'onboarding';
-
-    if (!onboardingCompleted && !inOnboarding) {
-      router.replace('/onboarding/welcome');
-    } else if (onboardingCompleted && inOnboarding) {
-      router.replace('/(tabs)');
-    }
-  }, [session, onboardingCompleted, isLoading, segments]);
-
-  // Prevent flash of tabs screen while loading or if first-time user hasn't redirected yet
-  const inOnboarding = segments[0] === 'onboarding';
-  if (isLoading || (!onboardingCompleted && !inOnboarding)) {
-    return <View style={{ flex: 1, backgroundColor: colors.canvas }} />;
-  }
-
-  return <>{children}</>;
-}
-
-
 export default function RootLayout() {
   const { revenueCatApiKey } = useSettingsStore();
   const { initialize } = useAuthStore();
@@ -83,37 +55,33 @@ export default function RootLayout() {
         <KeyboardProvider>
           <View style={styles.container}>
             <StatusBar style="dark" />
-            <AuthGate>
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  contentStyle: { backgroundColor: colors.canvas },
-                  animation: 'slide_from_right',
-                }}
-              >
-                {/* Main app tabs */}
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: colors.canvas },
+                animation: 'slide_from_right',
+              }}
+            >
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="onboarding/welcome" options={{ animation: 'fade' }} />
+              <Stack.Screen name="onboarding/discover" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="onboarding/pair" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="onboarding/groups" options={{ animation: 'slide_from_right' }} />
 
-                {/* Onboarding flow */}
-                <Stack.Screen name="onboarding/welcome" options={{ animation: 'fade' }} />
-                <Stack.Screen name="onboarding/discover" options={{ animation: 'slide_from_right' }} />
-                <Stack.Screen name="onboarding/pair" options={{ animation: 'slide_from_right' }} />
-                <Stack.Screen name="onboarding/groups" options={{ animation: 'slide_from_right' }} />
-
-                {/* Modals */}
-                <Stack.Screen name="modal/pitch" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-                <Stack.Screen name="modal/paywall" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-                <Stack.Screen name="modal/new-lead" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-                <Stack.Screen name="modal/whatsapp-pair" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-                <Stack.Screen name="modal/monitored-groups" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-              </Stack>
-            </AuthGate>
+              <Stack.Screen name="modal/pitch" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="modal/paywall" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="modal/new-lead" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="modal/whatsapp-pair" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="modal/monitored-groups" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+            </Stack>
           </View>
         </KeyboardProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
