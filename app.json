@@ -5,22 +5,25 @@
     "version": "1.0.0",
     "scheme": "mikana",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
-    "backgroundColor": "#09090b",
+    "icon": "./assets/ic_launcher.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#0B2545",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mikana.mikana"
+      "bundleIdentifier": "com.mikana.mikana",
+      "icon": "./assets/ic_launcher.png"
     },
     "android": {
       "package": "com.mikana.mikana",
       "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#09090b",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png"
+        "backgroundColor": "#0B2545",
+        "foregroundImage": "./assets/ic_launcher_foreground.png",
+        "backgroundImage": "./assets/ic_launcher_background.png",
+        "monochromeImage": "./assets/ic_launcher_monochrome.png"
       },
+
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.INTERNET",
