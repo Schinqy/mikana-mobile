@@ -71,9 +71,10 @@ export default function PairScreen() {
       setOnboardingStage('paired');
 
       // Push initial capability profile & filter dictionary to the relay server
-      if (capabilityProfile && sessionIdRef.current) {
+      if (capabilityProfile) {
+        const sid = sessionIdRef.current || 'session_user_default';
         const url = resolveRelayUrl(whatsappRelayUrl);
-        pushCapabilityProfile(url, sessionIdRef.current, capabilityProfile);
+        pushCapabilityProfile(url, sid, capabilityProfile);
       }
 
       router.push('/onboarding/groups');
@@ -195,7 +196,7 @@ export default function PairScreen() {
 
   const handleShareWebQR = async () => {
     const url = resolveRelayUrl(whatsappRelayUrl);
-    const webQrUrl = `${url}/qr/${sessionIdRef.current || 'user_default'}`;
+    const webQrUrl = `${url}/qr/${sessionIdRef.current || 'session_user_default'}`;
     await Share.share({
       message: `Open this link on your computer or tablet screen to scan Mikana WhatsApp QR:\n${webQrUrl}`,
       url: webQrUrl,
@@ -204,12 +205,14 @@ export default function PairScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-canvas" edges={['top', 'bottom']}>
-      {/* ── 1. Top Header & Micro Segmented Bar ──────────────────────────── */}
+      {/* ── 1. Top Header & 6-Segment Progress Bar ──────────────────────────── */}
       <View className="px-6 pt-2 pb-3 border-b border-border bg-canvas">
         <View className="flex-row items-center gap-1.5 mb-3">
           <View className="flex-1 h-1 rounded-full bg-brand-navy" />
           <View className="flex-1 h-1 rounded-full bg-brand-navy" />
-          <View className="flex-1 h-1 rounded-full bg-brand-blue" />
+          <View className="flex-1 h-1 rounded-full bg-brand-navy" />
+          <View className="flex-1 h-1 rounded-full bg-slate-200" />
+          <View className="flex-1 h-1 rounded-full bg-slate-200" />
           <View className="flex-1 h-1 rounded-full bg-slate-200" />
         </View>
 
@@ -229,7 +232,7 @@ export default function PairScreen() {
             <ArrowLeft size={20} color="#486581" strokeWidth={1.75} />
           </Pressable>
           <Text className="font-geist-medium text-xs text-content-muted tracking-wide">
-            Link WhatsApp
+            Step 3 of 6 · Connect WhatsApp
           </Text>
           <View className="w-8" />
         </View>
@@ -294,7 +297,7 @@ export default function PairScreen() {
                 pairMode === 'code' ? 'text-brand-blue font-geist-semibold' : 'text-content-secondary'
               }`}
             >
-              8-Digit Code
+              Phone Number (Secondary)
             </Text>
           </Pressable>
         </View>

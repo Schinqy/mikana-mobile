@@ -196,8 +196,10 @@ export default function HomeScreen() {
           if (status === 'connected' && phone) {
             setWhatsAppConnected(true, phone);
             setRelayStatus('connected');
-          } else if (status !== 'connected' && status !== 'pairing_syncing') {
+          } else if (status === 'logged_out' || status === 'disconnected') {
             setWhatsAppConnected(false, '');
+            setRelayStatus('idle');
+          } else {
             setRelayStatus(status as any);
           }
         },
@@ -218,14 +220,15 @@ export default function HomeScreen() {
           if (res.status === 'connected' && res.phone) {
             setWhatsAppConnected(true, res.phone);
             setRelayStatus('connected');
-          } else {
+          } else if (res.status === 'logged_out') {
             setWhatsAppConnected(false, '');
-            setRelayStatus(res.status || 'idle');
+            setRelayStatus('idle');
           }
         }
       } catch (_) {
+        // Server may be sleeping or cold-starting. Never wipe out isWhatsAppConnected on network catch!
         if (isMounted) {
-          setWhatsAppConnected(false, '');
+          setRelayStatus('connecting');
         }
       }
     };

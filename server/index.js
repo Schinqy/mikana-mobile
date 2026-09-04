@@ -675,20 +675,21 @@ app.post('/api/sessions/:sessionId/pairing-code', async (req, res) => {
 
 app.get('/api/sessions/:sessionId/status', async (req, res) => {
   const { sessionId } = req.params;
-  const userId = sessionId.replace('session_', '');
-  const authPath = path.join(AUTH_DIR, sessionId);
+  const fullSessionId = sessionId.startsWith('session_') ? sessionId : `session_${sessionId}`;
+  const userId = fullSessionId.replace('session_', '');
+  const authPath = path.join(AUTH_DIR, fullSessionId);
 
-  if (!sessions.has(sessionId) && fs.existsSync(path.join(authPath, 'creds.json'))) {
+  if (!sessions.has(fullSessionId) && fs.existsSync(path.join(authPath, 'creds.json'))) {
     try {
-      await startBaileysSession(sessionId, userId, false);
+      await startBaileysSession(fullSessionId, userId, false);
     } catch (_) {}
   }
 
-  const session = sessions.get(sessionId);
+  const session = sessions.get(fullSessionId) || sessions.get(sessionId);
   if (!session) return res.status(404).json({ error: 'Session not found' });
 
   res.json({
-    sessionId,
+    sessionId: fullSessionId,
     status: session.status,
     phone: session.phone || null,
     groups: session.monitoredGroups || [],
@@ -699,16 +700,17 @@ app.get('/api/sessions/:sessionId/status', async (req, res) => {
 
 app.get('/api/sessions/:sessionId/groups', async (req, res) => {
   const { sessionId } = req.params;
-  const userId = sessionId.replace('session_', '');
-  const authPath = path.join(AUTH_DIR, sessionId);
+  const fullSessionId = sessionId.startsWith('session_') ? sessionId : `session_${sessionId}`;
+  const userId = fullSessionId.replace('session_', '');
+  const authPath = path.join(AUTH_DIR, fullSessionId);
 
-  if (!sessions.has(sessionId) && fs.existsSync(path.join(authPath, 'creds.json'))) {
+  if (!sessions.has(fullSessionId) && fs.existsSync(path.join(authPath, 'creds.json'))) {
     try {
-      await startBaileysSession(sessionId, userId, false);
+      await startBaileysSession(fullSessionId, userId, false);
     } catch (_) {}
   }
 
-  const session = sessions.get(sessionId);
+  const session = sessions.get(fullSessionId) || sessions.get(sessionId);
   if (!session || !session.sock) {
     return res.status(404).json({ error: 'Session not found or not connected' });
   }
@@ -718,7 +720,9 @@ app.get('/api/sessions/:sessionId/groups', async (req, res) => {
     const groupList = Object.values(groups).map((g) => ({
       id: g.id,
       subject: g.subject,
+      name: g.subject,
       participants: g.participants?.length || 0,
+      participantCount: g.participants?.length || 0,
       creation: g.creation,
     }));
     res.json({ groups: groupList });
@@ -732,12 +736,13 @@ app.get('/api/sessions/:sessionId/groups', async (req, res) => {
 
 app.post('/api/sessions/:sessionId/monitor', async (req, res) => {
   const { sessionId } = req.params;
-  const { groupIds } = req.body; // Array of group JIDs to monitor
-  const session = sessions.get(sessionId);
+  const fullSessionId = sessionId.startsWith('session_') ? sessionId : `session_${sessionId}`;
+  const session = sessions.get(fullSessionId) || sessions.get(sessionId);
   if (!session) return res.status(404).json({ error: 'Session not found' });
 
+  const { groupIds } = req.body;
   session.monitoredGroups = groupIds || [];
-  logger.info({ sessionId, groupCount: groupIds.length }, 'Updated monitored groups');
+  logger.info({ sessionId: fullSessionId, groupCount: session.monitoredGroups.length }, 'Updated monitored groups');
   res.json({ ok: true, monitoredGroups: session.monitoredGroups });
 });
 

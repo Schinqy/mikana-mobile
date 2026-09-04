@@ -21,12 +21,12 @@ import {
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { colors, spacing, radius } from '../../src/theme/colors';
-import { resolveRelayUrl, fetchGroups } from '../../src/services/relay/whatsappRelay';
+import { resolveRelayUrl, fetchGroups, setMonitoredGroups } from '../../src/services/relay/whatsappRelay';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useSettingsStore } from '../../src/store/useSettingsStore';
 
 const FREE_GROUP_LIMIT = 2;
-const FETCH_TIMEOUT_MS = 8000;
+const FETCH_TIMEOUT_MS = 10000;
 
 interface GroupItem {
   id: string;
@@ -45,13 +45,15 @@ export default function GroupsScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isTimedOut, setIsTimedOut] = useState(false);
-  const [sessionId] = useState('user_default');
+  const [syncAttempt, setSyncAttempt] = useState(1);
+  const [sessionId] = useState('session_user_default');
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const loadGroups = useCallback(async () => {
+  const loadGroups = useCallback(async (retryCount = 0) => {
     setLoading(true);
     setIsTimedOut(false);
+    setSyncAttempt(retryCount + 1);
 
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -70,23 +72,35 @@ export default function GroupsScreen() {
       const raw = await fetchGroups(url, sessionId);
       clearTimeout(timeoutId);
 
-      if (Array.isArray(raw)) {
+      if (Array.isArray(raw) && raw.length > 0) {
         setGroups(
           raw.map((g: any) => ({
             id: g.id,
             jid: g.id,
-            name: g.name || g.id,
-            participantCount: g.participantCount || 0,
+            name: g.subject || g.name || g.id,
+            participantCount: g.participants || g.participantCount || 0,
           }))
         );
+        setLoading(false);
+      } else if (retryCount < 2) {
+        // Multi-device initial sync grace period: WhatsApp socket takes a few seconds to populate group metadata
+        setTimeout(() => {
+          loadGroups(retryCount + 1);
+        }, 2000);
       } else {
         setGroups([]);
+        setLoading(false);
       }
     } catch {
       clearTimeout(timeoutId);
-      setGroups([]);
-    } finally {
-      setLoading(false);
+      if (retryCount < 2) {
+        setTimeout(() => {
+          loadGroups(retryCount + 1);
+        }, 2000);
+      } else {
+        setGroups([]);
+        setLoading(false);
+      }
     }
   }, [whatsappRelayUrl, sessionId]);
 
@@ -123,10 +137,18 @@ export default function GroupsScreen() {
 
     const selectedJids = Array.from(selected);
     setRadarChannels(selectedJids);
-    setOnboardingStage('groups');
 
+    // Sync monitored group list to the active Baileys relay socket
+    try {
+      const url = resolveRelayUrl(whatsappRelayUrl);
+      await setMonitoredGroups(url, sessionId, selectedJids);
+    } catch (e) {
+      console.warn('Could not sync monitored groups to relay:', e);
+    }
+
+    setOnboardingStage('groups');
     router.push('/onboarding/notifications');
-  }, [selected, setRadarChannels, setOnboardingStage, router]);
+  }, [selected, setRadarChannels, whatsappRelayUrl, sessionId, setOnboardingStage, router]);
 
   const handleSkip = useCallback(() => {
     Haptics.selectionAsync();
@@ -259,7 +281,7 @@ export default function GroupsScreen() {
           <View style={styles.emptyActionsRow}>
             <Pressable
               style={styles.retryButton}
-              onPress={loadGroups}
+              onPress={() => loadGroups(0)}
               accessibilityRole="button"
             >
               <RefreshCw size={14} color={colors.brandNavy} strokeWidth={2} />
@@ -291,7 +313,7 @@ export default function GroupsScreen() {
               onPress={handleSkip}
               accessibilityRole="button"
             >
-              <Text style={styles.ctaButtonText}>Continue to Dashboard</Text>
+              <Text style={styles.ctaButtonText}>Continue</Text>
               <ArrowRight size={18} color={colors.textInverse} strokeWidth={2} />
             </Pressable>
             <Text style={styles.selectionSummary}>

@@ -4,8 +4,15 @@ All notable changes to **Mikana Mobile** are documented here.
 
 ## [1.6.0] - 2026-09-04
 
-### Onboarding Expansion: Notifications & Freemium Paywall Screens
+### Onboarding Expansion: Notifications, Paywall & 6-Stage Stepper
+- **WhatsApp Group Detection Fix (`groups.tsx` & `server/index.js`):** Resolved 404 session lookup failure by standardizing session key to `session_user_default` and normalizing server route handlers. Mapped Baileys `subject` and `participants` fields and added automated 2-second retry loops to accommodate initial multi-device chat sync lag right after QR scanning.
+- **Relay Monitored Groups Synchronization (`groups.tsx`):** Added `setMonitoredGroups` dispatch on group confirmation so the active Baileys socket immediately whitelists the user's chosen trade channels.
+- **Anti-Reset Storage Hydration Guard (`index.tsx` & `useAuthStore.ts`):** Added `_hasHydrated` gating to prevent app launch race conditions from prematurely redirecting returning authenticated users back to the welcome screen before `AsyncStorage` completes rehydration.
+- **Resilient Connection Persistence (`index.tsx`):** Protected WhatsApp connected status against accidental wipes on network timeouts or server cold-starts; status only resets on explicit `logged_out` or `disconnected` events.
 - **Language Country Flags (`discover.tsx`):** Added country and regional flag icons to all 44+ international and African languages in both the searchable dropdown menu and selected language badge chips.
+- **Categorized Match Trigger Dictionary (`discover.tsx`):** Structured AI-generated capability keywords into 3 distinct operational buckets: *Buyer Intent Signals*, *Specifications & Packaging Units*, and *Trade Vernacular & Offerings*.
+- **Unified 6-Stage Progress Stepper:** Harmonized top progress indicators across all onboarding steps (1. Welcome, 2. Discover, 3. Pair, 4. Groups, 5. Notifications, 6. Paywall) with stage 2 sub-progress bar.
+- **Secondary Phone Number Pairing (`pair.tsx`):** Maintained 8-digit multi-device phone pairing as a dedicated secondary tab alongside primary QR scanner, with zero skip traps to protect group sync reliability.
 - **Speak-Inspired Story Flow (`welcome.tsx`):** Redesigned the welcome screen with horizontal back-and-forth swiping, breathing ambient blue corner aura, royal blue text accents, and skip action.
 - **Instant Alerts Screen (`notifications.tsx`):** Added Step 5 onboarding screen demonstrating sub-second RFQ interception via a tactile push notification mockup card. Integrates `expo-notifications` permissions request with graceful fallback and a skip option.
 - **Freemium Paywall Screen (`paywall.tsx`):** Added Step 6 onboarding paywall highlighting **Mikana Free ("No Credit Card Required")** as the default zero-risk choice alongside an optional **Mikana Pro (7-Day Trial)** upgrade. Supports one-tap free enrollment and RevenueCat Pro purchases.

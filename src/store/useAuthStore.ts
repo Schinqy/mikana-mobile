@@ -22,6 +22,7 @@ interface AuthState {
   session: any | null;
   userId: string | null;
   isLoading: boolean;
+  _hasHydrated: boolean;
 
   // Onboarding progress
   onboardingStage: OnboardingStage;
@@ -31,6 +32,7 @@ interface AuthState {
   capabilityProfile: UserCapabilityProfile | null;
 
   // Actions
+  setHasHydrated: (hydrated: boolean) => void;
   setSession: (session: any | null) => void;
   setOnboardingStage: (stage: OnboardingStage) => void;
   completeOnboarding: () => void;
@@ -56,9 +58,12 @@ export const useAuthStore = create<AuthState>()(
       session: null,
       userId: null,
       isLoading: true,
+      _hasHydrated: false,
       onboardingStage: 'welcome',
       onboardingCompleted: false,
       capabilityProfile: null,
+
+      setHasHydrated: (hydrated) => set({ _hasHydrated: hydrated }),
 
       setSession: (session) =>
         set({
@@ -128,6 +133,9 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'mikana-auth-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
       // Only persist onboarding state — session is re-fetched from Supabase on mount
       partialize: (state) => ({
         onboardingStage: state.onboardingStage,

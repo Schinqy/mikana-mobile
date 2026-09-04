@@ -568,19 +568,61 @@ export default function DiscoverScreen() {
     );
   }, [languageSearch]);
 
+  // Categorized Trigger Keywords for Step 5
+  const categorizedKeywords = useMemo(() => {
+    const BUYER_VERBS = [
+      'looking', 'need', 'supplier', 'who has', 'who sells', 'price', 'cost', 'quote', 'urgent',
+      'in stock', 'delivery', 'rfq', 'dm', 'order', 'available', 'supply', 'buy', 'purchase',
+      'ndinoda', 'nditsvagireiwo', 'kutengesa', 'mutengo', 'mari', 'zvinhu', 'nahitaji', 'anauza',
+      'busco', 'compro', 'proveedor', 'precio', 'cotizacion', 'recherche', 'besoin', 'devis',
+      'procuro', 'fornecedor', 'orcamento', 'bulto', 'gros'
+    ];
+
+    const UNITS_AND_SPECS = [
+      '50kg', 'sack', 'bag', 'ton', 'tonne', 'bulk', 'grade', '5kva', '10kva', '48v', 'bms',
+      'lithium', 'battery', 'gel', 'panel', 'pv', 'pump', 'pipe', 'tank', 'inverter', 'superlink',
+      'triaxle', 'flatbed', 'box', 'carton', 'pallet', 'litre', 'meter', 'drum', 'casing', 'poly',
+      'submersible', 'solar pump', 'deye', 'sunsynk', 'growatt', 'monocrystalline'
+    ];
+
+    const demand: string[] = [];
+    const specs: string[] = [];
+    const domain: string[] = [];
+
+    for (const kw of activeKeywords) {
+      const lower = kw.toLowerCase();
+      if (BUYER_VERBS.some(v => lower.includes(v))) {
+        demand.push(kw);
+      } else if (UNITS_AND_SPECS.some(u => lower.includes(u))) {
+        specs.push(kw);
+      } else {
+        domain.push(kw);
+      }
+    }
+
+    return { demand, specs, domain };
+  }, [activeKeywords]);
+
   return (
     <SafeAreaView className="flex-1 bg-canvas" edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        {/* ── Top Bar with Continuous Progress & Skip ───────────────────── */}
+        {/* ── Top Bar with 6-Segment Stepper & Step 2 Sub-Progress ──────── */}
         <View className="px-6 pt-2 pb-3 border-b border-border bg-canvas">
-          <View className="h-1 w-full bg-slate-200 rounded-full mb-3 overflow-hidden">
-            <View
-              className="h-full bg-brand-navy rounded-full"
-              style={{ width: `${progressPercent}%` }}
-            />
+          <View className="flex-row items-center gap-1.5 mb-3">
+            <View className="flex-1 h-1 rounded-full bg-brand-navy" />
+            <View className="flex-1 h-1 rounded-full bg-slate-200 overflow-hidden">
+              <View
+                className="h-full bg-brand-navy rounded-full"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </View>
+            <View className="flex-1 h-1 rounded-full bg-slate-200" />
+            <View className="flex-1 h-1 rounded-full bg-slate-200" />
+            <View className="flex-1 h-1 rounded-full bg-slate-200" />
+            <View className="flex-1 h-1 rounded-full bg-slate-200" />
           </View>
 
           <View className="flex-row items-center justify-between">
@@ -594,7 +636,7 @@ export default function DiscoverScreen() {
             </Pressable>
 
             <Text className="font-geist-medium text-xs text-content-muted">
-              Step {stepIndex + 1} of {STEP_ORDER.length}
+              Step 2 of 6 · Business Setup ({stepIndex + 1}/{STEP_ORDER.length})
             </Text>
 
             {isSkippable ? (
@@ -1014,35 +1056,87 @@ export default function DiscoverScreen() {
                 </View>
               </View>
 
-              {/* Match Triggers & Buyer Demand Signals */}
+              {/* Categorized Match Trigger Dictionary */}
               <View className="mb-4">
                 <Text className="font-geist-semibold text-xs text-content-muted uppercase tracking-wider mb-1.5">
                   Match Trigger Dictionary ({activeKeywords.length} terms)
                 </Text>
                 <Text className="font-inter text-xs text-content-secondary mb-3">
-                  These product tokens, packaging specs, and buyer request phrases trigger high-priority alerts:
+                  Group messages containing these buyer phrases, specifications, and trade tokens trigger high-priority alerts:
                 </Text>
 
-                <View className="flex-row flex-wrap gap-1.5 mb-3">
-                  {activeKeywords.slice(0, 30).map(kw => (
-                    <View
-                      key={kw}
-                      className="flex-row items-center gap-1 bg-surface border border-border rounded-md px-2.5 py-1"
-                    >
-                      <Text className="font-inter text-xs text-content-primary">{kw}</Text>
-                      <Pressable onPress={() => removeKeyword(kw)} className="p-0.5">
-                        <X size={11} color="#829AB1" strokeWidth={2} />
-                      </Pressable>
+                {/* 1. Buyer Demand Signals */}
+                {categorizedKeywords.demand.length > 0 && (
+                  <View className="mb-3 bg-brand-blue-tint/60 border border-brand-blue-border/60 rounded-xl p-3">
+                    <Text className="font-geist-semibold text-[11px] text-brand-blue uppercase tracking-wider mb-2">
+                      Buyer Intent Signals ({categorizedKeywords.demand.length})
+                    </Text>
+                    <View className="flex-row flex-wrap gap-1.5">
+                      {categorizedKeywords.demand.map(kw => (
+                        <View
+                          key={kw}
+                          className="flex-row items-center gap-1 bg-surface border border-brand-blue-border rounded-md px-2 py-1"
+                        >
+                          <Text className="font-geist-medium text-xs text-brand-blue">{kw}</Text>
+                          <Pressable onPress={() => removeKeyword(kw)} className="p-0.5">
+                            <X size={11} color="#1E56A0" strokeWidth={2} />
+                          </Pressable>
+                        </View>
+                      ))}
                     </View>
-                  ))}
-                  {activeKeywords.length > 30 && (
-                    <View className="bg-surface-elevated border border-border rounded-md px-2 py-1">
-                      <Text className="font-inter text-xs text-content-muted">
-                        +{activeKeywords.length - 30} more
-                      </Text>
+                  </View>
+                )}
+
+                {/* 2. Specifications & Units */}
+                {categorizedKeywords.specs.length > 0 && (
+                  <View className="mb-3 bg-surface border border-border rounded-xl p-3">
+                    <Text className="font-geist-semibold text-[11px] text-content-secondary uppercase tracking-wider mb-2">
+                      Specifications & Packaging Units ({categorizedKeywords.specs.length})
+                    </Text>
+                    <View className="flex-row flex-wrap gap-1.5">
+                      {categorizedKeywords.specs.map(kw => (
+                        <View
+                          key={kw}
+                          className="flex-row items-center gap-1 bg-surface-elevated border border-border rounded-md px-2 py-1"
+                        >
+                          <Text className="font-inter text-xs text-content-primary">{kw}</Text>
+                          <Pressable onPress={() => removeKeyword(kw)} className="p-0.5">
+                            <X size={11} color="#829AB1" strokeWidth={2} />
+                          </Pressable>
+                        </View>
+                      ))}
                     </View>
-                  )}
-                </View>
+                  </View>
+                )}
+
+                {/* 3. Trade Offerings & Vernacular */}
+                {categorizedKeywords.domain.length > 0 && (
+                  <View className="mb-3 bg-surface border border-border rounded-xl p-3">
+                    <Text className="font-geist-semibold text-[11px] text-content-muted uppercase tracking-wider mb-2">
+                      Trade Vernacular & Offerings ({categorizedKeywords.domain.length})
+                    </Text>
+                    <View className="flex-row flex-wrap gap-1.5">
+                      {categorizedKeywords.domain.slice(0, 24).map(kw => (
+                        <View
+                          key={kw}
+                          className="flex-row items-center gap-1 bg-surface-elevated border border-border rounded-md px-2 py-1"
+                        >
+                          <Text className="font-inter text-xs text-content-primary">{kw}</Text>
+                          <Pressable onPress={() => removeKeyword(kw)} className="p-0.5">
+                            <X size={11} color="#829AB1" strokeWidth={2} />
+                          </Pressable>
+                        </View>
+                      ))}
+                      {categorizedKeywords.domain.length > 24 && (
+                        <View className="bg-surface-elevated border border-border rounded-md px-2 py-1">
+                          <Text className="font-inter text-xs text-content-muted">
+                            +{categorizedKeywords.domain.length - 24} more
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                )}
 
                 {/* Add Custom Term Field */}
                 <View className="flex-row items-center gap-2">

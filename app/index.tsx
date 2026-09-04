@@ -6,10 +6,10 @@ import { colors } from '../src/theme/colors';
 
 export default function Index() {
   const router = useRouter();
-  const { onboardingCompleted, onboardingStage, isLoading } = useAuthStore();
+  const { onboardingCompleted, onboardingStage, isLoading, _hasHydrated } = useAuthStore();
 
   useEffect(() => {
-    if (!isLoading) {
+    if (_hasHydrated && !isLoading) {
       if (onboardingCompleted) {
         router.replace('/(tabs)');
       } else {
@@ -36,7 +36,7 @@ export default function Index() {
         }
       }
     }
-  }, [isLoading, onboardingCompleted, onboardingStage]);
+  }, [_hasHydrated, isLoading, onboardingCompleted, onboardingStage]);
 
   return <View style={{ flex: 1, backgroundColor: colors.canvas }} />;
 }
