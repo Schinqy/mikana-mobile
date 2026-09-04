@@ -5,6 +5,7 @@ All notable changes to **Mikana Mobile** are documented here.
 ## [1.6.0] - 2026-09-04
 
 ### Onboarding Expansion: Notifications, Paywall & 6-Stage Stepper
+- **High-Craft Group Selection UI Redesign (`groups.tsx`):** Rewrote `groups.tsx` using 100% NativeWind v4 utility classes. Replaced broken flex-column StyleSheet rows with tactile elevated cards featuring left group avatars (`Users` / `Check`), single-line truncated titles, member count metadata pills, instant search filter input, and far-right tactile check pills that highlight in royal blue when selected.
 - **WhatsApp Group Detection Fix (`groups.tsx` & `server/index.js`):** Resolved 404 session lookup failure by standardizing session key to `session_user_default` and normalizing server route handlers. Mapped Baileys `subject` and `participants` fields and added automated 2-second retry loops to accommodate initial multi-device chat sync lag right after QR scanning.
 - **Relay Monitored Groups Synchronization (`groups.tsx`):** Added `setMonitoredGroups` dispatch on group confirmation so the active Baileys socket immediately whitelists the user's chosen trade channels.
 - **Anti-Reset Storage Hydration Guard (`index.tsx` & `useAuthStore.ts`):** Added `_hasHydrated` gating to prevent app launch race conditions from prematurely redirecting returning authenticated users back to the welcome screen before `AsyncStorage` completes rehydration.

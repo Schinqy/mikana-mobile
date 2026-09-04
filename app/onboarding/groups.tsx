@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   Pressable,
   FlatList,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,9 +18,11 @@ import {
   Crown,
   RefreshCw,
   MessageSquare,
+  Search,
+  X,
+  Radio,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { colors, spacing, radius } from '../../src/theme/colors';
 import { resolveRelayUrl, fetchGroups, setMonitoredGroups } from '../../src/services/relay/whatsappRelay';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useSettingsStore } from '../../src/store/useSettingsStore';
@@ -42,10 +44,10 @@ export default function GroupsScreen() {
 
   const [groups, setGroups] = useState<GroupItem[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isTimedOut, setIsTimedOut] = useState(false);
-  const [syncAttempt, setSyncAttempt] = useState(1);
   const [sessionId] = useState('session_user_default');
 
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -53,7 +55,6 @@ export default function GroupsScreen() {
   const loadGroups = useCallback(async (retryCount = 0) => {
     setLoading(true);
     setIsTimedOut(false);
-    setSyncAttempt(retryCount + 1);
 
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -83,7 +84,7 @@ export default function GroupsScreen() {
         );
         setLoading(false);
       } else if (retryCount < 2) {
-        // Multi-device initial sync grace period: WhatsApp socket takes a few seconds to populate group metadata
+        // Multi-device initial sync grace period: WhatsApp socket takes 2-4s to populate group metadata
         setTimeout(() => {
           loadGroups(retryCount + 1);
         }, 2000);
@@ -118,6 +119,7 @@ export default function GroupsScreen() {
       const next = new Set(prev);
       if (next.has(jid)) {
         next.delete(jid);
+        Haptics.selectionAsync();
       } else {
         if (next.size >= FREE_GROUP_LIMIT) {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -157,48 +159,95 @@ export default function GroupsScreen() {
     router.push('/onboarding/notifications');
   }, [setRadarChannels, setOnboardingStage, router]);
 
-  const renderGroup = ({ item }: { item: GroupItem }) => {
+  // Filter groups by search query
+  const filteredGroups = useMemo(() => {
+    if (!searchQuery.trim()) return groups;
+    const q = searchQuery.toLowerCase().trim();
+    return groups.filter(g => g.name.toLowerCase().includes(q));
+  }, [groups, searchQuery]);
+
+  const renderGroupItem = ({ item }: { item: GroupItem }) => {
     const isSelected = selected.has(item.jid);
     return (
       <Pressable
-        style={({ pressed }) => [
-          styles.groupRow,
-          isSelected && styles.groupRowSelected,
-          pressed && styles.groupRowPressed,
-        ]}
+        key={item.jid}
         onPress={() => toggleGroup(item.jid)}
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: isSelected }}
+        className={`flex-row items-center justify-between p-3.5 mb-2.5 rounded-2xl border transition-all ${
+          isSelected
+            ? 'bg-brand-blue-tint/70 border-brand-blue shadow-xs'
+            : 'bg-surface border-border active:bg-surface-elevated'
+        }`}
       >
-        <View style={styles.groupInfo}>
-          <Text style={styles.groupName} numberOfLines={1}>{item.name}</Text>
-          <View style={styles.groupMeta}>
-            <Users size={11} color={colors.textMuted} strokeWidth={1.5} />
-            <Text style={styles.groupMetaText}>{item.participantCount} members</Text>
+        {/* Left: Avatar + Details */}
+        <View className="flex-row items-center gap-3 flex-1 mr-3">
+          <View
+            className={`w-10 h-10 rounded-xl items-center justify-center border ${
+              isSelected
+                ? 'bg-brand-blue border-brand-blue'
+                : 'bg-surface-elevated border-border'
+            }`}
+          >
+            {isSelected ? (
+              <Check size={18} color="#FFFFFF" strokeWidth={2.5} />
+            ) : (
+              <Users size={18} color="#486581" strokeWidth={1.75} />
+            )}
+          </View>
+
+          <View className="flex-1">
+            <Text
+              numberOfLines={1}
+              className={`font-geist-semibold text-sm leading-5 ${
+                isSelected ? 'text-brand-navy' : 'text-content-heading'
+              }`}
+            >
+              {item.name}
+            </Text>
+            <View className="flex-row items-center gap-1.5 mt-0.5">
+              <Users size={11} color="#829AB1" strokeWidth={1.5} />
+              <Text className="font-inter text-xs text-content-secondary">
+                {item.participantCount > 0 ? `${item.participantCount} members` : 'WhatsApp Group'}
+              </Text>
+              {isSelected && (
+                <View className="ml-1 px-1.5 py-0.5 bg-brand-blue/10 border border-brand-blue/30 rounded">
+                  <Text className="font-geist-semibold text-[10px] text-brand-blue leading-3">
+                    Active
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
-        <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-          {isSelected && <Check size={13} color={colors.textInverse} strokeWidth={2.5} />}
+
+        {/* Right: Checkbox Pill */}
+        <View
+          className={`w-6 h-6 rounded-lg items-center justify-center border-1.5 ${
+            isSelected
+              ? 'bg-brand-blue border-brand-blue'
+              : 'bg-surface border-slate-300'
+          }`}
+        >
+          {isSelected && <Check size={13} color="#FFFFFF" strokeWidth={2.5} />}
         </View>
       </Pressable>
     );
   };
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-      {/* Top Segmented Progress Bar & Skip */}
-      <View style={styles.topProgress}>
-        <View style={styles.segmentedBar}>
-          <View style={[styles.segment, styles.segmentFilled]} />
-          <View style={[styles.segment, styles.segmentFilled]} />
-          <View style={[styles.segment, styles.segmentFilled]} />
-          <View style={[styles.segment, styles.segmentFilled]} />
-          <View style={styles.segment} />
-          <View style={styles.segment} />
+    <SafeAreaView className="flex-1 bg-canvas" edges={['top', 'bottom']}>
+      {/* ── 1. Top Bar & 6-Segment Stepper ────────────────────────────────────── */}
+      <View className="px-6 pt-2 pb-3 border-b border-border bg-canvas">
+        <View className="flex-row items-center gap-1.5 mb-3">
+          <View className="flex-1 h-1 rounded-full bg-brand-navy" />
+          <View className="flex-1 h-1 rounded-full bg-brand-navy" />
+          <View className="flex-1 h-1 rounded-full bg-brand-navy" />
+          <View className="flex-1 h-1 rounded-full bg-brand-navy" />
+          <View className="flex-1 h-1 rounded-full bg-slate-200" />
+          <View className="flex-1 h-1 rounded-full bg-slate-200" />
         </View>
-        <View style={styles.navRow}>
+
+        <View className="flex-row items-center justify-between">
           <Pressable
-            style={styles.backButton}
             onPress={() => {
               if (router.canGoBack()) {
                 router.back();
@@ -206,211 +255,215 @@ export default function GroupsScreen() {
                 router.replace('/onboarding/pair');
               }
             }}
-            accessibilityRole="button"
-            accessibilityLabel="Back"
+            className="w-8 h-8 -ml-1 items-center justify-center rounded-lg active:bg-surface-elevated"
+            hitSlop={8}
           >
-            <ArrowLeft size={20} color={colors.textSecondary} strokeWidth={1.75} />
+            <ArrowLeft size={20} color="#486581" strokeWidth={1.75} />
           </Pressable>
-          <Text style={styles.stepIndicator}>Step 4 of 6 · Trade Groups</Text>
+
+          <Text className="font-geist-medium text-xs text-content-muted tracking-wide">
+            Step 4 of 6 · Trade Groups
+          </Text>
+
           <Pressable
-            style={styles.skipButton}
             onPress={handleSkip}
-            accessibilityRole="button"
-            accessibilityLabel="Skip"
+            className="px-2 py-1 -mr-2 rounded-lg active:bg-surface-elevated"
+            hitSlop={8}
           >
-            <Text style={styles.skipText}>Skip</Text>
+            <Text className="font-geist-semibold text-xs text-brand-blue">
+              Skip
+            </Text>
           </Pressable>
         </View>
       </View>
 
-      <View style={styles.header}>
-        <Text style={styles.heading}>Choose your radar channels</Text>
-        <Text style={styles.subtext}>
+      {/* ── 2. Screen Header & Privacy ────────────────────────────────────────── */}
+      <View className="px-6 pt-4 pb-3">
+        <Text className="font-geist-bold text-2xl leading-8 text-content-heading tracking-tight mb-1">
+          Choose your radar channels
+        </Text>
+        <Text className="font-inter text-sm leading-5 text-content-secondary mb-3">
           Which WhatsApp trade groups should Mikana monitor for buyer leads?
         </Text>
-      </View>
 
-      {/* Privacy Banner */}
-      <View style={styles.privacyBanner}>
-        <Lock size={13} color={colors.textSecondary} strokeWidth={1.5} />
-        <Text style={styles.privacyText}>
-          Mikana only monitors groups you explicitly select. Personal chats and unselected groups are never accessed.
-        </Text>
-      </View>
-
-      {/* Free Plan Quota */}
-      {groups.length > 0 && (
-        <View style={styles.limitRow}>
-          <Text style={styles.limitText}>
-            Free tier: up to {FREE_GROUP_LIMIT} groups monitored
+        {/* Privacy Assurance Pill */}
+        <View className="flex-row items-start gap-2 bg-brand-blue-tint/50 border border-brand-blue-border/70 rounded-xl p-3 mb-2">
+          <Lock size={14} color="#1E56A0" strokeWidth={2} className="mt-0.5" />
+          <Text className="flex-1 font-inter text-xs text-content-secondary leading-4">
+            Mikana only monitors groups you explicitly select. Personal chats, calls, and unselected groups are never accessed.
           </Text>
-          <Pressable style={styles.proLink} onPress={() => router.push('/modal/paywall')}>
-            <Crown size={12} color={colors.accentBlue} strokeWidth={1.5} />
-            <Text style={styles.proLinkText}>Upgrade for 15</Text>
-          </Pressable>
+        </View>
+
+        {/* Plan Quota & Selection Status */}
+        {groups.length > 0 && (
+          <View className="flex-row items-center justify-between pt-1">
+            <View className="flex-row items-center gap-1.5 bg-surface-elevated border border-border px-2.5 py-1 rounded-full">
+              <Radio size={12} color="#1E56A0" strokeWidth={2} />
+              <Text className="font-geist-medium text-xs text-content-secondary">
+                Free Tier: <Text className="font-geist-semibold text-content-heading">{selected.size}/{FREE_GROUP_LIMIT} selected</Text>
+              </Text>
+            </View>
+
+            <Pressable
+              onPress={() => router.push('/modal/paywall')}
+              className="flex-row items-center gap-1 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full active:opacity-80"
+            >
+              <Crown size={12} color="#D97706" strokeWidth={2} />
+              <Text className="font-geist-semibold text-xs text-amber-700">
+                Unlock 15
+              </Text>
+            </Pressable>
+          </View>
+        )}
+      </View>
+
+      {/* ── 3. Search Bar (Visible when groups exist) ─────────────────────────── */}
+      {groups.length > 4 && (
+        <View className="px-6 mb-2">
+          <View className="flex-row items-center bg-surface border border-border rounded-xl px-3 py-2.5 gap-2">
+            <Search size={15} color="#829AB1" strokeWidth={2} />
+            <TextInput
+              placeholder="Search detected trade groups..."
+              placeholderTextColor="#829AB1"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              className="flex-1 font-inter text-xs text-content-primary p-0"
+              returnKeyType="search"
+            />
+            {searchQuery.length > 0 && (
+              <Pressable onPress={() => setSearchQuery('')} className="p-0.5">
+                <X size={14} color="#829AB1" strokeWidth={2} />
+              </Pressable>
+            )}
+          </View>
         </View>
       )}
 
+      {/* ── 4. Main Body: Loading Skeleton, Empty State, or Group Cards ──────── */}
       {loading ? (
-        <View style={styles.skeletonContainer}>
-          {[1, 2, 3, 4].map(key => (
-            <View key={key} style={styles.skeletonRow}>
-              <View style={styles.skeletonAvatar} />
-              <View style={styles.skeletonTextCol}>
-                <View style={[styles.skeletonLine, { width: '68%', height: 14 }]} />
-                <View style={[styles.skeletonLine, { width: '38%', height: 10, marginTop: 6 }]} />
+        <View className="flex-1 px-6 pt-2">
+          <View className="flex-row items-center justify-center gap-2 py-3 mb-2">
+            <ActivityIndicator size="small" color="#1E56A0" />
+            <Text className="font-inter text-xs text-content-secondary">
+              Syncing your WhatsApp trade channels...
+            </Text>
+          </View>
+
+          {[1, 2, 3, 4, 5].map(key => (
+            <View
+              key={key}
+              className="flex-row items-center p-3.5 mb-2.5 rounded-2xl border border-border bg-surface"
+            >
+              <View className="w-10 h-10 rounded-xl bg-slate-100 mr-3" />
+              <View className="flex-1 gap-2">
+                <View className="h-3.5 bg-slate-200 rounded w-3/4" />
+                <View className="h-2.5 bg-slate-100 rounded w-1/3" />
               </View>
-              <View style={styles.skeletonCheckbox} />
+              <View className="w-6 h-6 rounded-lg bg-slate-100" />
             </View>
           ))}
         </View>
       ) : groups.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <View style={styles.emptyIconCircle}>
-            <MessageSquare size={24} color={colors.textSecondary} strokeWidth={1.5} />
+        <View className="flex-1 items-center justify-center px-8">
+          <View className="w-14 h-14 rounded-2xl bg-surface border border-border items-center justify-center mb-3 shadow-2xs">
+            <MessageSquare size={24} color="#486581" strokeWidth={1.75} />
           </View>
-          <Text style={styles.emptyTitle}>
-            {isTimedOut ? 'Connection timed out' : 'No WhatsApp groups detected'}
+          <Text className="font-geist-bold text-lg text-content-heading text-center mb-1.5">
+            {isTimedOut ? 'Connection Timed Out' : 'No WhatsApp Groups Detected'}
           </Text>
-          <Text style={styles.emptySubtext}>
+          <Text className="font-inter text-xs text-content-secondary text-center leading-5 mb-5 max-w-[280px]">
             {isTimedOut
-              ? 'Could not reach the WhatsApp relay to retrieve groups in time. You can try again or proceed to your dashboard.'
-              : 'Make sure you have joined trade groups on your paired WhatsApp. You can join groups anytime and select them in Business settings.'}
+              ? 'Could not reach the WhatsApp relay in time. Make sure your WhatsApp phone has active internet.'
+              : 'Make sure your paired WhatsApp account has joined trade groups. You can join groups anytime and select them in Business settings.'}
           </Text>
 
-          <View style={styles.emptyActionsRow}>
+          <View className="flex-row gap-2.5">
             <Pressable
-              style={styles.retryButton}
               onPress={() => loadGroups(0)}
-              accessibilityRole="button"
+              className="flex-row items-center gap-1.5 bg-surface border border-border px-4 py-2.5 rounded-xl active:bg-surface-elevated shadow-2xs"
             >
-              <RefreshCw size={14} color={colors.brandNavy} strokeWidth={2} />
-              <Text style={styles.retryButtonText}>Try Again</Text>
+              <RefreshCw size={14} color="#0B2545" strokeWidth={2} />
+              <Text className="font-geist-semibold text-xs text-brand-navy">
+                Try Again
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={handleSkip}
+              className="flex-row items-center gap-1.5 bg-brand-navy px-4 py-2.5 rounded-xl active:opacity-90 shadow-2xs"
+            >
+              <Text className="font-geist-semibold text-xs text-white">
+                Continue
+              </Text>
+              <ArrowRight size={14} color="#FFFFFF" strokeWidth={2} />
             </Pressable>
           </View>
         </View>
       ) : (
         <FlatList
-          data={groups}
+          data={filteredGroups}
           keyExtractor={item => item.jid}
-          renderItem={renderGroup}
-          style={styles.list}
-          contentContainerStyle={styles.listContent}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          renderItem={renderGroupItem}
+          className="flex-1"
+          contentContainerClassName="px-6 pt-2 pb-6"
           showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View className="items-center justify-center py-10">
+              <Text className="font-inter text-xs text-content-muted">
+                No groups match "{searchQuery}"
+              </Text>
+            </View>
+          }
         />
       )}
 
-      {/* Docked CTA Footer */}
-      <View style={styles.ctaContainer}>
+      {/* ── 5. Docked Sticky Action Footer ────────────────────────────────────── */}
+      <View className="px-6 pt-3 pb-6 border-t border-border bg-canvas">
         {groups.length === 0 ? (
-          <>
-            <Pressable
-              style={({ pressed }) => [
-                styles.ctaButton,
-                pressed && styles.ctaButtonPressed,
-              ]}
-              onPress={handleSkip}
-              accessibilityRole="button"
-            >
-              <Text style={styles.ctaButtonText}>Continue</Text>
-              <ArrowRight size={18} color={colors.textInverse} strokeWidth={2} />
-            </Pressable>
-            <Text style={styles.selectionSummary}>
-              You can configure monitored groups later in Business settings
+          <Pressable
+            onPress={handleSkip}
+            className="flex-row items-center justify-center gap-2 bg-brand-navy py-3.5 rounded-xl border border-brand-navy-dark active:opacity-95"
+          >
+            <Text className="font-geist-semibold text-sm text-content-inverse">
+              Continue
             </Text>
-          </>
+            <ArrowRight size={16} color="#FFFFFF" strokeWidth={2} />
+          </Pressable>
+        ) : selected.size > 0 ? (
+          <Pressable
+            onPress={handleActivate}
+            disabled={saving}
+            className={`flex-row items-center justify-center gap-2 bg-brand-navy py-3.5 rounded-xl border border-brand-navy-dark shadow-xs ${
+              saving ? 'opacity-60' : 'active:scale-[0.99] active:opacity-95'
+            }`}
+          >
+            {saving ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <Text className="font-geist-semibold text-sm text-content-inverse">
+                  Monitor {selected.size} Trade Channel{selected.size > 1 ? 's' : ''}
+                </Text>
+                <ArrowRight size={16} color="#FFFFFF" strokeWidth={2} />
+              </>
+            )}
+          </Pressable>
         ) : (
-          <>
-            <Text style={styles.selectionSummary}>
-              {selected.size === 0
-                ? 'Select groups above or skip to finish'
-                : `${selected.size} group${selected.size > 1 ? 's' : ''} selected`}
+          <Pressable
+            onPress={handleSkip}
+            className="flex-row items-center justify-center gap-2 bg-surface border border-border py-3.5 rounded-xl active:bg-surface-elevated shadow-2xs"
+          >
+            <Text className="font-geist-semibold text-sm text-content-primary">
+              Skip Channel Selection for Now
             </Text>
-            <Pressable
-              style={({ pressed }) => [
-                styles.ctaButton,
-                selected.size === 0 && styles.ctaButtonSecondary,
-                saving && styles.ctaButtonDisabled,
-                pressed && styles.ctaButtonPressed,
-              ]}
-              onPress={selected.size === 0 ? handleSkip : handleActivate}
-              disabled={saving}
-              accessibilityRole="button"
-            >
-              {saving ? (
-                <ActivityIndicator color={colors.textInverse} size="small" />
-              ) : selected.size === 0 ? (
-                <>
-                  <Text style={styles.ctaButtonSecondaryText}>Skip for Now</Text>
-                  <ArrowRight size={18} color={colors.brandNavy} strokeWidth={2} />
-                </>
-              ) : (
-                <>
-                  <Text style={styles.ctaButtonText}>Start Watching ({selected.size}) Groups</Text>
-                  <ArrowRight size={18} color={colors.textInverse} strokeWidth={2} />
-                </>
-              )}
-            </Pressable>
-          </>
+            <ArrowRight size={16} color="#0B2545" strokeWidth={2} />
+          </Pressable>
         )}
+
+        <Text className="font-inter text-[11px] text-content-muted text-center mt-2.5">
+          You can add or change monitored trade channels anytime in Business settings
+        </Text>
       </View>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.canvas },
-  topProgress: { paddingHorizontal: spacing.xxl, paddingTop: spacing.sm, paddingBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
-  segmentedBar: { flexDirection: 'row', gap: 6, marginBottom: spacing.md },
-  segment: { flex: 1, height: 4, borderRadius: 2, backgroundColor: colors.border },
-  segmentFilled: { backgroundColor: colors.brandNavy },
-  navRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  backButton: { padding: spacing.xs, marginLeft: -spacing.xs },
-  stepIndicator: { fontFamily: 'Geist_500Medium', fontSize: 12, color: colors.textMuted },
-  skipButton: { padding: spacing.xs, marginRight: -spacing.xs },
-  skipText: { fontFamily: 'Geist_600SemiBold', fontSize: 13, color: colors.accentBlue },
-  header: { paddingHorizontal: spacing.xxl, paddingTop: spacing.xl, paddingBottom: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border },
-  heading: { fontFamily: 'Geist_700Bold', fontSize: 20, color: colors.textHeading, letterSpacing: -0.3, marginBottom: 2 },
-  subtext: { fontFamily: 'Inter_400Regular', fontSize: 14, color: colors.textSecondary },
-  privacyBanner: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, backgroundColor: colors.accentBlueTint, borderBottomWidth: 1, borderBottomColor: colors.accentBlueBorder, paddingHorizontal: spacing.xxl, paddingVertical: spacing.md },
-  privacyText: { flex: 1, fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.textSecondary, lineHeight: 17 },
-  limitRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.xxl, paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
-  limitText: { fontFamily: 'Inter_400Regular', fontSize: 13, color: colors.textMuted },
-  proLink: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  proLinkText: { fontFamily: 'Geist_600SemiBold', fontSize: 13, color: colors.accentBlue },
-  skeletonContainer: { flex: 1, paddingTop: spacing.md },
-  skeletonRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.xxl, paddingVertical: 14, gap: spacing.md },
-  skeletonAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.border },
-  skeletonTextCol: { flex: 1 },
-  skeletonLine: { backgroundColor: colors.border, borderRadius: 4 },
-  skeletonCheckbox: { width: 22, height: 22, borderRadius: radius.sm, backgroundColor: colors.border },
-  emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xxxl, gap: spacing.sm },
-  emptyIconCircle: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.border, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xs },
-  emptyTitle: { fontFamily: 'Geist_600SemiBold', fontSize: 16, color: colors.textPrimary, textAlign: 'center' },
-  emptySubtext: { fontFamily: 'Inter_400Regular', fontSize: 13, color: colors.textSecondary, textAlign: 'center', lineHeight: 19, maxWidth: 300 },
-  emptyActionsRow: { marginTop: spacing.md, flexDirection: 'row', gap: spacing.md },
-  retryButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.md, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  retryButtonText: { fontFamily: 'Geist_500Medium', fontSize: 13, color: colors.brandNavy },
-  list: { flex: 1 },
-  listContent: { paddingTop: spacing.sm },
-  groupRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.xxl, paddingVertical: 14, gap: spacing.md },
-  groupRowSelected: { backgroundColor: colors.accentBlueTint },
-  groupRowPressed: { backgroundColor: colors.surfaceElevated },
-  groupInfo: { flex: 1 },
-  groupName: { fontFamily: 'Geist_500Medium', fontSize: 14, color: colors.textPrimary, marginBottom: 2 },
-  groupMeta: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  groupMetaText: { fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.textMuted },
-  checkbox: { width: 22, height: 22, borderRadius: radius.sm, borderWidth: 1.5, borderColor: colors.borderStrong, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
-  checkboxSelected: { backgroundColor: colors.accentBlue, borderColor: colors.accentBlue },
-  separator: { height: 1, backgroundColor: colors.border, marginLeft: spacing.xxl },
-  ctaContainer: { paddingHorizontal: spacing.xxl, paddingBottom: spacing.xxxl, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.canvas, gap: spacing.sm },
-  selectionSummary: { fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.textMuted, textAlign: 'center' },
-  ctaButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, backgroundColor: colors.brandNavy, paddingVertical: 15, borderRadius: radius.md },
-  ctaButtonSecondary: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.brandNavy },
-  ctaButtonDisabled: { opacity: 0.45 },
-  ctaButtonPressed: { opacity: 0.88 },
-  ctaButtonText: { fontFamily: 'Geist_600SemiBold', fontSize: 15, color: colors.textInverse },
-  ctaButtonSecondaryText: { fontFamily: 'Geist_600SemiBold', fontSize: 15, color: colors.brandNavy },
-});
-
