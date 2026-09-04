@@ -6,6 +6,7 @@ import { SubscriptionStatus, SubscriptionTier } from '../types/subscription';
 interface SubscriptionState {
   status: SubscriptionStatus;
   isPaywallVisible: boolean;
+  _hasHydrated: boolean;
 
   // Actions
   setTier: (tier: SubscriptionTier) => void;
@@ -14,6 +15,7 @@ interface SubscriptionState {
   consumeLeadCredit: () => boolean;
   addBoostCredits: (amount: number) => void;
   resetWeeklyLimit: () => void;
+  setHasHydrated: (state: boolean) => void;
 }
 
 const DEFAULT_STATUS: SubscriptionStatus = {
@@ -31,6 +33,9 @@ export const useSubscriptionStore = create<SubscriptionState>()(
     (set, get) => ({
       status: DEFAULT_STATUS,
       isPaywallVisible: false,
+      _hasHydrated: false,
+
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
 
       setTier: (tier) => {
         const isPro = tier === 'pro_monthly' || tier === 'pro_annual' || tier === 'agency';
@@ -99,6 +104,9 @@ export const useSubscriptionStore = create<SubscriptionState>()(
     {
       name: 'mikana-subscription-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

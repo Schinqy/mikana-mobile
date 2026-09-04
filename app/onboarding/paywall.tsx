@@ -15,45 +15,29 @@ import {
   Check,
   Crown,
   ShieldCheck,
+  Sparkles,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useSubscriptionStore } from '../../src/store/useSubscriptionStore';
 import {
-  getRevenueCatPackages,
   purchaseSubscriptionPackage,
   restoreRevenueCatPurchases,
 } from '../../src/services/purchases/revenueCat';
-import { PaywallPackage } from '../../src/types/subscription';
 
-type PlanSelection = 'free' | 'pro';
+type BillingCycle = 'monthly' | 'annual';
 
 export default function OnboardingPaywallScreen() {
   const router = useRouter();
   const { completeOnboarding } = useAuthStore();
   const { status, setTier } = useSubscriptionStore();
 
-  const [selectedPlan, setSelectedPlan] = useState<PlanSelection>('free');
-  const [packages, setPackages] = useState<PaywallPackage[]>([]);
-  const [selectedPackageId, setSelectedPackageId] = useState<string>('pro_annual');
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
 
-  useEffect(() => {
-    async function loadPackages() {
-      try {
-        const pkgs = await getRevenueCatPackages();
-        setPackages(pkgs);
-        if (pkgs.length > 0) {
-          const annual = pkgs.find(p => p.packageType === 'ANNUAL');
-          setSelectedPackageId(annual ? annual.identifier : pkgs[0].identifier);
-        }
-      } catch {
-        // Fallback to static pricing display
-      }
-    }
-    loadPackages();
-  }, []);
+  // Selected package ID based on billing cycle
+  const selectedPackageId = billingCycle === 'annual' ? 'pro_annual' : 'pro_monthly';
 
   const handleFinishFree = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -81,7 +65,23 @@ export default function OnboardingPaywallScreen() {
         Alert.alert('Subscription Notice', result.error);
       }
     } catch (e: any) {
-      Alert.alert('Notice', e?.message || 'Could not process purchase. You can continue with the free plan.');
+      // Fallback: If store fails, allow instant simulated activation or free continuation
+      Alert.alert(
+        'Purchase Simulation',
+        'Store purchase failed or running in development without billing. Would you like to activate Pro in Demo Mode?',
+        [
+          { text: 'Continue Free', onPress: handleFinishFree, style: 'cancel' },
+          {
+            text: 'Activate Pro (Demo)',
+            onPress: () => {
+              setTier(billingCycle === 'annual' ? 'pro_annual' : 'pro_monthly');
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              completeOnboarding();
+              router.replace('/(tabs)');
+            },
+          },
+        ]
+      );
     } finally {
       setIsPurchasing(false);
     }
@@ -154,200 +154,212 @@ export default function OnboardingPaywallScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerClassName="px-6 pt-4 pb-8"
+        contentContainerClassName="px-6 pt-4 pb-12"
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
         <View className="mb-4">
           <View className="flex-row items-center gap-1.5 bg-brand-blue-tint border border-brand-blue-border rounded-full px-3 py-1 self-start mb-2">
-            <ShieldCheck size={13} color="#1E56A0" strokeWidth={2} />
+            <Sparkles size={13} color="#1E56A0" strokeWidth={2} />
             <Text className="font-geist-semibold text-xs text-brand-blue">
-              No Credit Card Required
+              Simple, Transparent Pricing
             </Text>
           </View>
           <Text className="font-geist-bold text-2xl leading-8 text-content-heading tracking-tight mb-1">
-            Start Free, Scale as You Win Deals
+            Choose Your Tier
           </Text>
           <Text className="font-inter text-sm leading-5 text-content-secondary">
-            Catch live WhatsApp leads at zero cost. Upgrade to Autopilot whenever you need 24/7 quote dispatching.
+            Start free with 2 monitored channels, or upgrade to Pro to unlock 15 trade groups and 24/7 Autopilot dispatching.
           </Text>
         </View>
 
-        {/* Plan 1: Mikana Free (Default / Selected) */}
-        <Pressable
-          onPress={() => {
-            Haptics.selectionAsync();
-            setSelectedPlan('free');
-          }}
-          className={`p-4 rounded-2xl border mb-3 ${
-            selectedPlan === 'free'
-              ? 'bg-brand-blue-tint border-brand-blue'
-              : 'bg-surface border-border active:bg-surface-elevated'
-          }`}
-        >
-          <View className="flex-row items-center justify-between mb-2">
-            <View>
-              <View className="bg-surface-elevated border border-border px-2 py-0.5 rounded self-start mb-1">
-                <Text className="font-geist-medium text-[10px] text-content-secondary uppercase tracking-wider">
-                  Freemium · Zero Risk
-                </Text>
-              </View>
-              <Text className="font-geist-bold text-lg text-content-heading">
-                Mikana Free
-              </Text>
-            </View>
-            <View
-              className={`w-5 h-5 rounded-full border items-center justify-center ${
-                selectedPlan === 'free'
-                  ? 'border-brand-blue bg-brand-blue'
-                  : 'border-slate-300 bg-surface'
+        {/* Pro Billing Cycle Toggle */}
+        <View className="flex-row p-1 bg-surface-elevated border border-border rounded-xl mb-4">
+          <Pressable
+            onPress={() => {
+              Haptics.selectionAsync();
+              setBillingCycle('monthly');
+            }}
+            className={`flex-1 py-2 rounded-lg items-center justify-center ${
+              billingCycle === 'monthly' ? 'bg-surface shadow-xs border border-border' : ''
+            }`}
+          >
+            <Text
+              className={`font-geist-medium text-xs ${
+                billingCycle === 'monthly' ? 'text-brand-navy font-geist-bold' : 'text-content-secondary'
               }`}
             >
-              {selectedPlan === 'free' && (
-                <View className="w-2 h-2 rounded-full bg-white" />
-              )}
+              Monthly · $9.99/mo
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => {
+              Haptics.selectionAsync();
+              setBillingCycle('annual');
+            }}
+            className={`flex-1 py-2 rounded-lg items-center justify-center flex-row gap-1.5 ${
+              billingCycle === 'annual' ? 'bg-surface shadow-xs border border-border' : ''
+            }`}
+          >
+            <Text
+              className={`font-geist-medium text-xs ${
+                billingCycle === 'annual' ? 'text-brand-navy font-geist-bold' : 'text-content-secondary'
+              }`}
+            >
+              Annual · $79.99/yr
+            </Text>
+            <View className="bg-amber-100 px-1.5 py-0.5 rounded">
+              <Text className="font-geist-bold text-[9px] text-amber-800">
+                SAVE 35%
+              </Text>
             </View>
+          </Pressable>
+        </View>
+
+        {/* ── CARD 1: Mikana Pro (Hero / Highlighted) ────────────────────────── */}
+        <View className="p-5 rounded-2xl border-2 border-brand-blue bg-brand-blue-tint mb-4 shadow-sm">
+          <View className="flex-row items-center justify-between mb-2">
+            <View className="flex-row items-center gap-1.5 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+              <Crown size={12} color="#D97706" strokeWidth={2} />
+              <Text className="font-geist-semibold text-[11px] text-amber-800 uppercase tracking-wider">
+                Recommended
+              </Text>
+            </View>
+            <Text className="font-inter text-xs text-brand-blue font-geist-medium">
+              Cancel Anytime
+            </Text>
           </View>
+
+          <Text className="font-geist-bold text-xl text-content-heading mb-1">
+            Mikana Pro
+          </Text>
+
+          {/* Pricing display */}
+          <View className="flex-row items-baseline mb-3">
+            <Text className="font-geist-bold text-3xl text-brand-navy">
+              {billingCycle === 'monthly' ? '$9.99' : '$79.99'}
+            </Text>
+            <Text className="font-inter text-xs text-content-secondary ml-1.5">
+              {billingCycle === 'monthly' ? '/ month' : '/ year ($6.66/mo)'}
+            </Text>
+          </View>
+
+          <View className="h-px bg-brand-blue-border mb-3" />
+
+          {/* Feature Bullets */}
+          <View className="gap-2.5 mb-5">
+            {[
+              'Monitor up to 15 WhatsApp trade channels simultaneously',
+              '24/7 Autonomous Autopilot quote dispatch while offline',
+              'Priority Gemini Flash AI extraction & match scoring',
+              'Unlimited deal pipeline CRM & CSV data export',
+            ].map((f, i) => (
+              <View key={i} className="flex-row items-center gap-2.5">
+                <View className="w-4 h-4 rounded-full bg-brand-blue items-center justify-center">
+                  <Check size={11} color="#FFFFFF" strokeWidth={2.5} />
+                </View>
+                <Text className="font-inter text-xs text-content-heading flex-1 leading-4">
+                  {f}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          {/* DIRECT ACTION BUTTON ON PRO CARD */}
+          <Pressable
+            onPress={handlePurchasePro}
+            disabled={isPurchasing}
+            className={`w-full bg-brand-navy py-3.5 rounded-xl flex-row items-center justify-center gap-2 border border-brand-navy-dark shadow-xs ${
+              isPurchasing ? 'opacity-60' : 'active:opacity-95'
+            }`}
+          >
+            {isPurchasing ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <Text className="font-geist-semibold text-sm text-white">
+                  {billingCycle === 'monthly'
+                    ? 'Activate Pro — $9.99 / month'
+                    : 'Activate Pro Annual — $79.99 / year'}
+                </Text>
+                <ArrowRight size={16} color="#FFFFFF" strokeWidth={2} />
+              </>
+            )}
+          </Pressable>
+        </View>
+
+        {/* ── CARD 2: Mikana Free (Freemium Zero-Risk Alternative) ──────────── */}
+        <View className="p-5 rounded-2xl border border-border bg-surface mb-4">
+          <View className="flex-row items-center justify-between mb-2">
+            <View className="bg-surface-elevated border border-border px-2.5 py-0.5 rounded-full">
+              <Text className="font-geist-medium text-[11px] text-content-secondary uppercase tracking-wider">
+                Freemium Tier
+              </Text>
+            </View>
+            <Text className="font-inter text-xs text-content-muted">
+              No Card Required
+            </Text>
+          </View>
+
+          <Text className="font-geist-bold text-lg text-content-heading mb-1">
+            Mikana Free
+          </Text>
 
           <View className="flex-row items-baseline mb-3">
             <Text className="font-geist-bold text-2xl text-content-heading">$0</Text>
-            <Text className="font-inter text-xs text-content-muted ml-1">/ forever</Text>
+            <Text className="font-inter text-xs text-content-muted ml-1.5">/ forever</Text>
           </View>
 
-          <View className="h-px bg-border my-2" />
+          <View className="h-px bg-border mb-3" />
 
-          <View className="gap-2 pt-1">
+          {/* Feature Bullets */}
+          <View className="gap-2.5 mb-5">
             {[
-              'Monitor up to 2 WhatsApp trade groups',
-              'Real-time sub-second buyer RFQ alerts',
-              'AI proposal & quote drafting',
-              'Manual quote review and DM dispatch',
+              'Monitor up to 2 WhatsApp trade channels',
+              'Real-time sub-second buyer RFQ notifications',
+              'Manual AI proposal & quote drafting',
+              'Direct WhatsApp deep link reply',
             ].map((f, i) => (
-              <View key={i} className="flex-row items-center gap-2">
-                <Check size={14} color="#1E56A0" strokeWidth={2.5} />
-                <Text className="font-inter text-xs text-content-secondary">{f}</Text>
-              </View>
-            ))}
-          </View>
-        </Pressable>
-
-        {/* Plan 2: Mikana Pro (Optional Upgrade) */}
-        <Pressable
-          onPress={() => {
-            Haptics.selectionAsync();
-            setSelectedPlan('pro');
-          }}
-          className={`p-4 rounded-2xl border mb-4 ${
-            selectedPlan === 'pro'
-              ? 'bg-brand-blue-tint border-brand-blue'
-              : 'bg-surface border-border active:bg-surface-elevated'
-          }`}
-        >
-          <View className="flex-row items-center justify-between mb-2">
-            <View>
-              <View className="flex-row items-center gap-1 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded self-start mb-1">
-                <Crown size={11} color="#D97706" strokeWidth={2} />
-                <Text className="font-geist-semibold text-[10px] text-amber-800 uppercase tracking-wider">
-                  Maximum Growth
+              <View key={i} className="flex-row items-center gap-2.5">
+                <View className="w-4 h-4 rounded-full bg-surface-elevated border border-border items-center justify-center">
+                  <Check size={10} color="#486581" strokeWidth={2.5} />
+                </View>
+                <Text className="font-inter text-xs text-content-secondary flex-1 leading-4">
+                  {f}
                 </Text>
               </View>
-              <Text className="font-geist-bold text-lg text-content-heading">
-                Mikana Pro
-              </Text>
-            </View>
-            <View
-              className={`w-5 h-5 rounded-full border items-center justify-center ${
-                selectedPlan === 'pro'
-                  ? 'border-brand-blue bg-brand-blue'
-                  : 'border-slate-300 bg-surface'
-              }`}
-            >
-              {selectedPlan === 'pro' && (
-                <View className="w-2 h-2 rounded-full bg-white" />
-              )}
-            </View>
-          </View>
-
-          <View className="flex-row items-baseline mb-3">
-            <Text className="font-geist-bold text-2xl text-content-heading">$9.99</Text>
-            <Text className="font-inter text-xs text-content-muted ml-1">/ month (or $79.99/yr)</Text>
-          </View>
-
-          <View className="h-px bg-border my-2" />
-
-          <View className="gap-2 pt-1">
-            {[
-              'Monitor up to 15 WhatsApp trade groups',
-              '24/7 Autonomous Autopilot quote dispatching',
-              'Priority Gemini Flash extraction & scoring',
-              'Unlimited deal pipeline CRM & export',
-            ].map((f, i) => (
-              <View key={i} className="flex-row items-center gap-2">
-                <Check size={14} color="#1E56A0" strokeWidth={2.5} />
-                <Text className="font-inter text-xs text-content-secondary">{f}</Text>
-              </View>
             ))}
           </View>
-        </Pressable>
 
-        {/* Restore Purchases Link */}
-        <View className="items-center py-2">
-          <Pressable onPress={handleRestore} disabled={isRestoring}>
+          {/* DIRECT ACTION BUTTON ON FREE CARD */}
+          <Pressable
+            onPress={handleFinishFree}
+            className="w-full bg-surface-elevated border border-border py-3.5 rounded-xl flex-row items-center justify-center gap-2 active:bg-slate-200"
+          >
+            <Text className="font-geist-semibold text-sm text-content-primary">
+              Continue with Free Tier ($0)
+            </Text>
+            <ArrowRight size={16} color="#0B2545" strokeWidth={2} />
+          </Pressable>
+        </View>
+
+        {/* Guarantee & Restore */}
+        <View className="items-center py-2 gap-2">
+          <View className="flex-row items-center gap-1.5">
+            <ShieldCheck size={14} color="#1E56A0" strokeWidth={2} />
+            <Text className="font-inter text-xs text-content-secondary">
+              Secured by RevenueCat • Change or cancel anytime in Settings
+            </Text>
+          </View>
+
+          <Pressable onPress={handleRestore} disabled={isRestoring} className="py-1">
             <Text className="font-inter text-xs text-content-muted underline">
               {isRestoring ? 'Restoring...' : 'Already subscribed? Restore Purchases'}
             </Text>
           </Pressable>
         </View>
       </ScrollView>
-
-      {/* ── Docked CTA Footer ────────────────────────────────────────────────── */}
-      <View className="px-6 pt-3 pb-8 border-t border-border bg-canvas">
-        {selectedPlan === 'free' ? (
-          <>
-            <Pressable
-              onPress={handleFinishFree}
-              className="w-full bg-brand-navy py-4 rounded-xl flex-row items-center justify-center gap-2 border border-brand-navy-dark shadow-xs active:opacity-95"
-            >
-              <Text className="font-geist-semibold text-sm text-white">
-                Start Free (No Card Required)
-              </Text>
-              <ArrowRight size={16} color="#FFFFFF" strokeWidth={2} />
-            </Pressable>
-            <Text className="font-inter text-[11px] text-content-muted text-center mt-2">
-              Includes 2 groups + real-time alerts. Upgrade anytime in Settings.
-            </Text>
-          </>
-        ) : (
-          <>
-            <Pressable
-              onPress={handlePurchasePro}
-              disabled={isPurchasing}
-              className={`w-full bg-brand-navy py-4 rounded-xl flex-row items-center justify-center gap-2 border border-brand-navy-dark shadow-xs ${
-                isPurchasing ? 'opacity-60' : 'active:opacity-95'
-              }`}
-            >
-              {isPurchasing ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <>
-                  <Text className="font-geist-semibold text-sm text-white">
-                    Start Pro (7-Day Trial)
-                  </Text>
-                  <ArrowRight size={16} color="#FFFFFF" strokeWidth={2} />
-                </>
-              )}
-            </Pressable>
-            <Pressable
-              onPress={() => setSelectedPlan('free')}
-              className="py-2.5 items-center justify-center mt-1"
-            >
-              <Text className="font-geist-medium text-xs text-content-secondary">
-                Or continue with Free Plan
-              </Text>
-            </Pressable>
-          </>
-        )}
-      </View>
     </SafeAreaView>
   );
 }
