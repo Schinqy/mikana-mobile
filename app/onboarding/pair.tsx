@@ -1,13 +1,30 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, Pressable, TextInput,
-  ActivityIndicator, Clipboard, Platform,
+  View,
+  Text,
+  Pressable,
+  TextInput,
+  ActivityIndicator,
+  Share,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Copy, Check, RefreshCw, Smartphone, QrCode } from 'lucide-react-native';
+import {
+  ArrowLeft,
+  QrCode,
+  Smartphone,
+  Copy,
+  Check,
+  RefreshCw,
+  ChevronDown,
+  Monitor,
+  Share2,
+} from 'lucide-react-native';
+import QRCode from 'react-native-qrcode-svg';
 import * as Haptics from 'expo-haptics';
-import { colors, spacing, radius } from '../../src/theme/colors';
+import * as Clipboard from 'expo-clipboard';
+import { colors } from '../../src/theme/colors';
 import {
   relayClient,
   createSession,
@@ -20,310 +37,484 @@ import { useSettingsStore } from '../../src/store/useSettingsStore';
 import { Country, detectUserCountry } from '../../src/utils/countryCodes';
 import { CountryCodePickerModal } from '../../src/components/ui/CountryCodePickerModal';
 
-type Mode = 'code' | 'qr';
+type PairMode = 'qr' | 'code';
 
 export default function PairScreen() {
   const router = useRouter();
   const { capabilityProfile, setOnboardingStage } = useAuthStore();
   const { whatsappRelayUrl, setWhatsAppConnected } = useSettingsStore();
 
-  const [mode, setMode] = useState<Mode>('code');
-  const [country, setCountry] = useState<Country>(() => detectUserCountry());
+  // QR is PRIMARY as agreed
+  const [pairMode, setPairMode] = useState<PairMode>('qr');
+  const [liveQR, setLiveQR] = useState<string | null>(null);
+  const [relayStatus, setRelayStatus] = useState<'idle' | 'connecting' | 'qr_ready' | 'connected' | 'error'>('idle');
+
+  // Phone code states
+  const [selectedCountry, setSelectedCountry] = useState<Country>(() => detectUserCountry());
   const [isCountryModalOpen, setIsCountryModalOpen] = useState(false);
   const [phoneInput, setPhoneInput] = useState('');
   const [pairingCode, setPairingCode] = useState<string | null>(null);
-  const [liveQR, setLiveQR] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [secondsLeft, setSecondsLeft] = useState(0);
+  const [pairingCodeLoading, setPairingCodeLoading] = useState(false);
+  const [pairingError, setPairingError] = useState<string | null>(null);
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [codeSecondsLeft, setCodeSecondsLeft] = useState<number>(0);
+
   const sessionIdRef = useRef<string | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const codeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const clearTimer = () => { if (timerRef.current) clearInterval(timerRef.current); };
+  // ── Connection Success Handler ────────────────────────────────────────────
 
-  const startCountdown = (secs: number) => {
-    clearTimer();
-    setSecondsLeft(secs);
-    timerRef.current = setInterval(() => {
-      setSecondsLeft(s => {
-        if (s <= 1) { clearTimer(); setPairingCode(null); setError('Code expired. Generate a new one.'); return 0; }
-        return s - 1;
-      });
-    }, 1000);
-  };
+  const handleConnected = useCallback(
+    async (phone: string) => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setWhatsAppConnected(true, phone || '');
+      setOnboardingStage('paired');
 
-  useEffect(() => () => clearTimer(), []);
+      // Push initial capability profile & filter dictionary to the relay server
+      if (capabilityProfile && sessionIdRef.current) {
+        const url = resolveRelayUrl(whatsappRelayUrl);
+        pushCapabilityProfile(url, sessionIdRef.current, capabilityProfile);
+      }
 
-  const handleConnected = useCallback(async (phone: string) => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setWhatsAppConnected(true, phone || '');
-    setOnboardingStage('paired');
+      router.push('/onboarding/groups');
+    },
+    [capabilityProfile, whatsappRelayUrl, setWhatsAppConnected, setOnboardingStage, router]
+  );
 
-    // Push capability profile to relay
-    if (capabilityProfile && sessionIdRef.current) {
-      const url = resolveRelayUrl(whatsappRelayUrl);
-      pushCapabilityProfile(url, sessionIdRef.current, capabilityProfile);
-    }
-    router.push('/onboarding/groups');
-  }, [capabilityProfile, whatsappRelayUrl]);
+  // ── Baileys Relay Socket Handshake (Matches Home Screen) ───────────────────
 
-  const startSession = useCallback(async () => {
-    const url = resolveRelayUrl(whatsappRelayUrl);
-    setLoading(true);
-    setError(null);
+  const connectToRelay = useCallback(async () => {
+    const targetUrl = resolveRelayUrl(whatsappRelayUrl);
+    setRelayStatus('connecting');
+    setPairingError(null);
+
     try {
-      const { sessionId } = await createSession(url, 'user_default');
+      const { sessionId } = await createSession(targetUrl, 'user_default');
       sessionIdRef.current = sessionId;
-      relayClient.connect(url, sessionId, {
-        onQR: (qr) => { setLiveQR(qr); setLoading(false); },
-        onConnected: (phone) => handleConnected(phone || ''),
-        onDisconnected: () => {},
-        onNewLead: () => {},
-        
 
-        onError: (msg) => { setError(msg); setLoading(false); },
+      relayClient.connect(targetUrl, sessionId, {
+        onQR: (qr) => {
+          setLiveQR(qr);
+          setRelayStatus('qr_ready');
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        },
+        onConnected: (phone) => {
+          setRelayStatus('connected');
+          handleConnected(phone || '');
+        },
+        onDisconnected: () => {
+          setRelayStatus('idle');
+        },
+        onNewLead: () => {},
+        onError: (msg) => {
+          setPairingError(msg || 'Relay server error');
+          setRelayStatus('error');
+        },
       });
     } catch (e: any) {
-      setError(e.message || 'Could not connect to relay. Check your internet.');
-      setLoading(false);
+      setPairingError(e.message || 'Could not connect to relay server');
+      setRelayStatus('error');
     }
   }, [whatsappRelayUrl, handleConnected]);
 
+  // Connect on mount for QR streaming
+  useEffect(() => {
+    connectToRelay();
+  }, [connectToRelay]);
+
+  // ── Countdown Timer for Pairing Code ──────────────────────────────────────
+
+  useEffect(() => {
+    if (pairingCode) {
+      setCodeSecondsLeft(60);
+      codeTimerRef.current = setInterval(() => {
+        setCodeSecondsLeft((s) => {
+          if (s <= 1) {
+            clearInterval(codeTimerRef.current!);
+            setPairingCode(null);
+            setPairingError('Code expired. Generate a new code and enter it immediately in WhatsApp.');
+            return 0;
+          }
+          return s - 1;
+        });
+      }, 1000);
+    } else {
+      if (codeTimerRef.current) clearInterval(codeTimerRef.current);
+    }
+    return () => {
+      if (codeTimerRef.current) clearInterval(codeTimerRef.current);
+    };
+  }, [pairingCode]);
+
+  // ── Request Pairing Code ──────────────────────────────────────────────────
+
   const handleRequestCode = useCallback(async () => {
     if (!phoneInput.trim()) return;
-    setLoading(true);
-    setError(null);
-    setPairingCode(null);
 
-    const url = resolveRelayUrl(whatsappRelayUrl);
+    setPairingCodeLoading(true);
+    setPairingError(null);
+    setPairingCode(null);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    const targetUrl = resolveRelayUrl(whatsappRelayUrl);
     let sid = sessionIdRef.current;
+
     try {
       if (!sid) {
-        const { sessionId } = await createSession(url, 'user_default');
+        const { sessionId } = await createSession(targetUrl, 'user_default');
         sessionIdRef.current = sessionId;
         sid = sessionId;
-        relayClient.connect(url, sid, {
+        relayClient.connect(targetUrl, sid, {
           onQR: () => {},
           onConnected: (phone) => handleConnected(phone || ''),
           onDisconnected: () => {},
           onNewLead: () => {},
-          
-
-          onError: (msg) => setError(msg),
+          onError: (msg) => setPairingError(msg),
         });
-        await new Promise(r => setTimeout(r, 800));
+        await new Promise((r) => setTimeout(r, 600));
       }
-      const fullPhone = `${country.dialCode}${phoneInput.replace(/\D/g, '')}`;
-      const result = await requestPairingCode(url, sid, fullPhone);
-      setPairingCode(result.code);
-      startCountdown(60);
-    } catch (e: any) {
-      setError(e.message || 'Could not generate code. Try QR code instead.');
-    } finally {
-      setLoading(false);
-    }
-  }, [phoneInput, country, whatsappRelayUrl, handleConnected]);
 
-  const handleCopy = () => {
+      const fullPhone = `${selectedCountry.dialCode}${phoneInput.replace(/\D/g, '')}`;
+      const result = await requestPairingCode(targetUrl, sid, fullPhone);
+      setPairingCode(result.code);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e: any) {
+      setPairingError(e.message || 'Could not generate pairing code. Try scanning QR code.');
+    } finally {
+      setPairingCodeLoading(false);
+    }
+  }, [phoneInput, selectedCountry, whatsappRelayUrl, handleConnected]);
+
+  const handleCopyCode = async () => {
     if (!pairingCode) return;
-    Clipboard.setString(pairingCode);
-    setCopied(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setTimeout(() => setCopied(false), 2000);
+    await Clipboard.setStringAsync(pairingCode);
+    setCopiedCode(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setTimeout(() => setCopiedCode(false), 2000);
   };
 
-  const switchToQR = () => {
-    setMode('qr');
-    setPairingCode(null);
-    setError(null);
-    clearTimer();
-    if (!sessionIdRef.current) startSession();
+  const handleShareWebQR = async () => {
+    const url = resolveRelayUrl(whatsappRelayUrl);
+    const webQrUrl = `${url}/qr/${sessionIdRef.current || 'user_default'}`;
+    await Share.share({
+      message: `Open this link on your computer or tablet screen to scan Mikana WhatsApp QR:\n${webQrUrl}`,
+      url: webQrUrl,
+    });
   };
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-      <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => router.back()} accessibilityRole="button">
-          <ArrowLeft size={20} color={colors.textSecondary} strokeWidth={1.5} />
-        </Pressable>
-        <Text style={styles.stepIndicator}>2 of 3</Text>
-      </View>
-
-      <View style={styles.body}>
-        <Text style={styles.heading}>Connect your WhatsApp</Text>
-        <Text style={styles.subtext}>
-          Mikana only reads the groups you choose. Personal chats are never accessed.
-        </Text>
-
-        {/* Mode toggle */}
-        <View style={styles.modeToggle}>
-          {(['code', 'qr'] as Mode[]).map(m => (
-            <Pressable
-              key={m}
-              style={[styles.modeTab, mode === m && styles.modeTabActive]}
-              onPress={() => {
-                setMode(m);
-                if (m === 'qr' && !liveQR) startSession();
-              }}
-            >
-              {m === 'code'
-                ? <Smartphone size={15} color={mode === m ? colors.accentBlue : colors.textMuted} strokeWidth={1.5} />
-                : <QrCode size={15} color={mode === m ? colors.accentBlue : colors.textMuted} strokeWidth={1.5} />
-              }
-              <Text style={[styles.modeTabText, mode === m && styles.modeTabTextActive]}>
-                {m === 'code' ? 'Pairing Code' : 'QR Code'}
-              </Text>
-            </Pressable>
-          ))}
+    <SafeAreaView className="flex-1 bg-canvas" edges={['top', 'bottom']}>
+      {/* ── 1. Top Header & Micro Segmented Bar ──────────────────────────── */}
+      <View className="px-6 pt-2 pb-3 border-b border-border bg-canvas">
+        <View className="flex-row items-center gap-1.5 mb-3">
+          <View className="flex-1 h-1 rounded-full bg-brand-navy" />
+          <View className="flex-1 h-1 rounded-full bg-brand-navy" />
+          <View className="flex-1 h-1 rounded-full bg-brand-blue" />
+          <View className="flex-1 h-1 rounded-full bg-slate-200" />
         </View>
 
-        {/* Pairing code mode */}
-        {mode === 'code' && (
-          <View style={styles.codeSection}>
+        <View className="flex-row items-center justify-between">
+          <Pressable
+            className="p-1 -ml-1 active:opacity-60"
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/onboarding/discover');
+              }
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+          >
+            <ArrowLeft size={20} color="#486581" strokeWidth={1.75} />
+          </Pressable>
+          <Text className="font-geist-medium text-xs text-content-muted tracking-wide">
+            Link WhatsApp
+          </Text>
+          <View className="w-8" />
+        </View>
+      </View>
+
+      <ScrollView
+        contentContainerClassName="px-6 pt-5 pb-24"
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Title & Privacy Guarantee */}
+        <View className="mb-5">
+          <Text className="font-geist-bold text-2xl leading-8 text-content-heading tracking-tight mb-1.5">
+            Connect your WhatsApp
+          </Text>
+          <Text className="font-inter text-sm leading-5 text-content-secondary">
+            Mikana only monitors selected groups for trade inquiries. Your private chats and calls are never accessed or stored.
+          </Text>
+        </View>
+
+        {/* ── Mode Toggle (QR Scanner is Primary) ───────────────────────── */}
+        <View className="flex-row bg-surface-elevated p-1 rounded-xl border border-border mb-5">
+          <Pressable
+            className={`flex-1 flex-row items-center justify-center gap-2 py-2.5 rounded-lg ${
+              pairMode === 'qr' ? 'bg-surface shadow-xs border border-border' : ''
+            }`}
+            onPress={() => {
+              setPairMode('qr');
+              Haptics.selectionAsync();
+            }}
+          >
+            <QrCode
+              size={15}
+              color={pairMode === 'qr' ? '#1E56A0' : '#829AB1'}
+              strokeWidth={2}
+            />
+            <Text
+              className={`font-geist-medium text-xs ${
+                pairMode === 'qr' ? 'text-brand-blue font-geist-semibold' : 'text-content-secondary'
+              }`}
+            >
+              QR Scanner (Primary)
+            </Text>
+          </Pressable>
+
+          <Pressable
+            className={`flex-1 flex-row items-center justify-center gap-2 py-2.5 rounded-lg ${
+              pairMode === 'code' ? 'bg-surface shadow-xs border border-border' : ''
+            }`}
+            onPress={() => {
+              setPairMode('code');
+              Haptics.selectionAsync();
+            }}
+          >
+            <Smartphone
+              size={15}
+              color={pairMode === 'code' ? '#1E56A0' : '#829AB1'}
+              strokeWidth={2}
+            />
+            <Text
+              className={`font-geist-medium text-xs ${
+                pairMode === 'code' ? 'text-brand-blue font-geist-semibold' : 'text-content-secondary'
+              }`}
+            >
+              8-Digit Code
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* ── QR Mode (Primary) ─────────────────────────────────────────── */}
+        {pairMode === 'qr' ? (
+          <View className="items-center bg-surface border border-border rounded-2xl p-6 shadow-xs">
+            <View className="w-[200px] h-[200px] items-center justify-center bg-white border border-border rounded-xl p-2 mb-4">
+              {liveQR ? (
+                <QRCode
+                  value={liveQR}
+                  size={180}
+                  color="#0B2545"
+                  backgroundColor="#FFFFFF"
+                />
+              ) : (
+                <View className="items-center justify-center gap-2 px-4">
+                  <ActivityIndicator size="large" color="#1E56A0" />
+                  <Text className="font-inter text-xs text-content-muted text-center leading-4">
+                    {relayStatus === 'error'
+                      ? 'Relay server unreachable'
+                      : 'Generating live WhatsApp QR...'}
+                  </Text>
+                  {relayStatus === 'error' && (
+                    <Pressable
+                      onPress={connectToRelay}
+                      className="flex-row items-center gap-1.5 bg-brand-blue-tint border border-brand-blue-border px-3 py-1.5 rounded-lg mt-1"
+                    >
+                      <RefreshCw size={12} color="#1E56A0" />
+                      <Text className="font-geist-medium text-xs text-brand-blue">Retry</Text>
+                    </Pressable>
+                  )}
+                </View>
+              )}
+            </View>
+
+            {/* Share to PC button (for single phone users) */}
+            <Pressable
+              className="flex-row items-center justify-between w-full bg-brand-blue-tint border border-brand-blue-border rounded-xl px-4 py-3 mb-4 active:opacity-85"
+              onPress={handleShareWebQR}
+            >
+              <View className="flex-row items-center gap-2.5">
+                <Monitor size={16} color="#1E56A0" strokeWidth={2} />
+                <Text className="font-geist-semibold text-xs text-brand-blue">
+                  Open / Share Live QR on PC Screen
+                </Text>
+              </View>
+              <Share2 size={14} color="#1E56A0" strokeWidth={2} />
+            </Pressable>
+
+            {/* Step-by-step guidance */}
+            <View className="w-full gap-2 pt-2 border-t border-border">
+              {[
+                'Open WhatsApp on your phone',
+                'Tap Settings → Linked Devices → Link a Device',
+                'Scan this QR code or open the link on PC to scan',
+              ].map((instruction, idx) => (
+                <View key={idx} className="flex-row items-start gap-2.5">
+                  <View className="w-5 h-5 rounded-full bg-surface-elevated border border-border items-center justify-center mt-0.5">
+                    <Text className="font-geist-semibold text-[10px] text-content-secondary">
+                      {idx + 1}
+                    </Text>
+                  </View>
+                  <Text className="flex-1 font-inter text-xs text-content-secondary leading-4">
+                    {instruction}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : (
+          /* ── Pairing Code Mode (Secondary) ─────────────────────────────── */
+          <View className="bg-surface border border-border rounded-2xl p-5 shadow-xs">
             {!pairingCode ? (
-              <>
-                <Text style={styles.fieldLabel}>Your WhatsApp number</Text>
-                <View style={styles.phoneRow}>
-                  <Pressable style={styles.countryButton} onPress={() => setIsCountryModalOpen(true)}>
-                    <Text style={styles.countryFlag}>{country.flag}</Text>
-                    <Text style={styles.countryCode}>{country.dialCode}</Text>
+              <View className="gap-3.5">
+                <Text className="font-geist-semibold text-[11px] text-content-muted uppercase tracking-wider">
+                  ENTER WHATSAPP PHONE NUMBER
+                </Text>
+
+                {/* Country selector */}
+                <Pressable
+                  className="flex-row items-center justify-between bg-surface-elevated border border-border rounded-xl px-3.5 py-3"
+                  onPress={() => setIsCountryModalOpen(true)}
+                >
+                  <View className="flex-row items-center gap-2">
+                    <Text className="text-base">{selectedCountry.flag}</Text>
+                    <Text className="font-geist-medium text-xs text-content-primary">
+                      {selectedCountry.name}
+                    </Text>
+                  </View>
+                  <ChevronDown size={14} color="#829AB1" />
+                </Pressable>
+
+                {/* Phone row with dial code */}
+                <View className="flex-row gap-2">
+                  <Pressable
+                    className="bg-surface-elevated border border-border rounded-xl px-3.5 justify-center"
+                    onPress={() => setIsCountryModalOpen(true)}
+                  >
+                    <Text className="font-geist-semibold text-sm text-content-primary">
+                      {selectedCountry.dialCode}
+                    </Text>
                   </Pressable>
                   <TextInput
-                    style={styles.phoneInput}
-                    value={phoneInput}
-                    onChangeText={setPhoneInput}
+                    className="flex-1 bg-surface border border-border rounded-xl px-3.5 py-3 font-inter text-sm text-content-primary"
                     placeholder="77 123 4567"
-                    placeholderTextColor={colors.textMuted}
+                    placeholderTextColor="#829AB1"
+                    value={phoneInput}
+                    onChangeText={text => {
+                      setPhoneInput(text);
+                      if (pairingError) setPairingError(null);
+                    }}
                     keyboardType="phone-pad"
                     returnKeyType="done"
                     onSubmitEditing={handleRequestCode}
                   />
                 </View>
+
                 <Pressable
-                  style={[styles.generateButton, (loading || !phoneInput.trim()) && styles.buttonDisabled]}
+                  className={`flex-row items-center justify-center gap-2 bg-brand-navy py-3.5 rounded-xl border border-brand-navy-dark ${
+                    !phoneInput.trim() || pairingCodeLoading
+                      ? 'opacity-40'
+                      : 'active:scale-[0.98] active:opacity-95'
+                  }`}
                   onPress={handleRequestCode}
-                  disabled={loading || !phoneInput.trim()}
-                  accessibilityRole="button"
+                  disabled={!phoneInput.trim() || pairingCodeLoading}
                 >
-                  {loading
-                    ? <ActivityIndicator color={colors.textInverse} size="small" />
-                    : <Text style={styles.generateButtonText}>Generate 8-Digit Code</Text>
-                  }
+                  {pairingCodeLoading ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text className="font-geist-semibold text-sm text-content-inverse">
+                      Generate 8-Digit Code
+                    </Text>
+                  )}
                 </Pressable>
-              </>
+              </View>
             ) : (
-              <>
-                <Text style={styles.codeLabel}>Your pairing code</Text>
-                <Pressable style={styles.codeDisplay} onPress={handleCopy} accessibilityRole="button">
-                  <Text style={styles.codeText}>
+              /* Display Generated Code */
+              <View className="items-center gap-3">
+                <Text className="font-geist-semibold text-[11px] text-content-muted uppercase tracking-wider">
+                  YOUR 8-DIGIT PAIRING CODE
+                </Text>
+
+                <Pressable
+                  className="flex-row items-center justify-between w-full bg-brand-blue-tint border-2 border-brand-blue rounded-xl px-5 py-4 active:opacity-80"
+                  onPress={handleCopyCode}
+                >
+                  <Text className="font-geist-bold text-2xl text-brand-navy tracking-widest">
                     {pairingCode.slice(0, 4)}-{pairingCode.slice(4)}
                   </Text>
-                  {copied
-                    ? <Check size={18} color={colors.emerald} strokeWidth={2} />
-                    : <Copy size={18} color={colors.textMuted} strokeWidth={1.5} />
-                  }
+                  {copiedCode ? (
+                    <View className="flex-row items-center gap-1 bg-emerald-600 px-2 py-1 rounded">
+                      <Check size={12} color="#FFFFFF" strokeWidth={2.5} />
+                      <Text className="font-geist-semibold text-[10px] text-white">COPIED</Text>
+                    </View>
+                  ) : (
+                    <Copy size={18} color="#1E56A0" strokeWidth={2} />
+                  )}
                 </Pressable>
-                {secondsLeft > 0 && (
-                  <Text style={styles.expiryText}>Expires in {secondsLeft}s</Text>
+
+                {codeSecondsLeft > 0 && (
+                  <Text className="font-inter text-xs text-content-muted">
+                    Expires in {codeSecondsLeft}s · Enter immediately in WhatsApp
+                  </Text>
                 )}
-                <View style={styles.instructionList}>
+
+                {/* Instructions */}
+                <View className="w-full gap-2 pt-2 border-t border-border mt-2">
                   {[
                     'Open WhatsApp on this phone',
-                    'Tap Settings ? Linked Devices ? Link a Device',
-                    'Tap "Link with phone number instead" and enter this code',
-                  ].map((step, i) => (
-                    <View key={i} style={styles.instructionRow}>
-                      <View style={styles.instructionNum}>
-                        <Text style={styles.instructionNumText}>{i + 1}</Text>
+                    'Tap Settings → Linked Devices → Link a Device',
+                    'Tap "Link with phone number instead" and paste this code',
+                  ].map((instruction, idx) => (
+                    <View key={idx} className="flex-row items-start gap-2.5">
+                      <View className="w-5 h-5 rounded-full bg-surface-elevated border border-border items-center justify-center mt-0.5">
+                        <Text className="font-geist-semibold text-[10px] text-content-secondary">
+                          {idx + 1}
+                        </Text>
                       </View>
-                      <Text style={styles.instructionText}>{step}</Text>
+                      <Text className="flex-1 font-inter text-xs text-content-secondary leading-4">
+                        {instruction}
+                      </Text>
                     </View>
                   ))}
                 </View>
-                <Pressable style={styles.resetButton} onPress={() => { setPairingCode(null); clearTimer(); setError(null); }}>
-                  <RefreshCw size={14} color={colors.textMuted} strokeWidth={1.5} />
-                  <Text style={styles.resetButtonText}>Generate new code</Text>
-                </Pressable>
-              </>
-            )}
-          </View>
-        )}
 
-        {/* QR mode */}
-        {mode === 'qr' && (
-          <View style={styles.qrSection}>
-            {loading && <ActivityIndicator color={colors.accentBlue} size="large" style={{ marginTop: spacing.xxxl }} />}
-            {liveQR && !loading && (
-              <View style={styles.qrPlaceholder}>
-                <Text style={styles.qrPlaceholderText}>QR code appears here</Text>
-                <Text style={styles.qrSubtext}>Open WhatsApp ? Settings ? Linked Devices ? Scan QR</Text>
+                <Pressable
+                  className="flex-row items-center gap-1.5 pt-2"
+                  onPress={() => {
+                    setPairingCode(null);
+                    setPairingError(null);
+                  }}
+                >
+                  <RefreshCw size={12} color="#829AB1" />
+                  <Text className="font-inter text-xs text-content-muted">Generate new code</Text>
+                </Pressable>
               </View>
             )}
           </View>
         )}
 
-        {error && (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{error}</Text>
-            {mode === 'code' && (
-              <Pressable onPress={switchToQR}>
-                <Text style={styles.errorLink}>Try QR code instead</Text>
-              </Pressable>
-            )}
+        {pairingError && (
+          <View className="bg-status-rose-bg border border-status-rose-border rounded-xl p-3 mt-4">
+            <Text className="font-inter text-xs text-status-rose leading-4">
+              {pairingError}
+            </Text>
           </View>
         )}
-      </View>
+      </ScrollView>
 
+      {/* Country picker modal */}
       <CountryCodePickerModal
         visible={isCountryModalOpen}
         onClose={() => setIsCountryModalOpen(false)}
-        onSelect={(c) => { setCountry(c); setIsCountryModalOpen(false); }}
-        selectedCountry={country}
+        onSelect={(c) => {
+          setSelectedCountry(c);
+          setIsCountryModalOpen(false);
+        }}
+        selectedCountry={selectedCountry}
       />
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.canvas },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.xxl, paddingVertical: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border },
-  backButton: { padding: spacing.xs },
-  stepIndicator: { fontFamily: 'Geist_500Medium', fontSize: 13, color: colors.textMuted },
-  body: { flex: 1, paddingHorizontal: spacing.xxl, paddingTop: spacing.xxl },
-  heading: { fontFamily: 'Geist_700Bold', fontSize: 22, lineHeight: 28, color: colors.textHeading, marginBottom: spacing.sm, letterSpacing: -0.3 },
-  subtext: { fontFamily: 'Inter_400Regular', fontSize: 14, lineHeight: 21, color: colors.textSecondary, marginBottom: spacing.xl },
-  modeToggle: { flexDirection: 'row', backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: 3, marginBottom: spacing.xxl },
-  modeTab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingVertical: spacing.sm, borderRadius: radius.sm },
-  modeTabActive: { backgroundColor: colors.surface, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, elevation: 1 },
-  modeTabText: { fontFamily: 'Geist_500Medium', fontSize: 13, color: colors.textMuted },
-  modeTabTextActive: { color: colors.accentBlue },
-  codeSection: { gap: spacing.md },
-  fieldLabel: { fontFamily: 'Geist_500Medium', fontSize: 13, color: colors.textPrimary },
-  phoneRow: { flexDirection: 'row', gap: spacing.sm },
-  countryButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 12 },
-  countryFlag: { fontSize: 18 },
-  countryCode: { fontFamily: 'Geist_500Medium', fontSize: 14, color: colors.textPrimary },
-  phoneInput: { flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 12, fontFamily: 'Inter_400Regular', fontSize: 15, color: colors.textPrimary },
-  generateButton: { backgroundColor: colors.brandNavy, borderRadius: radius.md, paddingVertical: 14, alignItems: 'center', marginTop: spacing.sm },
-  buttonDisabled: { opacity: 0.45 },
-  generateButtonText: { fontFamily: 'Geist_600SemiBold', fontSize: 15, color: colors.textInverse },
-  codeLabel: { fontFamily: 'Geist_500Medium', fontSize: 12, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  codeDisplay: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.accentBlueBorder, borderRadius: radius.md, paddingHorizontal: spacing.xl, paddingVertical: spacing.lg },
-  codeText: { fontFamily: 'Geist_700Bold', fontSize: 28, color: colors.brandNavy, letterSpacing: 4 },
-  expiryText: { fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.textMuted },
-  instructionList: { gap: spacing.md, marginTop: spacing.md },
-  instructionRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
-  instructionNum: { width: 22, height: 22, borderRadius: 11, backgroundColor: colors.accentBlueTint, borderWidth: 1, borderColor: colors.accentBlueBorder, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
-  instructionNumText: { fontFamily: 'Geist_600SemiBold', fontSize: 12, color: colors.accentBlue },
-  instructionText: { flex: 1, fontFamily: 'Inter_400Regular', fontSize: 14, lineHeight: 20, color: colors.textSecondary },
-  resetButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, alignSelf: 'center', marginTop: spacing.md },
-  resetButtonText: { fontFamily: 'Inter_400Regular', fontSize: 13, color: colors.textMuted },
-  qrSection: { alignItems: 'center', paddingTop: spacing.xl },
-  qrPlaceholder: { width: 220, height: 220, borderWidth: 1.5, borderColor: colors.border, borderRadius: radius.lg, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
-  qrPlaceholderText: { fontFamily: 'Geist_500Medium', fontSize: 13, color: colors.textMuted, textAlign: 'center', marginBottom: spacing.sm },
-  qrSubtext: { fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.textMuted, textAlign: 'center', lineHeight: 18 },
-  errorBox: { backgroundColor: colors.roseBg, borderWidth: 1, borderColor: colors.roseBorder, borderRadius: radius.md, padding: spacing.md, marginTop: spacing.xl, gap: spacing.xs },
-  errorText: { fontFamily: 'Inter_400Regular', fontSize: 13, color: colors.rose },
-  errorLink: { fontFamily: 'Geist_600SemiBold', fontSize: 13, color: colors.accentBlue },
-});

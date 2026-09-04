@@ -5,7 +5,8 @@ All notable changes to **Mikana Mobile** are documented here.
 ## [1.6.0] - 2026-09-04
 
 ### Onboarding Expansion: Notifications & Freemium Paywall Screens
-- **Speak-Inspired Story Flow (`welcome.tsx`):** Redesigned the welcome screen modeled after the Speak onboarding benchmark: clean canvas with ambient corner blue glow, 3-dash progress stepper (`— — —`), high-conviction product truth statements, tap-to-continue interaction, and top-right Skip button (no Sign In button).
+- **Language Country Flags (`discover.tsx`):** Added country and regional flag icons to all 44+ international and African languages in both the searchable dropdown menu and selected language badge chips.
+- **Speak-Inspired Story Flow (`welcome.tsx`):** Redesigned the welcome screen with horizontal back-and-forth swiping, breathing ambient blue corner aura, royal blue text accents, and skip action.
 - **Instant Alerts Screen (`notifications.tsx`):** Added Step 5 onboarding screen demonstrating sub-second RFQ interception via a tactile push notification mockup card. Integrates `expo-notifications` permissions request with graceful fallback and a skip option.
 - **Freemium Paywall Screen (`paywall.tsx`):** Added Step 6 onboarding paywall highlighting **Mikana Free ("No Credit Card Required")** as the default zero-risk choice alongside an optional **Mikana Pro (7-Day Trial)** upgrade. Supports one-tap free enrollment and RevenueCat Pro purchases.
 - **No-Trap Channel Selection (`groups.tsx`):** Added 8-second fetch timeout with AbortController, retry/refresh button, and a clean empty state with actionable instructions. Transitions seamlessly to `/onboarding/notifications`.

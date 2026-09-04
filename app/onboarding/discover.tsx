@@ -37,56 +37,57 @@ interface GlobalLanguage {
   id: string;
   label: string;
   native: string;
+  flag: string;
 }
 
 const GLOBAL_LANGUAGES: GlobalLanguage[] = [
   // Major International Lingua Francas
-  { id: 'en', label: 'English', native: 'English' },
-  { id: 'es', label: 'Spanish', native: 'Español' },
-  { id: 'fr', label: 'French', native: 'Français' },
-  { id: 'ar', label: 'Arabic', native: 'العربية' },
-  { id: 'pt', label: 'Portuguese', native: 'Português' },
-  { id: 'zh', label: 'Mandarin Chinese', native: '中文' },
-  { id: 'de', label: 'German', native: 'Deutsch' },
-  { id: 'hi', label: 'Hindi', native: 'हिन्दी' },
-  { id: 'ru', label: 'Russian', native: 'Русский' },
-  { id: 'ja', label: 'Japanese', native: '日本語' },
-  { id: 'it', label: 'Italian', native: 'Italiano' },
-  { id: 'tr', label: 'Turkish', native: 'Türkçe' },
-  { id: 'ko', label: 'Korean', native: '한국어' },
-  { id: 'nl', label: 'Dutch', native: 'Nederlands' },
-  { id: 'id', label: 'Indonesian', native: 'Bahasa Indonesia' },
-  { id: 'vi', label: 'Vietnamese', native: 'Tiếng Việt' },
-  { id: 'pl', label: 'Polish', native: 'Polski' },
-  { id: 'fa', label: 'Persian / Farsi', native: 'فارسی' },
-  { id: 'ur', label: 'Urdu', native: 'اردو' },
-  { id: 'th', label: 'Thai', native: 'ไทย' },
-  { id: 'bn', label: 'Bengali', native: 'বাংলা' },
-  { id: 'he', label: 'Hebrew', native: 'עברית' },
-  { id: 'el', label: 'Greek', native: 'Ελληνικά' },
-  { id: 'sv', label: 'Swedish', native: 'Svenska' },
-  { id: 'uk', label: 'Ukrainian', native: 'Українська' },
+  { id: 'en', label: 'English', native: 'English', flag: '🇬🇧' },
+  { id: 'es', label: 'Spanish', native: 'Español', flag: '🇪🇸' },
+  { id: 'fr', label: 'French', native: 'Français', flag: '🇫🇷' },
+  { id: 'ar', label: 'Arabic', native: 'العربية', flag: '🇦🇪' },
+  { id: 'pt', label: 'Portuguese', native: 'Português', flag: '🇵🇹' },
+  { id: 'zh', label: 'Mandarin Chinese', native: '中文', flag: '🇨🇳' },
+  { id: 'de', label: 'German', native: 'Deutsch', flag: '🇩🇪' },
+  { id: 'hi', label: 'Hindi', native: 'हिन्दी', flag: '🇮🇳' },
+  { id: 'ru', label: 'Russian', native: 'Русский', flag: '🇷🇺' },
+  { id: 'ja', label: 'Japanese', native: '日本語', flag: '🇯🇵' },
+  { id: 'it', label: 'Italian', native: 'Italiano', flag: '🇮🇹' },
+  { id: 'tr', label: 'Turkish', native: 'Türkçe', flag: '🇹🇷' },
+  { id: 'ko', label: 'Korean', native: '한국어', flag: '🇰🇷' },
+  { id: 'nl', label: 'Dutch', native: 'Nederlands', flag: '🇳🇱' },
+  { id: 'id', label: 'Indonesian', native: 'Bahasa Indonesia', flag: '🇮🇩' },
+  { id: 'vi', label: 'Vietnamese', native: 'Tiếng Việt', flag: '🇻🇳' },
+  { id: 'pl', label: 'Polish', native: 'Polski', flag: '🇵🇱' },
+  { id: 'fa', label: 'Persian / Farsi', native: 'فارسی', flag: '🇮🇷' },
+  { id: 'ur', label: 'Urdu', native: 'اردو', flag: '🇵🇰' },
+  { id: 'th', label: 'Thai', native: 'ไทย', flag: '🇹🇭' },
+  { id: 'bn', label: 'Bengali', native: 'বাংলা', flag: '🇧🇩' },
+  { id: 'he', label: 'Hebrew', native: 'עברית', flag: '🇮🇱' },
+  { id: 'el', label: 'Greek', native: 'Ελληνικά', flag: '🇬🇷' },
+  { id: 'sv', label: 'Swedish', native: 'Svenska', flag: '🇸🇪' },
+  { id: 'uk', label: 'Ukrainian', native: 'Українська', flag: '🇺🇦' },
 
   // African Commercial & Regional Languages
-  { id: 'sw', label: 'Swahili', native: 'Kiswahili' },
-  { id: 'sn', label: 'Shona', native: 'chiShona' },
-  { id: 'nd', label: 'Ndebele', native: 'isiNdebele' },
-  { id: 'zu', label: 'Zulu', native: 'isiZulu' },
-  { id: 'xh', label: 'Xhosa', native: 'isiXhosa' },
-  { id: 'af', label: 'Afrikaans', native: 'Afrikaans' },
-  { id: 'yo', label: 'Yoruba', native: 'Èdè Yorùbá' },
-  { id: 'ig', label: 'Igbo', native: 'Asụsụ Igbo' },
-  { id: 'ha', label: 'Hausa', native: 'Harshen Hausa' },
-  { id: 'am', label: 'Amharic', native: 'አማርኛ' },
-  { id: 'so', label: 'Somali', native: 'Af-Soomaali' },
-  { id: 'ln', label: 'Lingala', native: 'Lingála' },
-  { id: 'ny', label: 'Chewa / Nyanja', native: 'Chichewa' },
-  { id: 'tn', label: 'Tswana', native: 'Setswana' },
-  { id: 'st', label: 'Sotho', native: 'Sesotho' },
-  { id: 've', label: 'Venda', native: 'Tshivenḓa' },
-  { id: 'ts', label: 'Tsonga / Shangaan', native: 'Xitsonga' },
-  { id: 'bem', label: 'Bemba', native: 'Chibemba' },
-  { id: 'to', label: 'Tonga', native: 'Chitonga' },
+  { id: 'sw', label: 'Swahili', native: 'Kiswahili', flag: '🇰🇪' },
+  { id: 'sn', label: 'Shona', native: 'chiShona', flag: '🇿🇼' },
+  { id: 'nd', label: 'Ndebele', native: 'isiNdebele', flag: '🇿🇼' },
+  { id: 'zu', label: 'Zulu', native: 'isiZulu', flag: '🇿🇦' },
+  { id: 'xh', label: 'Xhosa', native: 'isiXhosa', flag: '🇿🇦' },
+  { id: 'af', label: 'Afrikaans', native: 'Afrikaans', flag: '🇿🇦' },
+  { id: 'yo', label: 'Yoruba', native: 'Èdè Yorùbá', flag: '🇳🇬' },
+  { id: 'ig', label: 'Igbo', native: 'Asụsụ Igbo', flag: '🇳🇬' },
+  { id: 'ha', label: 'Hausa', native: 'Harshen Hausa', flag: '🇳🇬' },
+  { id: 'am', label: 'Amharic', native: 'አማርኛ', flag: '🇪🇹' },
+  { id: 'so', label: 'Somali', native: 'Af-Soomaali', flag: '🇸🇴' },
+  { id: 'ln', label: 'Lingala', native: 'Lingála', flag: '🇨🇩' },
+  { id: 'ny', label: 'Chewa / Nyanja', native: 'Chichewa', flag: '🇲🇼' },
+  { id: 'tn', label: 'Tswana', native: 'Setswana', flag: '🇧🇼' },
+  { id: 'st', label: 'Sotho', native: 'Sesotho', flag: '🇱🇸' },
+  { id: 've', label: 'Venda', native: 'Tshivenḓa', flag: '🇿🇦' },
+  { id: 'ts', label: 'Tsonga / Shangaan', native: 'Xitsonga', flag: '🇿🇦' },
+  { id: 'bem', label: 'Bemba', native: 'Chibemba', flag: '🇿🇲' },
+  { id: 'to', label: 'Tonga', native: 'Chitonga', flag: '🇿🇼' },
 ];
 
 // ── Global Hubs & Region Presets ───────────────────────────────────────────────
@@ -665,20 +666,29 @@ export default function DiscoverScreen() {
 
               {/* Selected Badges */}
               <View className="flex-row flex-wrap gap-1.5 mb-4">
-                {selectedLanguages.map(lang => (
-                  <View
-                    key={lang}
-                    className="flex-row items-center gap-1.5 bg-brand-blue-tint border border-brand-blue rounded-xl px-3 py-1.5 shadow-xs"
-                  >
-                    <Globe size={13} color="#1E56A0" strokeWidth={1.75} />
-                    <Text className="font-geist-medium text-xs text-brand-blue">{lang}</Text>
-                    {selectedLanguages.length > 1 && (
-                      <Pressable onPress={() => toggleLanguage(lang)} className="p-0.5 ml-0.5">
-                        <X size={11} color="#1E56A0" strokeWidth={2} />
-                      </Pressable>
-                    )}
-                  </View>
-                ))}
+                {selectedLanguages.map(lang => {
+                  const matched = GLOBAL_LANGUAGES.find(
+                    l => l.label.toLowerCase() === lang.toLowerCase()
+                  );
+                  return (
+                    <View
+                      key={lang}
+                      className="flex-row items-center gap-1.5 bg-brand-blue-tint border border-brand-blue rounded-xl px-3 py-1.5 shadow-xs"
+                    >
+                      {matched?.flag ? (
+                        <Text className="text-xs">{matched.flag}</Text>
+                      ) : (
+                        <Globe size={13} color="#1E56A0" strokeWidth={1.75} />
+                      )}
+                      <Text className="font-geist-medium text-xs text-brand-blue">{lang}</Text>
+                      {selectedLanguages.length > 1 && (
+                        <Pressable onPress={() => toggleLanguage(lang)} className="p-0.5 ml-0.5">
+                          <X size={11} color="#1E56A0" strokeWidth={2} />
+                        </Pressable>
+                      )}
+                    </View>
+                  );
+                })}
               </View>
 
               {/* Searchable Dropdown Input */}
@@ -753,7 +763,7 @@ export default function DiscoverScreen() {
                             }}
                           >
                             <View className="flex-row items-center gap-2">
-                              <Globe size={13} color={isSelected ? '#1E56A0' : '#829AB1'} strokeWidth={1.5} />
+                              <Text className="text-sm">{lang.flag}</Text>
                               <Text
                                 className={`font-geist-medium text-xs ${
                                   isSelected ? 'text-brand-blue font-geist-semibold' : 'text-content-primary'
