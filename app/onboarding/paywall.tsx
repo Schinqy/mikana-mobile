@@ -15,7 +15,6 @@ import {
   Check,
   Crown,
   ShieldCheck,
-  Sparkles,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../src/store/useAuthStore';
@@ -159,12 +158,6 @@ export default function OnboardingPaywallScreen() {
       >
         {/* Header */}
         <View className="mb-4">
-          <View className="flex-row items-center gap-1.5 bg-brand-blue-tint border border-brand-blue-border rounded-full px-3 py-1 self-start mb-2">
-            <Sparkles size={13} color="#1E56A0" strokeWidth={2} />
-            <Text className="font-geist-semibold text-xs text-brand-blue">
-              Simple, Transparent Pricing
-            </Text>
-          </View>
           <Text className="font-geist-bold text-2xl leading-8 text-content-heading tracking-tight mb-1">
             Choose Your Tier
           </Text>
