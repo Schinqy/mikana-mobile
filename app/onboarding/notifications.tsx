@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,8 @@ import {
   ArrowLeft,
   ArrowRight,
   BellRing,
+  CheckCircle2,
+  ShieldCheck,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
@@ -21,8 +23,28 @@ import { useSettingsStore } from '../../src/store/useSettingsStore';
 export default function NotificationsScreen() {
   const router = useRouter();
   const { setOnboardingStage } = useAuthStore();
-  const { setPushNotifications } = useSettingsStore();
+  const { enablePushNotifications, setPushNotifications } = useSettingsStore();
+
   const [requesting, setRequesting] = useState(false);
+  const [isGranted, setIsGranted] = useState(enablePushNotifications);
+
+  // Check system permission status on mount
+  useEffect(() => {
+    async function checkPermission() {
+      if (Platform.OS !== 'web') {
+        try {
+          const { status } = await Notifications.getPermissionsAsync();
+          if (status === 'granted') {
+            setIsGranted(true);
+            setPushNotifications(true);
+          }
+        } catch (_) {
+          // Non-fatal
+        }
+      }
+    }
+    checkPermission();
+  }, [setPushNotifications]);
 
   const proceedToPaywall = useCallback(() => {
     setOnboardingStage('notifications');
@@ -30,19 +52,31 @@ export default function NotificationsScreen() {
   }, [setOnboardingStage, router]);
 
   const handleEnable = async () => {
+    // If already granted, immediately proceed without redundant system prompts
+    if (isGranted) {
+      Haptics.selectionAsync();
+      proceedToPaywall();
+      return;
+    }
+
     setRequesting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setPushNotifications(true);
 
     try {
       if (Platform.OS !== 'web') {
-        await Notifications.requestPermissionsAsync({
+        const { status } = await Notifications.requestPermissionsAsync({
           ios: {
             allowAlert: true,
             allowBadge: true,
             allowSound: true,
           },
         });
+        if (status === 'granted') {
+          setIsGranted(true);
+          setPushNotifications(true);
+        }
+      } else {
+        setPushNotifications(true);
       }
     } catch (e) {
       console.warn('Failed to request notification permissions:', e);
@@ -91,61 +125,106 @@ export default function NotificationsScreen() {
           </Text>
 
           <Pressable
-            onPress={handleSkip}
+            onPress={isGranted ? proceedToPaywall : handleSkip}
             className="px-2 py-1 -mr-2 rounded-lg active:bg-surface-elevated"
             hitSlop={8}
           >
             <Text className="font-geist-semibold text-xs text-brand-blue">
-              Skip
+              {isGranted ? 'Next' : 'Skip'}
             </Text>
           </Pressable>
         </View>
       </View>
 
-      {/* ── 2. Focused Permissions Body (Centered & Direct) ──────────────────── */}
+      {/* ── 2. Permissions Body ──────────────────────────────────────────────── */}
       <View className="flex-1 items-center justify-center px-8">
-        <View className="w-20 h-20 rounded-full bg-brand-blue-tint border border-brand-blue-border items-center justify-center mb-6 shadow-xs">
-          <BellRing size={36} color="#1E56A0" strokeWidth={2} />
-        </View>
+        {isGranted ? (
+          <>
+            <View className="w-20 h-20 rounded-full bg-emerald-50 border border-emerald-200 items-center justify-center mb-6 shadow-xs">
+              <CheckCircle2 size={38} color="#059669" strokeWidth={2} />
+            </View>
 
-        <Text className="font-geist-bold text-2xl text-content-heading text-center mb-2 tracking-tight">
-          Never miss a live buyer inquiry
-        </Text>
+            <View className="flex-row items-center gap-1.5 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1 mb-3">
+              <ShieldCheck size={13} color="#059669" strokeWidth={2} />
+              <Text className="font-geist-semibold text-xs text-emerald-800">
+                Notifications Active
+              </Text>
+            </View>
 
-        <Text className="font-inter text-sm text-content-secondary text-center leading-6 max-w-[300px]">
-          Turn on push notifications to receive real-time alerts the second a buyer posts in your monitored WhatsApp trade groups.
-        </Text>
+            <Text className="font-geist-bold text-2xl text-content-heading text-center mb-2 tracking-tight">
+              Real-time alerts enabled
+            </Text>
+
+            <Text className="font-inter text-sm text-content-secondary text-center leading-6 max-w-[300px]">
+              Mikana is primed to send you instant notifications the moment a buyer posts an RFQ in your monitored WhatsApp channels.
+            </Text>
+          </>
+        ) : (
+          <>
+            <View className="w-20 h-20 rounded-full bg-brand-blue-tint border border-brand-blue-border items-center justify-center mb-6 shadow-xs">
+              <BellRing size={36} color="#1E56A0" strokeWidth={2} />
+            </View>
+
+            <Text className="font-geist-bold text-2xl text-content-heading text-center mb-2 tracking-tight">
+              Never miss a live buyer inquiry
+            </Text>
+
+            <Text className="font-inter text-sm text-content-secondary text-center leading-6 max-w-[300px]">
+              Turn on push notifications to receive real-time alerts the second a buyer posts in your monitored WhatsApp trade groups.
+            </Text>
+          </>
+        )}
       </View>
 
       {/* ── 3. Docked Sticky Action Buttons ──────────────────────────────────── */}
       <View className="px-6 pt-3 pb-8 border-t border-border bg-canvas">
-        <Pressable
-          onPress={handleEnable}
-          disabled={requesting}
-          className={`w-full bg-brand-navy py-4 rounded-xl flex-row items-center justify-center gap-2 border border-brand-navy-dark shadow-xs ${
-            requesting ? 'opacity-60' : 'active:opacity-95'
-          }`}
-        >
-          {requesting ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <>
+        {isGranted ? (
+          <>
+            <Pressable
+              onPress={proceedToPaywall}
+              className="w-full bg-brand-navy py-4 rounded-xl flex-row items-center justify-center gap-2 border border-brand-navy-dark shadow-xs active:opacity-95"
+            >
               <Text className="font-geist-semibold text-sm text-white">
-                Enable Notifications
+                Continue to Membership Plan
               </Text>
               <ArrowRight size={16} color="#FFFFFF" strokeWidth={2} />
-            </>
-          )}
-        </Pressable>
+            </Pressable>
 
-        <Pressable
-          onPress={handleSkip}
-          className="py-3 items-center justify-center mt-1 active:opacity-70"
-        >
-          <Text className="font-geist-medium text-xs text-content-secondary">
-            Maybe Later
-          </Text>
-        </Pressable>
+            <Text className="font-inter text-[11px] text-content-muted text-center mt-2.5">
+              Notification settings can be adjusted anytime in the Settings tab
+            </Text>
+          </>
+        ) : (
+          <>
+            <Pressable
+              onPress={handleEnable}
+              disabled={requesting}
+              className={`w-full bg-brand-navy py-4 rounded-xl flex-row items-center justify-center gap-2 border border-brand-navy-dark shadow-xs ${
+                requesting ? 'opacity-60' : 'active:opacity-95'
+              }`}
+            >
+              {requesting ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Text className="font-geist-semibold text-sm text-white">
+                    Enable Notifications
+                  </Text>
+                  <ArrowRight size={16} color="#FFFFFF" strokeWidth={2} />
+                </>
+              )}
+            </Pressable>
+
+            <Pressable
+              onPress={handleSkip}
+              className="py-3 items-center justify-center mt-1 active:opacity-70"
+            >
+              <Text className="font-geist-medium text-xs text-content-secondary">
+                Maybe Later
+              </Text>
+            </Pressable>
+          </>
+        )}
       </View>
     </SafeAreaView>
   );
