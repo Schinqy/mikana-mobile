@@ -2,7 +2,13 @@
 
 All notable changes to **Mikana Mobile** are documented here.
 
-## [1.5.0] - 2026-09-02
+## [1.6.0] - 2026-09-04
+
+### Onboarding Polishing, Channel Empty State & Location Enhancements
+- **No-Trap Channel Selection (`groups.tsx`):** Added 8-second fetch timeout with AbortController, retry/refresh button, and a clean empty state with actionable instructions. Users can skip or proceed to dashboard with 0 groups selected, preventing onboarding lockouts.
+- **Strict Anti-Mock Guarantee:** Zero fake or mock demo groups inserted into live channel feeds.
+- **Smart Location Disambiguation (`discover.tsx`):** Selecting specific regional hubs or custom locations automatically clears the "Worldwide / Remote" fallback tag and vice versa.
+- **Zero-Emoji & Anti-Fake Controls:** Removed all placeholder/fake speech-to-text elements and verified clean, accessible UI controls across all onboarding steps.
 
 ### Conversational Onboarding, Supabase Schema & AuthGate Routing
 - **4-Stage Value-First Onboarding:** Replaced login-gate-first approach with value-first conversational onboarding. Users see the WhatsApp→Radar transformation demo before any credential prompt.
