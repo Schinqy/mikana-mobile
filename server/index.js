@@ -704,6 +704,7 @@ app.get('/api/sessions/:sessionId/groups', async (req, res) => {
   const userId = fullSessionId.replace('session_', '');
   const authPath = path.join(AUTH_DIR, fullSessionId);
 
+  // Auto-restore session from disk if creds exist
   if (!sessions.has(fullSessionId) && fs.existsSync(path.join(authPath, 'creds.json'))) {
     try {
       await startBaileysSession(fullSessionId, userId, false);
@@ -712,11 +713,35 @@ app.get('/api/sessions/:sessionId/groups', async (req, res) => {
 
   const session = sessions.get(fullSessionId) || sessions.get(sessionId);
   if (!session || !session.sock) {
-    return res.status(404).json({ error: 'Session not found or not connected' });
+    return res.status(404).json({ error: 'Session not found or not connected', groups: [] });
+  }
+
+  // If session is still connecting or pairing, return cached groups if available or 503
+  if (session.status !== 'connected') {
+    if (session.cachedGroups && session.cachedGroups.length > 0) {
+      return res.json({ groups: session.cachedGroups, cached: true });
+    }
+    return res.status(503).json({
+      error: 'WhatsApp session is still connecting. Please retry in a moment.',
+      status: session.status,
+      groups: [],
+    });
+  }
+
+  // If we already have cached groups from recent fetch or connect, serve them immediately (unless fresh=true)
+  if (session.cachedGroups && session.cachedGroups.length > 0 && req.query.fresh !== 'true') {
+    return res.json({ groups: session.cachedGroups, cached: true });
   }
 
   try {
-    const groups = await session.sock.groupFetchAllParticipating();
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('WhatsApp group query timed out')), 6000)
+    );
+    const groups = await Promise.race([
+      session.sock.groupFetchAllParticipating(),
+      timeoutPromise,
+    ]);
+
     const groupList = Object.values(groups).map((g) => ({
       id: g.id,
       subject: g.subject,
@@ -725,10 +750,15 @@ app.get('/api/sessions/:sessionId/groups', async (req, res) => {
       participantCount: g.participants?.length || 0,
       creation: g.creation,
     }));
+    session.cachedGroups = groupList;
     res.json({ groups: groupList });
   } catch (err) {
-    logger.error({ err }, 'Failed to fetch groups');
-    res.status(500).json({ error: 'Failed to fetch groups' });
+    logger.error({ err: err.message }, 'Failed to fetch groups');
+    // Return cached groups if available rather than hard failing
+    if (session.cachedGroups && session.cachedGroups.length > 0) {
+      return res.json({ groups: session.cachedGroups, cached: true });
+    }
+    res.status(500).json({ error: 'Failed to fetch groups from WhatsApp', groups: [] });
   }
 });
 
@@ -905,6 +935,7 @@ async function startBaileysSession(sessionId, userId, usePairingCode = false) {
     qrRetries: 0,
     userProfile: null,    // Compact capability profile — set via POST /api/sessions/:id/profile
     groupNameCache: {},   // Cache group JID → name to avoid repeated Baileys metadata calls
+    cachedGroups: [],     // Cache group list objects
   };
   sessions.set(sessionId, session);
   addLog('info', 'Baileys socket initialized', { sessionId, version: version?.join('.') });
@@ -957,6 +988,27 @@ async function startBaileysSession(sessionId, userId, usePairingCode = false) {
         type: 'connected',
         phone: session.phone,
       });
+
+      // Pre-fetch and cache WhatsApp groups in background so /groups returns immediately
+      setTimeout(async () => {
+        try {
+          if (session.status === 'connected' && session.sock) {
+            const rawGroups = await session.sock.groupFetchAllParticipating();
+            const groupList = Object.values(rawGroups).map((g) => ({
+              id: g.id,
+              subject: g.subject,
+              name: g.subject,
+              participants: g.participants?.length || 0,
+              participantCount: g.participants?.length || 0,
+              creation: g.creation,
+            }));
+            session.cachedGroups = groupList;
+            logger.info({ sessionId, groupCount: groupList.length }, 'Pre-cached WhatsApp groups on connect');
+          }
+        } catch (err) {
+          logger.warn({ sessionId, err: err.message }, 'Background group pre-cache deferred');
+        }
+      }, 1500);
 
       // Store session in Supabase if available
       if (supabase) {

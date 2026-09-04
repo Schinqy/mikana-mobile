@@ -60,3 +60,11 @@
 ### [2026-09-04] Permission Flow Idempotency & Confirmed Active States
 - **The Redundant Permission Prompt Trap:** Never render a permission request screen with an unconditional "Enable" CTA without first querying `getPermissionsAsync()` or persisted settings on mount. If the operating system or user already granted permissions in an earlier interaction, navigating back or reloading into the step must immediately display a confirmed "Notifications Active" state with a direct `"Continue"` CTA. Blindly calling `requestPermissionsAsync()` on an already-granted permission frustrates users by making them feel trapped in an endless loop of asking to accept again.
 
+### [2026-09-04] WhatsApp Multi-Device Group Detection Resilience & Relay Session Recovery
+- **The Ephemeral Relay Cold-Start & In-Memory Session Disconnect Trap:** Cloud relays running on ephemeral or free tiers (e.g., Render free instances) wipe in-memory session maps upon container restart or after 15 minutes of inactivity. Calling `/api/sessions/:sessionId/groups` on a dead or cold session returns 404 or hangs indefinitely if Baileys is in a connecting state. Always add `ensureSessionReady()` on the client to re-awaken sessions and wrap group socket queries in `Promise.race` timeouts with background pre-caching.
+- **Never Trap Users in Empty "No Groups Detected" Dead-Ends:** If a live group fetch returns empty or the relay drops, never render a blank dead-end that forces users to wonder why detection failed. Always:
+  1. Detect session disconnects and display an actionable "WhatsApp Session Offline" card with a 1-tap `[ Re-link Device ]` button routing directly back to pairing.
+  2. Synthesize and preserve any previously saved `radarChannels` as selectable chips so the user's progress is never reset to zero.
+  3. Provide an inline manual channel entry field (`[ + Add Group Name ]`) so users can type and monitor trade groups directly without blocking onboarding progress.
+
+

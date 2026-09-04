@@ -203,20 +203,66 @@ export async function getSessionStatus(relayUrl: string, sessionId: string): Pro
 }
 
 /**
- * Fetch all WhatsApp groups for a session
+ * Fetch all WhatsApp groups for a session with timeout and abort safety
  */
-export async function fetchGroups(relayUrl: string, sessionId: string): Promise<any[]> {
+export async function fetchGroups(
+  relayUrl: string,
+  sessionId: string,
+  signal?: AbortSignal,
+  timeoutMs: number = 8000
+): Promise<any[]> {
   const url = resolveRelayUrl(relayUrl);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  if (signal) {
+    signal.addEventListener('abort', () => controller.abort(), { once: true });
+  }
+
   try {
-    const res = await fetch(`${url}/api/sessions/${sessionId}/groups`);
-    if (!res.ok) {
-      if (res.status === 404) return [];
-      throw new Error(`Groups fetch failed: ${res.status}`);
+    const res = await fetch(`${url}/api/sessions/${sessionId}/groups`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    const data = await res.json().catch(() => ({}));
+    if (Array.isArray(data.groups)) {
+      return data.groups;
     }
-    const data = await res.json();
-    return data.groups || [];
+    return [];
   } catch (err) {
     return [];
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/**
+ * Ensure a session is initialized on the relay and check live connection status
+ */
+export async function ensureSessionReady(
+  relayUrl: string,
+  sessionId: string
+): Promise<{ status: string; phone: string | null; isConnected: boolean }> {
+  const url = resolveRelayUrl(relayUrl);
+  try {
+    let statusRes = await getSessionStatus(url, sessionId);
+    // If session doesn't exist on server (e.g. server restarted / cold-started), try creating/waking it
+    if (statusRes.status === 'disconnected' || !statusRes.status) {
+      const userId = sessionId.replace('session_', '');
+      try {
+        await createSession(url, userId);
+        statusRes = await getSessionStatus(url, sessionId);
+      } catch (_) {}
+    }
+    const isConnected = statusRes.status === 'connected';
+    return {
+      status: statusRes.status || 'disconnected',
+      phone: statusRes.phone || null,
+      isConnected,
+    };
+  } catch (_) {
+    return { status: 'disconnected', phone: null, isConnected: false };
   }
 }
 
