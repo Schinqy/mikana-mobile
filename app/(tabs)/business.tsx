@@ -210,8 +210,8 @@ export default function BusinessScreen() {
           icon={Building2}
           iconColor={colors.brandNavy}
           label="Business Profile"
-          value={profile.businessName || 'Configure'}
-          onPress={() => router.push('/(tabs)/catalog')}
+          value={profile.businessName ? `${profile.businessName} · ${profile.location || 'Online'}` : 'Configure'}
+          onPress={() => router.push('/modal/business-profile')}
         />
       </View>
 

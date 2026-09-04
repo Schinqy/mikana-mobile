@@ -25,4 +25,7 @@ export interface BusinessProfile {
   website: string;
   defaultCurrency: string;
   customPitchGuidelines: string;
+  location?: string;
+  serviceAreas?: string[];
+  languages?: string[];
 }

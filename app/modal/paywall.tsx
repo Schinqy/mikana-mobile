@@ -128,16 +128,35 @@ export default function PaywallModal() {
         contentContainerClassName="px-6 pt-5 pb-10"
         showsVerticalScrollIndicator={false}
       >
+        {/* Current Plan Indicator */}
+        <View className="flex-row items-center gap-2 bg-surface border border-border px-3.5 py-2 rounded-xl mb-5 self-center shadow-2xs">
+          <View
+            className={`w-2 h-2 rounded-full ${
+              status.isPro ? 'bg-emerald-500' : 'bg-slate-400'
+            }`}
+          />
+          <Text className="font-inter text-xs text-content-secondary">
+            Current Plan:{' '}
+            <Text className="font-geist-bold text-content-heading">
+              {status.isPro
+                ? status.tier === 'pro_annual'
+                  ? 'Pro Annual (Active)'
+                  : 'Pro Monthly (Active)'
+                : 'Free Tier (2 Channels)'}
+            </Text>
+          </Text>
+        </View>
+
         {/* Hero Section */}
-        <View className="items-center mb-6">
-          <View className="w-14 h-14 rounded-2xl bg-brand-blue-tint border border-brand-blue-border items-center justify-center mb-3">
-            <Crown size={28} color="#1E56A0" strokeWidth={2} />
+        <View className="items-center mb-5">
+          <View className="w-12 h-12 rounded-2xl bg-brand-blue-tint border border-brand-blue-border items-center justify-center mb-2.5">
+            <Crown size={24} color="#1E56A0" strokeWidth={2} />
           </View>
-          <Text className="font-geist-bold text-2xl text-content-heading text-center mb-1.5 tracking-tight">
-            Close High-Ticket WhatsApp Deals
+          <Text className="font-geist-bold text-xl text-content-heading text-center mb-1 tracking-tight">
+            Mikana Pro Trader
           </Text>
           <Text className="font-inter text-xs text-content-secondary text-center leading-5 max-w-[300px]">
-            Free tier is limited to 2 groups. Upgrade to Pro to monitor up to 15 trade groups and automatically draft proposals.
+            Scale your pipeline by monitoring 15 trade channels simultaneously with 24/7 Autopilot quote dispatch.
           </Text>
         </View>
 
@@ -148,7 +167,7 @@ export default function PaywallModal() {
               Haptics.selectionAsync();
               setBillingCycle('monthly');
             }}
-            className={`flex-1 py-2.5 rounded-lg items-center justify-center ${
+            className={`flex-1 py-2 rounded-lg items-center justify-center ${
               billingCycle === 'monthly' ? 'bg-surface shadow-xs border border-border' : ''
             }`}
           >
@@ -166,7 +185,7 @@ export default function PaywallModal() {
               Haptics.selectionAsync();
               setBillingCycle('annual');
             }}
-            className={`flex-1 py-2.5 rounded-lg items-center justify-center flex-row gap-1.5 ${
+            className={`flex-1 py-2 rounded-lg items-center justify-center flex-row gap-1 ${
               billingCycle === 'annual' ? 'bg-surface shadow-xs border border-border' : ''
             }`}
           >
@@ -177,57 +196,60 @@ export default function PaywallModal() {
             >
               Annual · $79.99/yr
             </Text>
-            <View className="bg-amber-100 px-1.5 py-0.5 rounded">
-              <Text className="font-geist-bold text-[9px] text-amber-800">
-                SAVE 35%
+            <View className="bg-amber-100 px-1 py-0.5 rounded">
+              <Text className="font-geist-bold text-[8px] text-amber-800">
+                -35%
               </Text>
             </View>
           </Pressable>
         </View>
 
-        {/* Feature Comparison Box */}
-        <View className="bg-surface border border-border rounded-2xl p-5 mb-5 shadow-xs">
-          <View className="flex-row items-center justify-between pb-3 border-b border-border mb-3">
-            <View>
-              <Text className="font-geist-bold text-base text-content-heading">
-                Pro Entitlements
-              </Text>
-              <Text className="font-inter text-xs text-content-secondary">
-                Everything you need to dominate trade channels
+        {/* Pro Card */}
+        <View className="bg-surface border-2 border-brand-blue rounded-2xl p-5 mb-5 shadow-xs">
+          <View className="flex-row items-center justify-between mb-2">
+            <View className="bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+              <Text className="font-geist-semibold text-[10px] text-amber-800 uppercase tracking-wider">
+                Full Access
               </Text>
             </View>
-            <View className="items-end">
-              <Text className="font-geist-bold text-2xl text-brand-navy">
-                {billingCycle === 'monthly' ? '$9.99' : '$79.99'}
-              </Text>
-              <Text className="font-inter text-[11px] text-content-muted">
-                {billingCycle === 'monthly' ? '/ month' : '/ year ($6.66/mo)'}
-              </Text>
-            </View>
+            <Text className="font-inter text-xs text-brand-blue font-geist-medium">
+              Cancel Anytime
+            </Text>
           </View>
+
+          <View className="flex-row items-baseline mb-3">
+            <Text className="font-geist-bold text-3xl text-brand-navy">
+              {billingCycle === 'monthly' ? '$9.99' : '$79.99'}
+            </Text>
+            <Text className="font-inter text-xs text-content-secondary ml-1.5">
+              {billingCycle === 'monthly' ? '/ month' : '/ year ($6.66/mo)'}
+            </Text>
+          </View>
+
+          <View className="h-px bg-border mb-4" />
 
           <View className="gap-3">
             {[
               {
-                title: '15 Monitored Trade Groups',
-                desc: 'Never miss an RFQ by expanding from 2 to 15 concurrent channels',
+                title: '15 Monitored Trade Channels',
+                desc: 'Expand from 2 to 15 concurrent WhatsApp trade groups',
               },
               {
                 title: '24/7 Offline Lead Autopilot',
-                desc: 'Auto-draft and dispatch quotes the second a buyer posts',
+                desc: 'Autonomous matching & quote drafting while you are offline',
               },
               {
                 title: 'Priority Gemini Flash AI Engine',
-                desc: 'Extract buyer intent, quantities, and budgets in under 500ms',
+                desc: 'Sub-second buyer intent and requirement extraction',
               },
               {
                 title: 'Unlimited Pipeline CRM & Export',
-                desc: 'Track closed revenue, customer contacts, and export CSVs',
+                desc: 'Full deal tracking, customer contacts, and CSV export',
               },
             ].map((f, i) => (
-              <View key={i} className="flex-row items-start gap-3">
-                <View className="w-5 h-5 rounded-full bg-brand-blue items-center justify-center mt-0.5">
-                  <Check size={12} color="#FFFFFF" strokeWidth={2.5} />
+              <View key={i} className="flex-row items-start gap-2.5">
+                <View className="w-4 h-4 rounded-full bg-brand-blue items-center justify-center mt-0.5">
+                  <Check size={10} color="#FFFFFF" strokeWidth={2.5} />
                 </View>
                 <View className="flex-1">
                   <Text className="font-geist-semibold text-xs text-content-heading">
@@ -255,7 +277,9 @@ export default function PaywallModal() {
           ) : (
             <>
               <Text className="font-geist-semibold text-sm text-white">
-                {billingCycle === 'monthly'
+                {status.isPro
+                  ? `Active on Pro (${billingCycle === 'annual' ? '$79.99/yr' : '$9.99/mo'})`
+                  : billingCycle === 'monthly'
                   ? 'Unlock Pro — $9.99 / month'
                   : 'Unlock Pro Annual — $79.99 / year'}
               </Text>

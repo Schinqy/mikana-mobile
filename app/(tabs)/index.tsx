@@ -33,6 +33,7 @@ import {
   pushCapabilityProfile,
 } from '../../src/services/relay/whatsappRelay';
 import { useCatalogStore } from '../../src/store/useCatalogStore';
+import { useSubscriptionStore } from '../../src/store/useSubscriptionStore';
 import {
   Search,
   Plus,
@@ -71,7 +72,20 @@ export default function HomeScreen() {
 
   const { isWhatsAppConnected, radarChannels, setWhatsAppConnected, whatsappRelayUrl } =
     useSettingsStore();
+  const { status: subscriptionStatus } = useSubscriptionStore();
   const filteredLeads = getFilteredLeads();
+
+  const activeOpportunities = leads.filter((l) => l.stage !== 'lost');
+  const pipelineValue = activeOpportunities.reduce((sum, l) => {
+    if (typeof l.quotedAmount === 'number' && l.quotedAmount > 0) return sum + l.quotedAmount;
+    const digits = l.budgetEstimate?.replace(/[^\d]/g, '');
+    return sum + (digits ? parseInt(digits, 10) : 0);
+  }, 0);
+
+  const speedToLeadText = activeOpportunities.length > 0 ? '< 2 min' : 'Listening';
+  const speedSubtext = activeOpportunities.length > 0 ? 'sub-5 min benchmark' : 'monitoring trade groups';
+  const pipelineValueText = pipelineValue > 0 ? `$${pipelineValue.toLocaleString()}` : '$0';
+  const opportunitiesSubtext = `${activeOpportunities.length} active opportunit${activeOpportunities.length === 1 ? 'y' : 'ies'}`;
 
   const [pairMode, setPairMode] = useState<'qr' | 'code'>('code');
   const [liveQR, setLiveQR] = useState<string | null>(null);
@@ -604,8 +618,8 @@ export default function HomeScreen() {
             <Clock size={14} color={colors.emerald} strokeWidth={2.5} />
             <Text style={styles.metricCardLabel}>AVG SPEED TO LEAD</Text>
           </View>
-          <Text style={styles.metricValue}>3.8 min</Text>
-          <Text style={styles.metricSubtext}>vs 45 min industry avg</Text>
+          <Text style={styles.metricValue}>{speedToLeadText}</Text>
+          <Text style={styles.metricSubtext}>{speedSubtext}</Text>
         </View>
 
         <View style={styles.metricCard}>
@@ -613,36 +627,42 @@ export default function HomeScreen() {
             <TrendingUp size={14} color={colors.accentBlue} strokeWidth={2.5} />
             <Text style={styles.metricCardLabel}>PIPELINE VALUE</Text>
           </View>
-          <Text style={styles.metricValue}>$17,150</Text>
-          <Text style={styles.metricSubtext}>4 active opportunities</Text>
+          <Text style={styles.metricValue}>{pipelineValueText}</Text>
+          <Text style={styles.metricSubtext}>{opportunitiesSubtext}</Text>
         </View>
       </View>
 
-      {/* Pro Upgrade Banner */}
+      {/* Autopilot Status / Upgrade Banner */}
       <View style={styles.proCard}>
         <View style={styles.proCardTop}>
           <View style={styles.crownCircle}>
             <Crown size={16} color={colors.amber} strokeWidth={2} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.proCardTitle}>24/7 Autopilot Quote Engine</Text>
+            <Text style={styles.proCardTitle}>
+              {subscriptionStatus.isPro ? '24/7 Autopilot Quote Engine Active' : '24/7 Autopilot Quote Engine'}
+            </Text>
             <Text style={styles.proCardDesc}>
-              Auto-qualify RFQs and send personalized quotes within 30s while you're away.
+              {subscriptionStatus.isPro
+                ? 'Autonomous matching is live and monitoring trade channels to draft proposals in real-time.'
+                : 'Auto-qualify RFQs and send personalized quotes within 30s while you are away.'}
             </Text>
           </View>
         </View>
 
-        <TouchableOpacity
-          style={styles.proUpgradeBtn}
-          activeOpacity={0.8}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            router.push('/modal/paywall');
-          }}
-        >
-          <Text style={styles.proUpgradeBtnText}>Upgrade to Pro</Text>
-          <ArrowRight size={14} color={colors.surface} strokeWidth={2.5} />
-        </TouchableOpacity>
+        {!subscriptionStatus.isPro && (
+          <TouchableOpacity
+            style={styles.proUpgradeBtn}
+            activeOpacity={0.8}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push('/modal/paywall');
+            }}
+          >
+            <Text style={styles.proUpgradeBtnText}>Upgrade to Pro</Text>
+            <ArrowRight size={14} color={colors.surface} strokeWidth={2.5} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Monitored Channels Snapshot */}
@@ -756,9 +776,14 @@ export default function HomeScreen() {
         ListFooterComponent={renderOverviewFooter}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>No matching inquiries</Text>
+            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#1E56A015', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+              <Zap size={22} color={colors.accentBlue} strokeWidth={2} />
+            </View>
+            <Text style={styles.emptyTitle}>Radar Active & Listening</Text>
             <Text style={styles.emptySubtitle}>
-              Incoming buyer requests from your WhatsApp groups will appear here.
+              {radarChannels.length > 0
+                ? `Monitoring ${radarChannels.length} trade groups for buyer inquiries. Inquiries and AI quote drafts will stream here in real-time.`
+                : 'Link your WhatsApp account and select trade channels to start intercepting real buyer inquiries.'}
             </Text>
           </View>
         }

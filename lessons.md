@@ -67,4 +67,10 @@
   2. Synthesize and preserve any previously saved `radarChannels` as selectable chips so the user's progress is never reset to zero.
   3. Provide an inline manual channel entry field (`[ + Add Group Name ]`) so users can type and monitor trade groups directly without blocking onboarding progress.
 
+### [2026-09-04] Onboarding Offerings Pipeline & Unified Screen Navigation Craft
+- **The Onboarding Extraction Disconnect Anti-Pattern:** When users enter business details and products during onboarding, never discard or only partially store the extracted offerings in temporary step state. Always immediately instantiate them as active offerings in `useCatalogStore` (`services`) and sync `location`, `serviceAreas`, and `languages` so the Catalog and Business hub instantly reflect the user's setup upon completing onboarding.
+- **Header & Navigation Uniformity Standard:** Sub-screens navigated from bottom tabs (such as `catalog.tsx`, `settings.tsx`, and `business-profile.tsx`) must never omit a standard top-bar back button (`ArrowLeft` or `X`). Navigating to a sub-screen without a clear, prominent back action traps users and breaks physical navigation flow.
+- **Anti-Dummy Metric Transparency:** Never hardcode mock analytics (e.g. `$17,150` pipeline value, `3.8 min` speed) on the main dashboard feed. Always compute metrics dynamically from live user leads, falling back to clean "Radar Active & Listening" radar states when no inquiries have arrived yet.
+
+
 

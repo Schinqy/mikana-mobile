@@ -2,6 +2,16 @@
 
 All notable changes to **Mikana Mobile** are documented here.
 
+## [1.7.0] - 2026-09-04
+
+### Navigation Unification, Catalog Sync, Dedicated Business Profile & Dynamic Radar
+- **Dynamic Home Metrics & Elimination of Hardcoded Dummies (`index.tsx`):** Removed all fake hardcoded metrics (`$17,150`, `3.8 min`, and fake lead counts) from the home feed. Pipeline value, opportunities count, and speed-to-lead are now computed dynamically from real persisted opportunities in `useLeadStore`. When zero leads are present, the feed displays a clean "Radar Active & Listening" state with a real-time status banner. Also prevented Autopilot from displaying redundant "Upgrade to Pro" banners when the user is already subscribed.
+- **Automatic Catalog Sync from Onboarding (`discover.tsx`, `useCatalogStore.ts`, `catalog.ts`):** Fixed onboarding data loss where products and capabilities entered during Stage 2 were previously discarded. Discovered products and active capability chips are now automatically converted into catalog service offerings with estimated pricing and turnaround times, and business profile metadata (name, tagline, location, coverage areas, languages) is synced directly into `useCatalogStore`.
+- **Dedicated Business Profile Screen & Route Separation (`modal/business-profile.tsx`, `business.tsx`):** Separated "Business Profile" and "Products & Services" in the Business Hub. "Products & Services" links directly to the catalog manager, while "Business Profile" links to a dedicated full-screen editor where users can view and update business identity, location, coverage areas, operating languages, WhatsApp contact number, and AI pitch guidelines.
+- **Universal Back Buttons & NativeWind v4 Typography Alignment (`catalog.tsx`, `settings.tsx`):** Rebuilt both Catalog and Settings screens using 100% NativeWind v4 utility classes. Added standard `ArrowLeft` back buttons to all navigation headers, eliminating dead-end navigation traps. Harmonized font hierarchy with Geist and Inter tokens across all screens to resolve visual inconsistencies and oversized text.
+- **Instant Sample Groups in WhatsApp Onboarding (`groups.tsx`):** Added a 1-tap `[ Load Sample Trade Groups ]` fallback in the channel selection empty state. Allows users to test channel selection, 2-group limits, and paywall unlocks immediately without being blocked by Render relay cold-starts or pending WhatsApp pairing.
+- **Realigned Subscription Paywall (`modal/paywall.tsx`):** Streamlined the paywall UI with an active plan indicator (`Current Plan: Pro Active` vs. `Free Tier`), clean billing frequency switcher, and reliable sandbox simulation mode.
+
 ## [1.6.0] - 2026-09-04
 
 ### Onboarding Expansion: Notifications, Paywall & 6-Stage Stepper

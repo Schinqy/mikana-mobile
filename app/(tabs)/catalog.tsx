@@ -3,47 +3,35 @@ import {
   View,
   Text,
   ScrollView,
-  StyleSheet,
-  SafeAreaView,
-  TouchableOpacity,
+  Pressable,
+  TextInput,
   Switch,
-  Platform,
 } from 'react-native';
-import { useCatalogStore } from '../../src/store/useCatalogStore';
-import { ServiceItem } from '../../src/types/catalog';
-import { Card } from '../../src/components/ui/Card';
-import { Badge } from '../../src/components/ui/Badge';
-import { Button } from '../../src/components/ui/Button';
-import { Input } from '../../src/components/ui/Input';
-import { colors } from '../../src/theme/colors';
+import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  Briefcase,
+  ArrowLeft,
+  Package,
   Plus,
-  Edit2,
+  Trash2,
+  Check,
   DollarSign,
   Clock,
-  CheckCircle2,
-  Building2,
-  Phone,
-  Trash2,
+  X,
+  Sparkles,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import { useCatalogStore } from '../../src/store/useCatalogStore';
+import { ServiceItem } from '../../src/types/catalog';
 
 export default function CatalogScreen() {
+  const router = useRouter();
   const {
-    profile,
     services,
-    updateProfile,
     addService,
     deleteService,
     toggleServiceActive,
   } = useCatalogStore();
-
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [businessName, setBusinessName] = useState(profile.businessName);
-  const [tagline, setTagline] = useState(profile.tagline);
-  const [whatsappNumber, setWhatsappNumber] = useState(profile.whatsappNumber);
-  const [pitchGuidelines, setPitchGuidelines] = useState(profile.customPitchGuidelines);
 
   const [isAddingService, setIsAddingService] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -52,31 +40,21 @@ export default function CatalogScreen() {
   const [newTurnaround, setNewTurnaround] = useState('');
   const [newDescription, setNewDescription] = useState('');
 
-  const handleSaveProfile = () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    updateProfile({
-      businessName,
-      tagline,
-      whatsappNumber,
-      customPitchGuidelines: pitchGuidelines,
-    });
-    setIsEditingProfile(false);
-  };
-
   const handleCreateService = () => {
-    if (!newTitle.trim() || !newPrice.trim()) {
-      return;
-    }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (!newTitle.trim()) return;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const parsedPrice = parseInt(newPrice.replace(/[^\d]/g, '') || '0', 10);
+
     addService({
       title: newTitle.trim(),
-      category: newCategory.trim() || 'General Services',
-      description: newDescription.trim() || 'Professional execution with delivery guarantee.',
+      category: newCategory.trim() || 'General Offerings',
+      description: newDescription.trim() || 'Quality-assured trade offering with delivery guarantee.',
       pricingModel: 'fixed',
-      price: parseInt(newPrice.replace(/[^\d]/g, '') || '1000', 10),
+      price: parsedPrice,
       currency: 'USD',
-      turnaroundTime: newTurnaround.trim() || '3–5 Days',
-      keyDeliverables: ['Standard Scope Deliverables', 'Quality Inspection & Handover'],
+      turnaroundTime: newTurnaround.trim() || '1–3 Days',
+      keyDeliverables: [newTitle.trim(), 'Quality inspection', 'Customer handover'],
       portfolioLinks: [],
       isActive: true,
     });
@@ -87,364 +65,293 @@ export default function CatalogScreen() {
     setNewTurnaround('');
     setNewDescription('');
     setIsAddingService(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const handleDelete = (id: string) => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    deleteService(id);
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>Service & Pricing Catalog</Text>
-          <Text style={styles.subtitle}>
-            Your products and rates used by AI to generate grounded quotes
-          </Text>
+    <SafeAreaView className="flex-1 bg-canvas" edges={['top', 'bottom']}>
+      {/* ── 1. Top Bar with Back Button ─────────────────────────────────────── */}
+      <View className="px-6 py-3 border-b border-border bg-canvas flex-row items-center justify-between">
+        <View className="flex-row items-center gap-3">
+          <Pressable
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/(tabs)/business');
+              }
+            }}
+            className="w-8 h-8 -ml-1 items-center justify-center rounded-lg active:bg-surface-elevated"
+            hitSlop={8}
+          >
+            <ArrowLeft size={20} color="#486581" strokeWidth={1.75} />
+          </Pressable>
+
+          <View>
+            <Text className="font-geist-medium text-xs text-content-muted tracking-wide">
+              Business · Offerings
+            </Text>
+            <Text className="font-geist-bold text-base text-content-heading">
+              Products & Services
+            </Text>
+          </View>
         </View>
+
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setIsAddingService(!isAddingService);
+          }}
+          className="flex-row items-center gap-1 bg-brand-navy px-3 py-1.5 rounded-lg active:opacity-90 shadow-xs"
+        >
+          {isAddingService ? (
+            <>
+              <X size={13} color="#FFFFFF" strokeWidth={2} />
+              <Text className="font-geist-semibold text-xs text-white">Cancel</Text>
+            </>
+          ) : (
+            <>
+              <Plus size={13} color="#FFFFFF" strokeWidth={2.5} />
+              <Text className="font-geist-semibold text-xs text-white">Add</Text>
+            </>
+          )}
+        </Pressable>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        {/* Business Profile Card */}
-        <Card style={styles.profileCard}>
-          <View style={styles.profileHeader}>
-            <View style={styles.profileTitleRow}>
-              <Building2 size={16} color={colors.brandNavy} />
-              <Text style={styles.profileBusinessName}>{profile.businessName}</Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => setIsEditingProfile(!isEditingProfile)}
-              style={styles.editIconBtn}
-            >
-              <Edit2 size={13} color={colors.brandNavy} />
-              <Text style={styles.editBtnText}>{isEditingProfile ? 'Cancel' : 'Edit'}</Text>
-            </TouchableOpacity>
-          </View>
-
-          {isEditingProfile ? (
-            <View style={styles.profileForm}>
-              <Input
-                label="BUSINESS NAME"
-                value={businessName}
-                onChangeText={setBusinessName}
-                placeholder="e.g. Apex Engineering & Print"
-              />
-              <Input
-                label="TAGLINE & SPECIALTY"
-                value={tagline}
-                onChangeText={setTagline}
-                placeholder="e.g. Precision apparel and corporate gifts"
-              />
-              <Input
-                label="WHATSAPP NUMBER"
-                value={whatsappNumber}
-                onChangeText={setWhatsappNumber}
-                keyboardType="phone-pad"
-                placeholder="+27..."
-              />
-              <Input
-                label="CUSTOM PITCH GUIDELINES"
-                value={pitchGuidelines}
-                onChangeText={setPitchGuidelines}
-                placeholder="e.g. Always mention free Sandton delivery"
-              />
-              <Button size="sm" variant="primary" onPress={handleSaveProfile} style={styles.saveBtn}>
-                Save Profile Changes
-              </Button>
-            </View>
-          ) : (
-            <View style={styles.profileSummary}>
-              <Text style={styles.taglineText}>{profile.tagline}</Text>
-              <View style={styles.phoneRow}>
-                <Phone size={12} color={colors.textMuted} />
-                <Text style={styles.phoneText}>{profile.whatsappNumber}</Text>
-              </View>
-            </View>
-          )}
-        </Card>
-
-        {/* Services List Header */}
-        <View style={styles.servicesHeader}>
-          <View style={styles.servicesTitleRow}>
-            <Briefcase size={15} color={colors.brandNavy} />
-            <Text style={styles.servicesTitle}>Active Offerings ({services.length})</Text>
-          </View>
-          <Button
-            size="sm"
-            variant="primary"
-            icon={<Plus size={13} color={colors.textInverse} />}
-            onPress={() => setIsAddingService(!isAddingService)}
-          >
-            Add Offering
-          </Button>
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="px-6 pt-4 pb-24"
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* ── 2. Screen Header & Description ──────────────────────────────────── */}
+        <View className="mb-4">
+          <Text className="font-geist-bold text-2xl leading-8 text-content-heading tracking-tight mb-1">
+            Catalog & Rates
+          </Text>
+          <Text className="font-inter text-xs leading-5 text-content-secondary">
+            Your products and capabilities used by AI to draft grounded quotes when buyers post inquiries in your trade groups.
+          </Text>
         </View>
 
-        {/* Add Offering Form */}
+        {/* ── 3. Add Offering Form ────────────────────────────────────────────── */}
         {isAddingService && (
-          <Card style={styles.addServiceCard}>
-            <Text style={styles.addCardTitle}>New Service / Product Offering</Text>
-            <Input
-              label="SERVICE / PRODUCT TITLE"
-              value={newTitle}
-              onChangeText={setNewTitle}
-              placeholder="e.g. 50x Custom Branded Hoodies"
-            />
-            <Input
-              label="CATEGORY"
-              value={newCategory}
-              onChangeText={setNewCategory}
-              placeholder="e.g. Apparel & Merchandise"
-            />
-            <Input
-              label="STANDARD PRICE (USD / ZAR)"
-              value={newPrice}
-              onChangeText={setNewPrice}
-              keyboardType="numeric"
-              placeholder="e.g. 450"
-            />
-            <Input
-              label="TYPICAL TURNAROUND"
-              value={newTurnaround}
-              onChangeText={setNewTurnaround}
-              placeholder="e.g. 3–5 Business Days"
-            />
-            <Input
-              label="DESCRIPTION / DELIVERABLES"
-              value={newDescription}
-              onChangeText={setNewDescription}
-              placeholder="Includes embroidery, proofing, and delivery"
-            />
-            <View style={styles.addBtnRow}>
-              <Button size="sm" variant="outline" onPress={() => setIsAddingService(false)} style={{ flex: 1 }}>
-                Cancel
-              </Button>
-              <Button size="sm" variant="primary" onPress={handleCreateService} style={{ flex: 1 }}>
-                Save Offering
-              </Button>
+          <View className="bg-surface border border-brand-blue rounded-2xl p-4 mb-4 shadow-sm">
+            <View className="flex-row items-center justify-between pb-2.5 mb-3 border-b border-border">
+              <Text className="font-geist-bold text-sm text-brand-navy">
+                New Product or Service
+              </Text>
+              <Pressable onPress={() => setIsAddingService(false)}>
+                <X size={16} color="#829AB1" strokeWidth={2} />
+              </Pressable>
             </View>
-          </Card>
+
+            <View className="gap-3">
+              <View>
+                <Text className="font-geist-medium text-xs text-content-secondary mb-1">
+                  Title / Name *
+                </Text>
+                <TextInput
+                  value={newTitle}
+                  onChangeText={setNewTitle}
+                  placeholder="e.g. 50kVA Perkins Generator Service"
+                  placeholderTextColor="#829AB1"
+                  className="font-inter text-xs text-content-primary bg-surface-elevated border border-border rounded-xl px-3 py-2"
+                />
+              </View>
+
+              <View className="flex-row gap-3">
+                <View className="flex-1">
+                  <Text className="font-geist-medium text-xs text-content-secondary mb-1">
+                    Category
+                  </Text>
+                  <TextInput
+                    value={newCategory}
+                    onChangeText={setNewCategory}
+                    placeholder="e.g. Industrial Equipment"
+                    placeholderTextColor="#829AB1"
+                    className="font-inter text-xs text-content-primary bg-surface-elevated border border-border rounded-xl px-3 py-2"
+                  />
+                </View>
+
+                <View className="flex-1">
+                  <Text className="font-geist-medium text-xs text-content-secondary mb-1">
+                    Price (USD)
+                  </Text>
+                  <TextInput
+                    value={newPrice}
+                    onChangeText={setNewPrice}
+                    placeholder="e.g. 450 (or 0 for quote)"
+                    placeholderTextColor="#829AB1"
+                    keyboardType="numeric"
+                    className="font-inter text-xs text-content-primary bg-surface-elevated border border-border rounded-xl px-3 py-2"
+                  />
+                </View>
+              </View>
+
+              <View>
+                <Text className="font-geist-medium text-xs text-content-secondary mb-1">
+                  Turnaround / Availability
+                </Text>
+                <TextInput
+                  value={newTurnaround}
+                  onChangeText={setNewTurnaround}
+                  placeholder="e.g. In Stock / 1–3 Business Days"
+                  placeholderTextColor="#829AB1"
+                  className="font-inter text-xs text-content-primary bg-surface-elevated border border-border rounded-xl px-3 py-2"
+                />
+              </View>
+
+              <View>
+                <Text className="font-geist-medium text-xs text-content-secondary mb-1">
+                  Description / Deliverables
+                </Text>
+                <TextInput
+                  value={newDescription}
+                  onChangeText={setNewDescription}
+                  placeholder="e.g. Full mechanical inspection, oil filter change, load test"
+                  placeholderTextColor="#829AB1"
+                  multiline
+                  className="font-inter text-xs text-content-primary bg-surface-elevated border border-border rounded-xl px-3 py-2"
+                />
+              </View>
+
+              <View className="flex-row gap-2 mt-1">
+                <Pressable
+                  onPress={() => setIsAddingService(false)}
+                  className="flex-1 py-2.5 rounded-xl bg-surface-elevated border border-border items-center justify-center"
+                >
+                  <Text className="font-geist-semibold text-xs text-content-secondary">
+                    Cancel
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={handleCreateService}
+                  className="flex-1 py-2.5 rounded-xl bg-brand-navy items-center justify-center active:opacity-95"
+                >
+                  <Text className="font-geist-semibold text-xs text-white">
+                    Save Offering
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
         )}
 
-        {/* Service Cards */}
-        {services.map((item: ServiceItem) => (
-          <Card key={item.id} style={styles.serviceCard}>
-            <View style={styles.serviceTop}>
-              <View style={styles.serviceTitleGroup}>
-                <Text style={styles.serviceTitleText}>{item.title}</Text>
-                <Badge variant="default">{item.category}</Badge>
-              </View>
-              <Switch
-                value={item.isActive}
-                onValueChange={() => toggleServiceActive(item.id)}
-                trackColor={{ false: colors.borderStrong, true: colors.emerald }}
-                thumbColor="#FFFFFF"
-              />
+        {/* ── 4. Offerings List ───────────────────────────────────────────────── */}
+        {services.length === 0 ? (
+          <View className="bg-surface border border-border rounded-2xl p-8 items-center justify-center my-6">
+            <View className="w-12 h-12 rounded-2xl bg-surface-elevated border border-border items-center justify-center mb-3">
+              <Package size={22} color="#486581" strokeWidth={1.75} />
+            </View>
+            <Text className="font-geist-bold text-base text-content-heading text-center mb-1">
+              No Offerings in Catalog
+            </Text>
+            <Text className="font-inter text-xs text-content-secondary text-center leading-5 mb-4 max-w-[260px]">
+              Add your trade products and services so Mikana's AI can ground quotes to your inventory.
+            </Text>
+            <Pressable
+              onPress={() => setIsAddingService(true)}
+              className="flex-row items-center gap-1.5 bg-brand-navy px-4 py-2.5 rounded-xl active:opacity-90 shadow-xs"
+            >
+              <Plus size={14} color="#FFFFFF" strokeWidth={2.5} />
+              <Text className="font-geist-semibold text-xs text-white">
+                Add First Offering
+              </Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View className="gap-2.5">
+            <View className="flex-row items-center justify-between pb-1">
+              <Text className="font-geist-semibold text-xs text-content-heading uppercase tracking-wider">
+                Active Offerings ({services.length})
+              </Text>
+              <Text className="font-inter text-[11px] text-content-muted">
+                Toggled ON = Monitored for RFQs
+              </Text>
             </View>
 
-            <Text style={styles.serviceDescText}>{item.description}</Text>
+            {services.map((item: ServiceItem) => (
+              <View
+                key={item.id}
+                className="bg-surface border border-border rounded-2xl p-4 shadow-xs"
+              >
+                <View className="flex-row items-start justify-between mb-2">
+                  <View className="flex-1 mr-3">
+                    <Text className="font-geist-semibold text-sm text-content-heading leading-5 mb-1">
+                      {item.title}
+                    </Text>
+                    <View className="flex-row items-center gap-1.5">
+                      <View className="bg-surface-elevated border border-border px-2 py-0.5 rounded">
+                        <Text className="font-geist-medium text-[10px] text-content-secondary">
+                          {item.category}
+                        </Text>
+                      </View>
+                      {item.isActive && (
+                        <View className="bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                          <Text className="font-geist-semibold text-[10px] text-emerald-700">
+                            Active
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
 
-            <View style={styles.serviceMetaRow}>
-              <View style={styles.pricePill}>
-                <DollarSign size={13} color={colors.emerald} />
-                <Text style={styles.pricePillText}>${item.price.toLocaleString()}</Text>
+                  <Switch
+                    value={item.isActive}
+                    onValueChange={() => {
+                      Haptics.selectionAsync();
+                      toggleServiceActive(item.id);
+                    }}
+                    trackColor={{ false: '#CBD5E1', true: '#1E56A0' }}
+                    thumbColor="#FFFFFF"
+                  />
+                </View>
+
+                {item.description ? (
+                  <Text className="font-inter text-xs text-content-secondary leading-4 mb-3">
+                    {item.description}
+                  </Text>
+                ) : null}
+
+                <View className="flex-row items-center justify-between pt-2.5 border-t border-border">
+                  <View className="flex-row items-center gap-3">
+                    <View className="flex-row items-center gap-1 bg-surface-elevated px-2 py-1 rounded-lg">
+                      <DollarSign size={12} color="#1E56A0" strokeWidth={2} />
+                      <Text className="font-geist-semibold text-xs text-brand-navy">
+                        {item.price > 0 ? `$${item.price.toLocaleString()}` : 'Custom Quote'}
+                      </Text>
+                    </View>
+
+                    {item.turnaroundTime ? (
+                      <View className="flex-row items-center gap-1">
+                        <Clock size={11} color="#829AB1" strokeWidth={1.75} />
+                        <Text className="font-inter text-[11px] text-content-muted">
+                          {item.turnaroundTime}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+
+                  <Pressable
+                    onPress={() => handleDelete(item.id)}
+                    className="p-1.5 rounded-lg active:bg-rose-50"
+                    hitSlop={8}
+                  >
+                    <Trash2 size={14} color="#E02424" strokeWidth={1.75} />
+                  </Pressable>
+                </View>
               </View>
-              <View style={styles.turnaroundPill}>
-                <Clock size={12} color={colors.textSecondary} />
-                <Text style={styles.turnaroundPillText}>{item.turnaroundTime}</Text>
-              </View>
-              <TouchableOpacity onPress={() => deleteService(item.id)} style={styles.deleteBtn}>
-                <Trash2 size={14} color={colors.rose} />
-              </TouchableOpacity>
-            </View>
-          </Card>
-        ))}
+            ))}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.canvas,
-    paddingTop: Platform.OS === 'android' ? 30 : 0,
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: 11,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  content: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  profileCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    marginBottom: 20,
-  },
-  profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  profileTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  profileBusinessName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  editIconBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: colors.surfaceElevated,
-  },
-  editBtnText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.brandNavy,
-  },
-  profileSummary: {
-    gap: 4,
-  },
-  taglineText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
-  phoneRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 4,
-  },
-  phoneText: {
-    fontSize: 12,
-    color: colors.textMuted,
-    fontWeight: '500',
-  },
-  profileForm: {
-    marginTop: 10,
-  },
-  saveBtn: {
-    marginTop: 6,
-  },
-  servicesHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  servicesTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  servicesTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  addServiceCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    marginBottom: 16,
-  },
-  addCardTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    marginBottom: 12,
-  },
-  addBtnRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 6,
-  },
-  serviceCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    marginBottom: 12,
-  },
-  serviceTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  serviceTitleGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flex: 1,
-  },
-  serviceTitleText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  serviceDescText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    lineHeight: 17,
-    marginBottom: 10,
-  },
-  serviceMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  pricePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    backgroundColor: colors.emeraldBg,
-    borderColor: colors.emeraldBorder,
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  pricePillText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.emerald,
-  },
-  turnaroundPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.surfaceElevated,
-    borderColor: colors.border,
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  turnaroundPillText: {
-    fontSize: 11,
-    color: colors.textSecondary,
-  },
-  deleteBtn: {
-    marginLeft: 'auto',
-    padding: 6,
-  },
-});

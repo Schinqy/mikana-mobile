@@ -23,6 +23,7 @@ import {
   Plus,
   AlertCircle,
   Smartphone,
+  Sparkles,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import {
@@ -316,6 +317,21 @@ export default function GroupsScreen() {
 
     setManualChannelInput('');
   }, [manualChannelInput, setRadarChannels]);
+
+  const handleLoadDemoGroups = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const demoItems: GroupItem[] = [
+      { id: 'demo_1', jid: 'demo_1@g.us', name: 'Harare Commercial Hardware & Spares', participantCount: 384 },
+      { id: 'demo_2', jid: 'demo_2@g.us', name: 'Dubai & SA Heavy Equipment Deals', participantCount: 512 },
+      { id: 'demo_3', jid: 'demo_3@g.us', name: 'B2B Tech & Electronics Exchange', participantCount: 246 },
+      { id: 'demo_4', jid: 'demo_4@g.us', name: 'Southern Africa Wholesale Merchant Hub', participantCount: 620 },
+    ];
+    setGroups(demoItems);
+    groupsRef.current = demoItems;
+    setSelectedGroupIds(new Set(['demo_1', 'demo_2']));
+    setRadarChannels(['Harare Commercial Hardware & Spares', 'Dubai & SA Heavy Equipment Deals']);
+    setSessionOffline(false);
+  }, [setRadarChannels]);
 
   const handleActivate = useCallback(async () => {
     setSaving(true);
@@ -614,6 +630,16 @@ export default function GroupsScreen() {
               ? 'Your paired WhatsApp session disconnected. Reconnect your device to automatically detect groups, or add group names manually above.'
               : 'Make sure your paired WhatsApp account has joined trade groups. You can enter group names manually above or join groups anytime.'}
           </Text>
+
+          <Pressable
+            onPress={handleLoadDemoGroups}
+            className="flex-row items-center gap-1.5 bg-brand-blue-tint border border-brand-blue-border px-3.5 py-2 rounded-xl active:opacity-80 mb-4"
+          >
+            <Sparkles size={13} color="#1E56A0" strokeWidth={2} />
+            <Text className="font-geist-semibold text-xs text-brand-blue">
+              Load Sample Trade Groups
+            </Text>
+          </Pressable>
 
           <View className="flex-row gap-2.5">
             <Pressable

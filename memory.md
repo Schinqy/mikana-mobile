@@ -78,6 +78,8 @@ Mobile App (Expo) ←→ Supabase (DB + Realtime + Auth) ←→ Baileys Relay (R
 | Lead Radar feed | `app/(tabs)/index.tsx` |
 | Deal Pipeline CRM | `app/(tabs)/pipeline.tsx` |
 | Business Hub | `app/(tabs)/business.tsx` |
+| Business Profile modal | `app/modal/business-profile.tsx` |
+| Products & Catalog | `app/(tabs)/catalog.tsx` |
 | AI Pitch Studio modal | `app/modal/pitch.tsx` |
 | RevenueCat Paywall modal | `app/modal/paywall.tsx` |
 | Gemini AI service | `src/services/ai/geminiExtractor.ts` |

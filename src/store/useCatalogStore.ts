@@ -28,6 +28,9 @@ const DEFAULT_PROFILE: BusinessProfile = {
   website: '',
   defaultCurrency: 'USD',
   customPitchGuidelines: '',
+  location: '',
+  serviceAreas: [],
+  languages: [],
 };
 
 const DEFAULT_SERVICES: ServiceItem[] = [];

@@ -426,7 +426,56 @@ export default function DiscoverScreen() {
     // Also persist business profile into useCatalogStore so Business and Settings tabs remember it
     useCatalogStore.getState().updateProfile({
       businessName: trimmedName,
+      tagline: tradeDescription.trim(),
       industry: extracted?.categories?.[0] || 'Commercial Trade',
+      location: locations[0] || 'Harare',
+      serviceAreas: locations,
+      languages: selectedLanguages.length > 0 ? selectedLanguages : ['English'],
+    });
+
+    // Populate catalog services with extracted offerings so the user sees their products in Catalog
+    const existingServices = useCatalogStore.getState().services || [];
+    const existingTitles = new Set(existingServices.map(s => s.title.toLowerCase()));
+    const newOfferings: any[] = [];
+
+    (extracted?.products || []).forEach((prod, i) => {
+      if (!existingTitles.has(prod.toLowerCase())) {
+        newOfferings.push({
+          title: prod,
+          category: extracted?.categories?.[0] || 'Products',
+          description: `Quality verified offering: ${prod}`,
+          pricingModel: 'fixed' as const,
+          price: 0,
+          currency: 'USD',
+          turnaroundTime: 'In Stock / Ready',
+          keyDeliverables: [prod, 'Quality inspection', 'Direct delivery'],
+          portfolioLinks: [],
+          isActive: true,
+        });
+        existingTitles.add(prod.toLowerCase());
+      }
+    });
+
+    (activeCapabilities || []).forEach((cap, i) => {
+      if (!existingTitles.has(cap.toLowerCase())) {
+        newOfferings.push({
+          title: cap,
+          category: extracted?.categories?.[0] || 'Services',
+          description: `Specialized capability: ${cap}`,
+          pricingModel: 'fixed' as const,
+          price: 0,
+          currency: 'USD',
+          turnaroundTime: '1–3 Days',
+          keyDeliverables: [cap, 'Professional execution', 'Customer handover'],
+          portfolioLinks: [],
+          isActive: true,
+        });
+        existingTitles.add(cap.toLowerCase());
+      }
+    });
+
+    newOfferings.forEach(offering => {
+      useCatalogStore.getState().addService(offering);
     });
   }, [
     businessName,

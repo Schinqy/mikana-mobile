@@ -78,6 +78,7 @@ export default function RootLayout() {
               <Stack.Screen name="modal/new-lead" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
               <Stack.Screen name="modal/whatsapp-pair" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
               <Stack.Screen name="modal/monitored-groups" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="modal/business-profile" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
             </Stack>
           </View>
         </KeyboardProvider>
