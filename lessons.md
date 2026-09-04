@@ -80,5 +80,11 @@
   3. Graceful local heuristic fallback (`localFallbackExtract`) with informative diagnostics when no key is configured.
 - **Key Rotation Protocol:** Once an API key is detected by GitHub Secret Scanning in a committed git hash, consider that credential compromised. Immediately revoke and generate a replacement key in Google AI Studio / Google Cloud Console, update the gitignored local `.env` file, and dismiss the alert on GitHub as Revoked.
 
+### [2026-09-04] Persisted Dummy Data Sanitization Standard
+- **The Stale AsyncStorage Seed Trap:** When removing mock or sample data (`INITIAL_SAMPLE_LEADS`) from an application, simply changing initial state defaults in code (`leads: []`) is NOT enough. If the app was previously launched, Zustand's `persist` middleware hydrates the previously saved mock array from `AsyncStorage`, continuing to render mock cards on the user's screen.
+- **The Solution:** Always pair mock array removal with an active rehydration sanitizer:
+  1. Add an `onRehydrateStorage` hook in the store definition to filter out legacy dummy IDs (`lead-001..004`) during state hydration.
+  2. Add a mount-time `useEffect` in the consuming screen (`HomeScreen`) to actively purge legacy mock records from memory and storage immediately upon render.
+
 
 
