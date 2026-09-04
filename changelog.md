@@ -4,9 +4,10 @@ All notable changes to **Mikana Mobile** are documented here.
 
 ## [1.6.0] - 2026-09-04
 
-### Onboarding Polishing, Channel Empty State & Location Enhancements
-- **No-Trap Channel Selection (`groups.tsx`):** Added 8-second fetch timeout with AbortController, retry/refresh button, and a clean empty state with actionable instructions. Users can skip or proceed to dashboard with 0 groups selected, preventing onboarding lockouts.
-- **Strict Anti-Mock Guarantee:** Zero fake or mock demo groups inserted into live channel feeds.
+### Onboarding Expansion: Notifications & Freemium Paywall Screens
+- **Instant Alerts Screen (`notifications.tsx`):** Added Step 5 onboarding screen demonstrating sub-second RFQ interception via a tactile push notification mockup card. Integrates `expo-notifications` permissions request with graceful fallback and a skip option.
+- **Freemium Paywall Screen (`paywall.tsx`):** Added Step 6 onboarding paywall highlighting **Mikana Free ("No Credit Card Required")** as the default zero-risk choice alongside an optional **Mikana Pro (7-Day Trial)** upgrade. Supports one-tap free enrollment and RevenueCat Pro purchases.
+- **No-Trap Channel Selection (`groups.tsx`):** Added 8-second fetch timeout with AbortController, retry/refresh button, and a clean empty state with actionable instructions. Transitions seamlessly to `/onboarding/notifications`.
 - **Smart Location Disambiguation (`discover.tsx`):** Selecting specific regional hubs or custom locations automatically clears the "Worldwide / Remote" fallback tag and vice versa.
 - **Zero-Emoji & Anti-Fake Controls:** Removed all placeholder/fake speech-to-text elements and verified clean, accessible UI controls across all onboarding steps.
 

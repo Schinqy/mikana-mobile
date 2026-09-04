@@ -3,11 +3,12 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../services/supabase/client';
 
-export type OnboardingStage = 'welcome' | 'discovered' | 'paired' | 'groups' | 'completed';
+export type OnboardingStage = 'welcome' | 'discovered' | 'paired' | 'groups' | 'notifications' | 'paywall' | 'completed';
 
 interface UserCapabilityProfile {
   displayName: string;
   description: string;
+  languages?: string[];
   location: string;
   serviceAreas: string[];
   categories: string[];

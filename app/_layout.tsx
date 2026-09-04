@@ -70,6 +70,8 @@ export default function RootLayout() {
               <Stack.Screen name="onboarding/discover" options={{ animation: 'slide_from_right' }} />
               <Stack.Screen name="onboarding/pair" options={{ animation: 'slide_from_right' }} />
               <Stack.Screen name="onboarding/groups" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="onboarding/notifications" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="onboarding/paywall" options={{ animation: 'slide_from_right' }} />
 
               <Stack.Screen name="modal/pitch" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
               <Stack.Screen name="modal/paywall" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />

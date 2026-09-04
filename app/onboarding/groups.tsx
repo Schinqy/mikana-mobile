@@ -37,7 +37,7 @@ interface GroupItem {
 
 export default function GroupsScreen() {
   const router = useRouter();
-  const { completeOnboarding } = useAuthStore();
+  const { setOnboardingStage } = useAuthStore();
   const { whatsappRelayUrl, setRadarChannels } = useSettingsStore();
 
   const [groups, setGroups] = useState<GroupItem[]>([]);
@@ -123,17 +123,17 @@ export default function GroupsScreen() {
 
     const selectedJids = Array.from(selected);
     setRadarChannels(selectedJids);
-    completeOnboarding();
+    setOnboardingStage('groups');
 
-    router.replace('/(tabs)');
-  }, [selected, setRadarChannels, completeOnboarding, router]);
+    router.push('/onboarding/notifications');
+  }, [selected, setRadarChannels, setOnboardingStage, router]);
 
   const handleSkip = useCallback(() => {
     Haptics.selectionAsync();
     setRadarChannels([]);
-    completeOnboarding();
-    router.replace('/(tabs)');
-  }, [setRadarChannels, completeOnboarding, router]);
+    setOnboardingStage('groups');
+    router.push('/onboarding/notifications');
+  }, [setRadarChannels, setOnboardingStage, router]);
 
   const renderGroup = ({ item }: { item: GroupItem }) => {
     const isSelected = selected.has(item.jid);
@@ -171,6 +171,8 @@ export default function GroupsScreen() {
           <View style={[styles.segment, styles.segmentFilled]} />
           <View style={[styles.segment, styles.segmentFilled]} />
           <View style={[styles.segment, styles.segmentFilled]} />
+          <View style={styles.segment} />
+          <View style={styles.segment} />
         </View>
         <View style={styles.navRow}>
           <Pressable
@@ -187,7 +189,7 @@ export default function GroupsScreen() {
           >
             <ArrowLeft size={20} color={colors.textSecondary} strokeWidth={1.75} />
           </Pressable>
-          <Text style={styles.stepIndicator}>Step 4 of 4 · Monitored Channels</Text>
+          <Text style={styles.stepIndicator}>Step 4 of 6 · Trade Groups</Text>
           <Pressable
             style={styles.skipButton}
             onPress={handleSkip}
