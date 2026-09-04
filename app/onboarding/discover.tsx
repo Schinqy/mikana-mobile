@@ -31,6 +31,7 @@ import {
 import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useCatalogStore } from '../../src/store/useCatalogStore';
+import { useSettingsStore } from '../../src/store/useSettingsStore';
 
 // ── Comprehensive Global Language Catalog ──────────────────────────────────────
 
@@ -160,17 +161,22 @@ interface ExtractedProfile {
 
 // ── Gemini Capability Engine with Rich Buyer Intent Prompts ────────────────────
 
-const GEMINI_API_KEY =
-  process.env.EXPO_PUBLIC_GEMINI_API_KEY ||
-  process.env.GEMINI_API_KEY ||
-  'AIzaSyBPMtdBw3WfPJdeuqi1CBE1541PslE8mio';
+function getGeminiApiKey(): string {
+  return (
+    process.env.EXPO_PUBLIC_GEMINI_API_KEY ||
+    process.env.GEMINI_API_KEY ||
+    useSettingsStore.getState().geminiApiKey ||
+    ''
+  );
+}
 
 async function extractTradeWithIntelligence(
   description: string,
   languages: string[],
   location: string
 ): Promise<ExtractedProfile> {
-  if (!GEMINI_API_KEY) {
+  const apiKey = getGeminiApiKey();
+  if (!apiKey) {
     return localFallbackExtract(description, languages);
   }
 
@@ -206,7 +212,7 @@ Return ONLY valid JSON in this exact structure:
     const timeoutId = setTimeout(() => controller.abort(), 6500);
 
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

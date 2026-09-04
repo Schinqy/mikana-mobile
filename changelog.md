@@ -11,6 +11,7 @@ All notable changes to **Mikana Mobile** are documented here.
 - **Universal Back Buttons & NativeWind v4 Typography Alignment (`catalog.tsx`, `settings.tsx`):** Rebuilt both Catalog and Settings screens using 100% NativeWind v4 utility classes. Added standard `ArrowLeft` back buttons to all navigation headers, eliminating dead-end navigation traps. Harmonized font hierarchy with Geist and Inter tokens across all screens to resolve visual inconsistencies and oversized text.
 - **Instant Sample Groups in WhatsApp Onboarding (`groups.tsx`):** Added a 1-tap `[ Load Sample Trade Groups ]` fallback in the channel selection empty state. Allows users to test channel selection, 2-group limits, and paywall unlocks immediately without being blocked by Render relay cold-starts or pending WhatsApp pairing.
 - **Realigned Subscription Paywall (`modal/paywall.tsx`):** Streamlined the paywall UI with an active plan indicator (`Current Plan: Pro Active` vs. `Free Tier`), clean billing frequency switcher, and reliable sandbox simulation mode.
+- **Hardcoded Secret Removal & Credential Sanitization (`discover.tsx`):** Eliminated hardcoded Google API key string identified by GitHub Secret Scanning. Configured dynamic runtime resolution prioritizing `EXPO_PUBLIC_GEMINI_API_KEY` and user settings (`useSettingsStore`), with zero exposed plaintext credentials in source code.
 
 ## [1.6.0] - 2026-09-04
 

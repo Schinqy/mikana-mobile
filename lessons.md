@@ -72,5 +72,13 @@
 - **Header & Navigation Uniformity Standard:** Sub-screens navigated from bottom tabs (such as `catalog.tsx`, `settings.tsx`, and `business-profile.tsx`) must never omit a standard top-bar back button (`ArrowLeft` or `X`). Navigating to a sub-screen without a clear, prominent back action traps users and breaks physical navigation flow.
 - **Anti-Dummy Metric Transparency:** Never hardcode mock analytics (e.g. `$17,150` pipeline value, `3.8 min` speed) on the main dashboard feed. Always compute metrics dynamically from live user leads, falling back to clean "Radar Active & Listening" radar states when no inquiries have arrived yet.
 
+### [2026-09-04] Secret Scanning & API Key Sanitization Standard
+- **The Hardcoded Fallback Secret Trap:** Never provide a fallback string containing a real API key or credential literal (e.g. `'AIzaSy...'`) in source code, even as a development convenience or temporary value. GitHub Secret Scanning and automated static security analysis immediately detect and flag hardcoded Google/Gemini API key patterns across all commits.
+- **Secure Key Resolution Architecture:** Always resolve API keys dynamically at runtime in the following priority order:
+  1. `process.env.EXPO_PUBLIC_GEMINI_API_KEY` (from `.env`, which is strictly `.gitignore`d).
+  2. User-configured store credentials (`useSettingsStore.getState().geminiApiKey`).
+  3. Graceful local heuristic fallback (`localFallbackExtract`) with informative diagnostics when no key is configured.
+- **Key Rotation Protocol:** Once an API key is detected by GitHub Secret Scanning in a committed git hash, consider that credential compromised. Immediately revoke and generate a replacement key in Google AI Studio / Google Cloud Console, update the gitignored local `.env` file, and dismiss the alert on GitHub as Revoked.
+
 
 
