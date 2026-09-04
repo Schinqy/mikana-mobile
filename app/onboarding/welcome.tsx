@@ -1,202 +1,285 @@
-﻿import React, { useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
   Pressable,
   Animated,
-  Easing,
+  StyleSheet,
+  Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowRight, ArrowDown, MapPin, Send, MessageSquare } from 'lucide-react-native';
+import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
+import * as Haptics from 'expo-haptics';
 import Logotype from '../../assets/logotype.svg';
+
+const ROYAL_BLUE = '#1E56A0';
+const ACCENT_BLUE = '#4169E1';
+
+interface StorySlide {
+  statement: string;
+  highlight?: string;
+  subtext?: string;
+}
+
+const SLIDES: StorySlide[] = [
+  {
+    statement: 'Your next customer is already in a WhatsApp group.',
+  },
+  {
+    statement: 'The first merchant to quote closes the deal 70% of the time.',
+  },
+  {
+    statement: 'Mikana turns group requests into winning quotes — in seconds.',
+  },
+];
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const [currentSlide, setCurrentSlide] = useState(0);
 
-  // Staggered presentation animations
-  const fadeStage1 = useRef(new Animated.Value(0)).current;
-  const slideStage1 = useRef(new Animated.Value(14)).current;
-  const fadeStage2 = useRef(new Animated.Value(0)).current;
-  const slideStage2 = useRef(new Animated.Value(12)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(0.6)).current;
 
+  // Subtle pulsing animation on "Tap to continue"
   useEffect(() => {
-    // 1. Initial view entrance
-    Animated.parallel([
-      Animated.timing(fadeStage1, {
-        toValue: 1,
-        duration: 380,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideStage1, {
-        toValue: 0,
-        duration: 380,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // 2. Structured lead revelation
-    const timer = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(fadeStage2, {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
           toValue: 1,
-          duration: 380,
-          easing: Easing.out(Easing.cubic),
+          duration: 1200,
           useNativeDriver: true,
         }),
-        Animated.timing(slideStage2, {
-          toValue: 0,
-          duration: 380,
-          easing: Easing.out(Easing.cubic),
+        Animated.timing(pulseAnim, {
+          toValue: 0.5,
+          duration: 1200,
           useNativeDriver: true,
         }),
-      ]).start();
-    }, 350);
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, [pulseAnim]);
 
-    return () => clearTimeout(timer);
-  }, []);
+  const handleNext = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    if (currentSlide < SLIDES.length - 1) {
+      Animated.sequence([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 120,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 10,
+          duration: 0,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setCurrentSlide(prev => prev + 1);
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 240,
+            useNativeDriver: true,
+          }),
+          Animated.timing(slideAnim, {
+            toValue: 0,
+            duration: 240,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      });
+    } else {
+      router.push('/onboarding/discover');
+    }
+  };
+
+  const handleSkip = (e: any) => {
+    e?.stopPropagation?.();
+    Haptics.selectionAsync();
+    router.push('/onboarding/discover');
+  };
+
+  const activeSlide = SLIDES[currentSlide];
 
   return (
-    <SafeAreaView className="flex-1 bg-canvas justify-between px-6 py-4" edges={['top', 'bottom']}>
-      {/* 1. Brand Logotype */}
-      <View className="pt-2 pb-1">
-        <Logotype width={116} height={38} />
-      </View>
-
-      {/* 2. Headline & Value Proposition */}
-      <Animated.View
-        style={{ opacity: fadeStage1, transform: [{ translateY: slideStage1 }] }}
-        className="mt-2 mb-1"
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      {/* Ambient Blue Glow at Bottom Right (Inspired by Speak) */}
+      <Svg
+        height="480"
+        width="480"
+        style={styles.ambientGlow}
+        pointerEvents="none"
       >
-        <Text className="font-geist-bold text-[26px] leading-[33px] text-content-heading tracking-tight mb-2">
-          {"Never miss a customer\nin your WhatsApp groups."}
-        </Text>
-        <Text className="font-inter text-sm leading-[21px] text-content-secondary">
-          Mikana monitors your selected groups 24/7 and turns raw chat requests into structured, actionable sales leads.
-        </Text>
-      </Animated.View>
+        <Defs>
+          <RadialGradient
+            id="cornerGlow"
+            cx="75%"
+            cy="75%"
+            rx="65%"
+            ry="65%"
+            fx="75%"
+            fy="75%"
+            gradientUnits="userSpaceOnUse"
+          >
+            <Stop offset="0%" stopColor="#60A5FA" stopOpacity="0.32" />
+            <Stop offset="45%" stopColor="#93C5FD" stopOpacity="0.16" />
+            <Stop offset="80%" stopColor="#FFFFFF" stopOpacity="0.03" />
+            <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+          </RadialGradient>
+        </Defs>
+        <Rect x="0" y="0" width="480" height="480" fill="url(#cornerGlow)" />
+      </Svg>
 
-      {/* 3. The Transformation Showcase */}
-      <View className="my-1 gap-2">
-        {/* Step A: Raw WhatsApp Group Chat Message */}
-        <Animated.View
-          style={{ opacity: fadeStage1, transform: [{ translateY: slideStage1 }] }}
-          className="bg-surface rounded-xl p-3 border border-border"
-        >
-          <View className="flex-row items-center justify-between mb-1.5">
-            <View className="flex-row items-center gap-1.5">
-              <View className="w-5 h-5 rounded-full bg-emerald-50 items-center justify-center border border-emerald-200">
-                <MessageSquare size={11} color="#059669" strokeWidth={2} />
-              </View>
-              <Text className="font-geist-semibold text-xs text-content-primary">
-                Commercial Suppliers & Trade
-              </Text>
-            </View>
-            <Text className="font-inter text-[11px] text-content-muted">2m ago</Text>
-          </View>
-
-          <Text className="font-geist-medium text-xs text-content-secondary mb-0.5">David K.</Text>
-          <Text className="font-inter text-[13px] leading-[18px] text-content-secondary italic">
-            "Looking for a verified supplier who can dispatch 50 commercial units by Friday. Immediate PO ready."
-          </Text>
-        </Animated.View>
-
-        {/* Step B: Interception Divider */}
-        <Animated.View
-          style={{ opacity: fadeStage2 }}
-          className="flex-row items-center justify-center py-0.5"
-        >
-          <View className="flex-1 h-[1px] bg-border" />
-          <View className="flex-row items-center gap-1.5 bg-brand-blue-tint border border-brand-blue-border rounded-full px-3 py-1 mx-2">
-            <ArrowDown size={11} color="#1E56A0" strokeWidth={2.5} />
-            <Text className="font-geist-semibold text-[10px] text-brand-blue tracking-wider">
-              CAPTURED AS ACTIONABLE LEAD
-            </Text>
-          </View>
-          <View className="flex-1 h-[1px] bg-border" />
-        </Animated.View>
-
-        {/* Step C: Real Mikana Lead Card (Identical to in-app Radar UI) */}
-        <Animated.View
-          style={{ opacity: fadeStage2, transform: [{ translateY: slideStage2 }] }}
-          className="bg-surface rounded-xl p-3.5 border border-border-strong shadow-sm"
-        >
-          {/* Card Top: Avatar, Sender, Source Badge */}
-          <View className="flex-row items-center justify-between mb-2">
-            <View className="flex-row items-center gap-2.5">
-              <View className="w-8 h-8 rounded-full bg-brand-navy items-center justify-center">
-                <Text className="font-geist-bold text-xs text-content-inverse">DK</Text>
-              </View>
-              <View>
-                <Text className="font-geist-semibold text-sm text-content-primary leading-tight">
-                  David K.
-                </Text>
-                <View className="flex-row items-center gap-1.5 mt-0.5">
-                  <View className="bg-brand-blue-tint border border-brand-blue-border rounded px-1.5 py-0.2">
-                    <Text className="font-geist-medium text-[9px] text-brand-blue">WhatsApp</Text>
-                  </View>
-                  <Text className="font-inter text-[11px] text-content-muted">
-                    Commercial Suppliers
-                  </Text>
-                </View>
-              </View>
-            </View>
-            <Text className="font-inter text-[11px] text-content-muted">Just now</Text>
-          </View>
-
-          {/* Lead Title */}
-          <Text className="font-geist-semibold text-sm text-content-primary leading-snug mb-2">
-            50 Commercial Units Required
-          </Text>
-
-          {/* Structured Detail Badges */}
-          <View className="flex-row items-center justify-between pt-1 border-t border-border">
-            <View className="flex-row items-center gap-1.5">
-              <View className="bg-surface-elevated border border-border rounded px-2 py-0.5">
-                <Text className="font-geist-medium text-[10px] text-content-secondary">
-                  50 Units
-                </Text>
-              </View>
-              <View className="bg-surface-elevated border border-border rounded px-2 py-0.5">
-                <Text className="font-geist-medium text-[10px] text-content-secondary">
-                  Due Friday
-                </Text>
-              </View>
-              <View className="bg-brand-blue-tint border border-brand-blue-border rounded px-2 py-0.5">
-                <Text className="font-geist-semibold text-[10px] text-brand-blue">
-                  PO Ready
-                </Text>
-              </View>
-            </View>
-
-            {/* In-Card Action Pill */}
-            <View className="flex-row items-center gap-1 bg-brand-navy px-2.5 py-1 rounded-md">
-              <Send size={10} color="#FFFFFF" strokeWidth={2} />
-              <Text className="font-geist-medium text-[10px] text-content-inverse">Quote</Text>
-            </View>
-          </View>
-        </Animated.View>
-      </View>
-
-      {/* 4. Docked Action Zone */}
-      <View className="gap-1.5 pb-1">
+      {/* Top Bar with Skip (No Sign-in button) */}
+      <View style={styles.topBar}>
+        <View style={styles.topBarSpacer} />
         <Pressable
-          className="flex-row items-center justify-center gap-2.5 bg-brand-navy py-4 rounded-xl shadow border border-brand-navy-dark active:scale-[0.98] active:opacity-95"
-          onPress={() => router.push('/onboarding/discover')}
+          onPress={handleSkip}
+          hitSlop={16}
           accessibilityRole="button"
-          accessibilityLabel="Get Started"
+          accessibilityLabel="Skip intro"
         >
-          <Text className="font-geist-semibold text-[15px] text-content-inverse tracking-wide">
-            Get Started
-          </Text>
-          <ArrowRight size={16} color="#FFFFFF" strokeWidth={2.25} />
+          <Text style={styles.skipText}>Skip</Text>
         </Pressable>
-        <Text className="font-inter text-xs text-content-muted text-center mt-0.5">
-          Free tier included · Connects in 60 seconds
-        </Text>
       </View>
+
+      {/* Full-Screen Tap Area */}
+      <Pressable
+        style={styles.contentContainer}
+        onPress={handleNext}
+        accessibilityRole="button"
+        accessibilityLabel="Tap to continue"
+      >
+        {/* Brand & Progress Section */}
+        <View style={styles.brandSection}>
+          <View style={styles.logoWrapper}>
+            <Logotype width={128} height={42} />
+          </View>
+
+          {/* 3-Dash Progress Stepper */}
+          <View style={styles.dashRow}>
+            {SLIDES.map((_, index) => {
+              const isActive = index === currentSlide;
+              return (
+                <View
+                  key={index}
+                  style={[
+                    styles.dash,
+                    isActive ? styles.dashActive : styles.dashInactive,
+                  ]}
+                />
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Big Impact Statement */}
+        <View style={styles.statementSection}>
+          <Animated.View
+            style={{
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            }}
+          >
+            <Text style={styles.statementText}>
+              {activeSlide.statement}
+            </Text>
+          </Animated.View>
+        </View>
+
+        {/* Subtle "Tap to continue" */}
+        <View style={styles.footerSection}>
+          <Animated.Text style={[styles.tapText, { opacity: pulseAnim }]}>
+            {currentSlide === SLIDES.length - 1 ? 'Tap to start' : 'Tap to continue'}
+          </Animated.Text>
+        </View>
+      </Pressable>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  ambientGlow: {
+    position: 'absolute',
+    bottom: -80,
+    right: -80,
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 28,
+    paddingTop: 8,
+    paddingBottom: 4,
+    zIndex: 10,
+  },
+  topBarSpacer: {
+    flex: 1,
+  },
+  skipText: {
+    fontFamily: 'Geist_600SemiBold',
+    fontSize: 15,
+    color: '#3B82F6',
+    letterSpacing: -0.2,
+  },
+  contentContainer: {
+    flex: 1,
+    paddingHorizontal: 28,
+    justifyContent: 'space-between',
+    paddingBottom: 24,
+  },
+  brandSection: {
+    paddingTop: 36,
+  },
+  logoWrapper: {
+    marginBottom: 26,
+  },
+  dashRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dash: {
+    height: 4,
+    borderRadius: 2,
+  },
+  dashActive: {
+    width: 30,
+    backgroundColor: ROYAL_BLUE,
+  },
+  dashInactive: {
+    width: 30,
+    backgroundColor: '#CBD5E1',
+  },
+  statementSection: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingBottom: 60,
+  },
+  statementText: {
+    fontFamily: 'Geist_700Bold',
+    fontSize: 34,
+    lineHeight: 44,
+    color: '#0F172A',
+    letterSpacing: -0.9,
+    maxWidth: '96%',
+  },
+  footerSection: {
+    alignItems: 'center',
+    paddingBottom: 16,
+  },
+  tapText: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 14,
+    color: '#64748B',
+    letterSpacing: 0.2,
+  },
+});
