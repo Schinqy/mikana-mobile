@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   Pressable,
   ScrollView,
   ActivityIndicator,
@@ -16,12 +15,8 @@ import {
   Check,
   Crown,
   ShieldCheck,
-  Zap,
-  Users,
-  Bot,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { colors, spacing, radius } from '../../src/theme/colors';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useSubscriptionStore } from '../../src/store/useSubscriptionStore';
 import {
@@ -114,20 +109,20 @@ export default function OnboardingPaywallScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-      {/* Top Segmented Progress Bar (Step 6 of 6 — Complete!) */}
-      <View style={styles.topProgress}>
-        <View style={styles.segmentedBar}>
-          <View style={[styles.segment, styles.segmentFilled]} />
-          <View style={[styles.segment, styles.segmentFilled]} />
-          <View style={[styles.segment, styles.segmentFilled]} />
-          <View style={[styles.segment, styles.segmentFilled]} />
-          <View style={[styles.segment, styles.segmentFilled]} />
-          <View style={[styles.segment, styles.segmentFilled]} />
+    <SafeAreaView className="flex-1 bg-canvas" edges={['top', 'bottom']}>
+      {/* ── 1. Top Bar & 6-Segment Stepper (All 6 Complete) ──────────────────── */}
+      <View className="px-6 pt-2 pb-3 border-b border-border bg-canvas">
+        <View className="flex-row items-center gap-1.5 mb-3">
+          <View className="flex-1 h-1 rounded-full bg-brand-navy" />
+          <View className="flex-1 h-1 rounded-full bg-brand-navy" />
+          <View className="flex-1 h-1 rounded-full bg-brand-navy" />
+          <View className="flex-1 h-1 rounded-full bg-brand-navy" />
+          <View className="flex-1 h-1 rounded-full bg-brand-navy" />
+          <View className="flex-1 h-1 rounded-full bg-brand-navy" />
         </View>
-        <View style={styles.navRow}>
+
+        <View className="flex-row items-center justify-between">
           <Pressable
-            style={styles.backButton}
             onPress={() => {
               if (router.canGoBack()) {
                 router.back();
@@ -135,217 +130,220 @@ export default function OnboardingPaywallScreen() {
                 router.replace('/onboarding/notifications');
               }
             }}
-            accessibilityRole="button"
-            accessibilityLabel="Back"
+            className="w-8 h-8 -ml-1 items-center justify-center rounded-lg active:bg-surface-elevated"
+            hitSlop={8}
           >
-            <ArrowLeft size={20} color={colors.textSecondary} strokeWidth={1.75} />
+            <ArrowLeft size={20} color="#486581" strokeWidth={1.75} />
           </Pressable>
-          <Text style={styles.stepIndicator}>Step 6 of 6 · Membership Tier</Text>
+
+          <Text className="font-geist-medium text-xs text-content-muted tracking-wide">
+            Step 6 of 6 · Membership Tier
+          </Text>
+
           <Pressable
-            style={styles.skipButton}
             onPress={handleFinishFree}
-            accessibilityRole="button"
-            accessibilityLabel="Skip to Free"
+            className="px-2 py-1 -mr-2 rounded-lg active:bg-surface-elevated"
+            hitSlop={8}
           >
-            <Text style={styles.skipText}>Start Free</Text>
+            <Text className="font-geist-semibold text-xs text-brand-blue">
+              Start Free
+            </Text>
           </Pressable>
         </View>
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        className="flex-1"
+        contentContainerClassName="px-6 pt-4 pb-8"
         showsVerticalScrollIndicator={false}
       >
-        {/* Header with Zero-Risk Freemium Guarantee */}
-        <View style={styles.header}>
-          <View style={styles.guaranteeBadge}>
-            <ShieldCheck size={13} color={colors.accentBlue} strokeWidth={2} />
-            <Text style={styles.guaranteeBadgeText}>No Credit Card Required</Text>
+        {/* Header */}
+        <View className="mb-4">
+          <View className="flex-row items-center gap-1.5 bg-brand-blue-tint border border-brand-blue-border rounded-full px-3 py-1 self-start mb-2">
+            <ShieldCheck size={13} color="#1E56A0" strokeWidth={2} />
+            <Text className="font-geist-semibold text-xs text-brand-blue">
+              No Credit Card Required
+            </Text>
           </View>
-          <Text style={styles.heading}>Start Free, Scale as You Win Deals</Text>
-          <Text style={styles.subtext}>
-            Catch live WhatsApp leads at zero cost. Upgrade to Autopilot whenever you want 24/7 quote dispatching.
+          <Text className="font-geist-bold text-2xl leading-8 text-content-heading tracking-tight mb-1">
+            Start Free, Scale as You Win Deals
+          </Text>
+          <Text className="font-inter text-sm leading-5 text-content-secondary">
+            Catch live WhatsApp leads at zero cost. Upgrade to Autopilot whenever you need 24/7 quote dispatching.
           </Text>
         </View>
 
         {/* Plan 1: Mikana Free (Default / Selected) */}
         <Pressable
-          style={[
-            styles.planCard,
-            selectedPlan === 'free' && styles.planCardSelected,
-          ]}
           onPress={() => {
             Haptics.selectionAsync();
             setSelectedPlan('free');
           }}
-          accessibilityRole="radio"
-          accessibilityState={{ checked: selectedPlan === 'free' }}
+          className={`p-4 rounded-2xl border mb-3 ${
+            selectedPlan === 'free'
+              ? 'bg-brand-blue-tint border-brand-blue'
+              : 'bg-surface border-border active:bg-surface-elevated'
+          }`}
         >
-          <View style={styles.planCardHeader}>
+          <View className="flex-row items-center justify-between mb-2">
             <View>
-              <View style={styles.pillRow}>
-                <View style={styles.freePill}>
-                  <Text style={styles.freePillText}>Freemium · Zero Risk</Text>
-                </View>
+              <View className="bg-surface-elevated border border-border px-2 py-0.5 rounded self-start mb-1">
+                <Text className="font-geist-medium text-[10px] text-content-secondary uppercase tracking-wider">
+                  Freemium · Zero Risk
+                </Text>
               </View>
-              <Text style={styles.planName}>Mikana Free</Text>
-              <Text style={styles.planDescription}>
-                Best for individual merchants & contractors getting started
+              <Text className="font-geist-bold text-lg text-content-heading">
+                Mikana Free
               </Text>
             </View>
-            <View style={[styles.radioCircle, selectedPlan === 'free' && styles.radioCircleSelected]}>
-              {selectedPlan === 'free' && <View style={styles.radioDot} />}
+            <View
+              className={`w-5 h-5 rounded-full border items-center justify-center ${
+                selectedPlan === 'free'
+                  ? 'border-brand-blue bg-brand-blue'
+                  : 'border-slate-300 bg-surface'
+              }`}
+            >
+              {selectedPlan === 'free' && (
+                <View className="w-2 h-2 rounded-full bg-white" />
+              )}
             </View>
           </View>
 
-          <View style={styles.priceRow}>
-            <Text style={styles.priceAmount}>$0</Text>
-            <Text style={styles.priceUnit}> / forever</Text>
+          <View className="flex-row items-baseline mb-3">
+            <Text className="font-geist-bold text-2xl text-content-heading">$0</Text>
+            <Text className="font-inter text-xs text-content-muted ml-1">/ forever</Text>
           </View>
 
-          <View style={styles.featureDivider} />
+          <View className="h-px bg-border my-2" />
 
-          <View style={styles.planFeatures}>
-            <View style={styles.featureLine}>
-              <Check size={14} color={colors.accentBlue} strokeWidth={2.5} />
-              <Text style={styles.featureLineText}>Monitor up to 2 WhatsApp trade groups</Text>
-            </View>
-            <View style={styles.featureLine}>
-              <Check size={14} color={colors.accentBlue} strokeWidth={2.5} />
-              <Text style={styles.featureLineText}>Real-time sub-second buyer RFQ alerts</Text>
-            </View>
-            <View style={styles.featureLine}>
-              <Check size={14} color={colors.accentBlue} strokeWidth={2.5} />
-              <Text style={styles.featureLineText}>AI proposal & quote drafting</Text>
-            </View>
-            <View style={styles.featureLine}>
-              <Check size={14} color={colors.accentBlue} strokeWidth={2.5} />
-              <Text style={styles.featureLineText}>Manual quote review and DM dispatch</Text>
-            </View>
+          <View className="gap-2 pt-1">
+            {[
+              'Monitor up to 2 WhatsApp trade groups',
+              'Real-time sub-second buyer RFQ alerts',
+              'AI proposal & quote drafting',
+              'Manual quote review and DM dispatch',
+            ].map((f, i) => (
+              <View key={i} className="flex-row items-center gap-2">
+                <Check size={14} color="#1E56A0" strokeWidth={2.5} />
+                <Text className="font-inter text-xs text-content-secondary">{f}</Text>
+              </View>
+            ))}
           </View>
         </Pressable>
 
         {/* Plan 2: Mikana Pro (Optional Upgrade) */}
         <Pressable
-          style={[
-            styles.planCard,
-            selectedPlan === 'pro' && styles.planCardSelected,
-          ]}
           onPress={() => {
             Haptics.selectionAsync();
             setSelectedPlan('pro');
           }}
-          accessibilityRole="radio"
-          accessibilityState={{ checked: selectedPlan === 'pro' }}
+          className={`p-4 rounded-2xl border mb-4 ${
+            selectedPlan === 'pro'
+              ? 'bg-brand-blue-tint border-brand-blue'
+              : 'bg-surface border-border active:bg-surface-elevated'
+          }`}
         >
-          <View style={styles.planCardHeader}>
+          <View className="flex-row items-center justify-between mb-2">
             <View>
-              <View style={styles.pillRow}>
-                <View style={styles.proPill}>
-                  <Crown size={11} color={colors.brandNavy} strokeWidth={2} />
-                  <Text style={styles.proPillText}>Maximum Growth</Text>
-                </View>
+              <View className="flex-row items-center gap-1 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded self-start mb-1">
+                <Crown size={11} color="#D97706" strokeWidth={2} />
+                <Text className="font-geist-semibold text-[10px] text-amber-800 uppercase tracking-wider">
+                  Maximum Growth
+                </Text>
               </View>
-              <Text style={styles.planName}>Mikana Pro</Text>
-              <Text style={styles.planDescription}>
-                For established suppliers, distributors, and high-volume traders
+              <Text className="font-geist-bold text-lg text-content-heading">
+                Mikana Pro
               </Text>
             </View>
-            <View style={[styles.radioCircle, selectedPlan === 'pro' && styles.radioCircleSelected]}>
-              {selectedPlan === 'pro' && <View style={styles.radioDot} />}
+            <View
+              className={`w-5 h-5 rounded-full border items-center justify-center ${
+                selectedPlan === 'pro'
+                  ? 'border-brand-blue bg-brand-blue'
+                  : 'border-slate-300 bg-surface'
+              }`}
+            >
+              {selectedPlan === 'pro' && (
+                <View className="w-2 h-2 rounded-full bg-white" />
+              )}
             </View>
           </View>
 
-          <View style={styles.priceRow}>
-            <Text style={styles.priceAmount}>$9.99</Text>
-            <Text style={styles.priceUnit}> / month (or $79.99/yr)</Text>
+          <View className="flex-row items-baseline mb-3">
+            <Text className="font-geist-bold text-2xl text-content-heading">$9.99</Text>
+            <Text className="font-inter text-xs text-content-muted ml-1">/ month (or $79.99/yr)</Text>
           </View>
 
-          <View style={styles.featureDivider} />
+          <View className="h-px bg-border my-2" />
 
-          <View style={styles.planFeatures}>
-            <View style={styles.featureLine}>
-              <Check size={14} color={colors.accentBlue} strokeWidth={2.5} />
-              <Text style={styles.featureLineText}>Monitor up to 15 WhatsApp trade groups</Text>
-            </View>
-            <View style={styles.featureLine}>
-              <Check size={14} color={colors.accentBlue} strokeWidth={2.5} />
-              <Text style={styles.featureLineText}>
-                24/7 Autonomous Autopilot quote dispatching
-              </Text>
-            </View>
-            <View style={styles.featureLine}>
-              <Check size={14} color={colors.accentBlue} strokeWidth={2.5} />
-              <Text style={styles.featureLineText}>
-                Priority Gemini Flash extraction & scoring
-              </Text>
-            </View>
-            <View style={styles.featureLine}>
-              <Check size={14} color={colors.accentBlue} strokeWidth={2.5} />
-              <Text style={styles.featureLineText}>
-                Unlimited deal pipeline CRM & export
-              </Text>
-            </View>
+          <View className="gap-2 pt-1">
+            {[
+              'Monitor up to 15 WhatsApp trade groups',
+              '24/7 Autonomous Autopilot quote dispatching',
+              'Priority Gemini Flash extraction & scoring',
+              'Unlimited deal pipeline CRM & export',
+            ].map((f, i) => (
+              <View key={i} className="flex-row items-center gap-2">
+                <Check size={14} color="#1E56A0" strokeWidth={2.5} />
+                <Text className="font-inter text-xs text-content-secondary">{f}</Text>
+              </View>
+            ))}
           </View>
         </Pressable>
 
         {/* Restore Purchases Link */}
-        <View style={styles.restoreRow}>
+        <View className="items-center py-2">
           <Pressable onPress={handleRestore} disabled={isRestoring}>
-            <Text style={styles.restoreText}>
+            <Text className="font-inter text-xs text-content-muted underline">
               {isRestoring ? 'Restoring...' : 'Already subscribed? Restore Purchases'}
             </Text>
           </Pressable>
         </View>
       </ScrollView>
 
-      {/* Docked CTA Footer */}
-      <View style={styles.ctaContainer}>
+      {/* ── Docked CTA Footer ────────────────────────────────────────────────── */}
+      <View className="px-6 pt-3 pb-8 border-t border-border bg-canvas">
         {selectedPlan === 'free' ? (
           <>
             <Pressable
-              style={({ pressed }) => [
-                styles.ctaButton,
-                pressed && styles.ctaButtonPressed,
-              ]}
               onPress={handleFinishFree}
-              accessibilityRole="button"
-              accessibilityLabel="Start Free - No Card Required"
+              className="w-full bg-brand-navy py-4 rounded-xl flex-row items-center justify-center gap-2 border border-brand-navy-dark shadow-xs active:opacity-95"
             >
-              <Text style={styles.ctaButtonText}>Start Free (No Card Required)</Text>
-              <ArrowRight size={18} color={colors.textInverse} strokeWidth={2} />
+              <Text className="font-geist-semibold text-sm text-white">
+                Start Free (No Card Required)
+              </Text>
+              <ArrowRight size={16} color="#FFFFFF" strokeWidth={2} />
             </Pressable>
-            <Text style={styles.ctaHintText}>
+            <Text className="font-inter text-[11px] text-content-muted text-center mt-2">
               Includes 2 groups + real-time alerts. Upgrade anytime in Settings.
             </Text>
           </>
         ) : (
           <>
             <Pressable
-              style={({ pressed }) => [
-                styles.ctaButton,
-                isPurchasing && styles.ctaButtonDisabled,
-                pressed && styles.ctaButtonPressed,
-              ]}
               onPress={handlePurchasePro}
               disabled={isPurchasing}
-              accessibilityRole="button"
-              accessibilityLabel="Start Pro Subscription"
+              className={`w-full bg-brand-navy py-4 rounded-xl flex-row items-center justify-center gap-2 border border-brand-navy-dark shadow-xs ${
+                isPurchasing ? 'opacity-60' : 'active:opacity-95'
+              }`}
             >
               {isPurchasing ? (
-                <ActivityIndicator color={colors.textInverse} size="small" />
+                <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <>
-                  <Text style={styles.ctaButtonText}>Start Pro (7-Day Trial)</Text>
-                  <ArrowRight size={18} color={colors.textInverse} strokeWidth={2} />
+                  <Text className="font-geist-semibold text-sm text-white">
+                    Start Pro (7-Day Trial)
+                  </Text>
+                  <ArrowRight size={16} color="#FFFFFF" strokeWidth={2} />
                 </>
               )}
             </Pressable>
             <Pressable
-              style={styles.switchFreeLink}
               onPress={() => setSelectedPlan('free')}
+              className="py-2.5 items-center justify-center mt-1"
             >
-              <Text style={styles.switchFreeText}>Or continue with Free Plan</Text>
+              <Text className="font-geist-medium text-xs text-content-secondary">
+                Or continue with Free Plan
+              </Text>
             </Pressable>
           </>
         )}
@@ -353,223 +351,3 @@ export default function OnboardingPaywallScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.canvas },
-  topProgress: {
-    paddingHorizontal: spacing.xxl,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  segmentedBar: { flexDirection: 'row', gap: 6, marginBottom: spacing.md },
-  segment: { flex: 1, height: 4, borderRadius: 2, backgroundColor: colors.border },
-  segmentFilled: { backgroundColor: colors.brandNavy },
-  navRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  backButton: { padding: spacing.xs, marginLeft: -spacing.xs },
-  stepIndicator: { fontFamily: 'Geist_500Medium', fontSize: 12, color: colors.textMuted },
-  skipButton: { padding: spacing.xs, marginRight: -spacing.xs },
-  skipText: { fontFamily: 'Geist_600SemiBold', fontSize: 13, color: colors.accentBlue },
-  scrollContent: {
-    paddingHorizontal: spacing.xxl,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  header: { marginBottom: spacing.lg },
-  guaranteeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: colors.accentBlueTint,
-    borderWidth: 1,
-    borderColor: colors.accentBlueBorder,
-    borderRadius: radius.full,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    alignSelf: 'flex-start',
-    marginBottom: spacing.xs,
-  },
-  guaranteeBadgeText: {
-    fontFamily: 'Geist_600SemiBold',
-    fontSize: 11,
-    color: colors.accentBlue,
-  },
-  heading: {
-    fontFamily: 'Geist_700Bold',
-    fontSize: 22,
-    color: colors.textHeading,
-    letterSpacing: -0.4,
-    marginBottom: 4,
-  },
-  subtext: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 13,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
-  planCard: {
-    backgroundColor: colors.surface,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderRadius: radius.xl,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  planCardSelected: {
-    borderColor: colors.brandNavy,
-    backgroundColor: colors.surface,
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  planCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xs,
-  },
-  pillRow: { marginBottom: 4 },
-  freePill: {
-    backgroundColor: colors.accentBlueTint,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radius.full,
-    alignSelf: 'flex-start',
-  },
-  freePillText: {
-    fontFamily: 'Geist_600SemiBold',
-    fontSize: 10,
-    color: colors.accentBlue,
-  },
-  proPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radius.full,
-    alignSelf: 'flex-start',
-  },
-  proPillText: {
-    fontFamily: 'Geist_600SemiBold',
-    fontSize: 10,
-    color: colors.brandNavy,
-  },
-  planName: {
-    fontFamily: 'Geist_700Bold',
-    fontSize: 17,
-    color: colors.textPrimary,
-    marginBottom: 2,
-  },
-  planDescription: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 12,
-    color: colors.textSecondary,
-    maxWidth: 240,
-  },
-  radioCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: colors.borderStrong,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-    marginTop: 4,
-  },
-  radioCircleSelected: {
-    borderColor: colors.brandNavy,
-    backgroundColor: colors.surface,
-  },
-  radioDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.brandNavy,
-  },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginTop: spacing.xs,
-    marginBottom: spacing.sm,
-  },
-  priceAmount: {
-    fontFamily: 'Geist_700Bold',
-    fontSize: 24,
-    color: colors.textPrimary,
-  },
-  priceUnit: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-  featureDivider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: spacing.sm,
-  },
-  planFeatures: { gap: 8 },
-  featureLine: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  featureLineText: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 12,
-    color: colors.textPrimary,
-  },
-  restoreRow: {
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  restoreText: {
-    fontFamily: 'Inter_500Medium',
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  ctaContainer: {
-    paddingHorizontal: spacing.xxl,
-    paddingBottom: spacing.xxxl,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.canvas,
-    gap: spacing.xs,
-  },
-  ctaButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.brandNavy,
-    paddingVertical: 15,
-    borderRadius: radius.md,
-  },
-  ctaButtonDisabled: { opacity: 0.5 },
-  ctaButtonPressed: { opacity: 0.88 },
-  ctaButtonText: { fontFamily: 'Geist_600SemiBold', fontSize: 15, color: colors.textInverse },
-  ctaHintText: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 11,
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginTop: 2,
-  },
-  switchFreeLink: {
-    alignItems: 'center',
-    paddingVertical: spacing.xs,
-  },
-  switchFreeText: {
-    fontFamily: 'Inter_500Medium',
-    fontSize: 12,
-    color: colors.accentBlue,
-  },
-});

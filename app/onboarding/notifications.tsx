@@ -2,9 +2,9 @@ import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   Pressable,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,14 +12,9 @@ import {
   ArrowLeft,
   ArrowRight,
   BellRing,
-  ShieldCheck,
-  Zap,
-  MessageSquare,
-  Sparkles,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
-import { colors, spacing, radius } from '../../src/theme/colors';
 import { useAuthStore } from '../../src/store/useAuthStore';
 
 export default function NotificationsScreen() {
@@ -38,13 +33,16 @@ export default function NotificationsScreen() {
 
     try {
       if (Platform.OS !== 'web') {
-        const { status: existingStatus } = await Notifications.getPermissionsAsync();
-        if (existingStatus !== 'granted') {
-          await Notifications.requestPermissionsAsync();
-        }
+        await Notifications.requestPermissionsAsync({
+          ios: {
+            allowAlert: true,
+            allowBadge: true,
+            allowSound: true,
+          },
+        });
       }
-    } catch {
-      // Non-fatal on simulator or restricted permissions
+    } catch (e) {
+      console.warn('Failed to request notification permissions:', e);
     } finally {
       setRequesting(false);
       proceedToPaywall();
@@ -57,20 +55,20 @@ export default function NotificationsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-      {/* Top Segmented Progress Bar (Step 5 of 6) */}
-      <View style={styles.topProgress}>
-        <View style={styles.segmentedBar}>
-          <View style={[styles.segment, styles.segmentFilled]} />
-          <View style={[styles.segment, styles.segmentFilled]} />
-          <View style={[styles.segment, styles.segmentFilled]} />
-          <View style={[styles.segment, styles.segmentFilled]} />
-          <View style={[styles.segment, styles.segmentFilled]} />
-          <View style={styles.segment} />
+    <SafeAreaView className="flex-1 bg-canvas" edges={['top', 'bottom']}>
+      {/* ── 1. Top Bar & 6-Segment Stepper ────────────────────────────────────── */}
+      <View className="px-6 pt-2 pb-3 border-b border-border bg-canvas">
+        <View className="flex-row items-center gap-1.5 mb-3">
+          <View className="flex-1 h-1 rounded-full bg-brand-navy" />
+          <View className="flex-1 h-1 rounded-full bg-brand-navy" />
+          <View className="flex-1 h-1 rounded-full bg-brand-navy" />
+          <View className="flex-1 h-1 rounded-full bg-brand-navy" />
+          <View className="flex-1 h-1 rounded-full bg-brand-navy" />
+          <View className="flex-1 h-1 rounded-full bg-slate-200" />
         </View>
-        <View style={styles.navRow}>
+
+        <View className="flex-row items-center justify-between">
           <Pressable
-            style={styles.backButton}
             onPress={() => {
               if (router.canGoBack()) {
                 router.back();
@@ -78,278 +76,73 @@ export default function NotificationsScreen() {
                 router.replace('/onboarding/groups');
               }
             }}
-            accessibilityRole="button"
-            accessibilityLabel="Back"
+            className="w-8 h-8 -ml-1 items-center justify-center rounded-lg active:bg-surface-elevated"
+            hitSlop={8}
           >
-            <ArrowLeft size={20} color={colors.textSecondary} strokeWidth={1.75} />
+            <ArrowLeft size={20} color="#486581" strokeWidth={1.75} />
           </Pressable>
-          <Text style={styles.stepIndicator}>Step 5 of 6 · Instant Alerts</Text>
+
+          <Text className="font-geist-medium text-xs text-content-muted tracking-wide">
+            Step 5 of 6 · Notifications
+          </Text>
+
           <Pressable
-            style={styles.skipButton}
             onPress={handleSkip}
-            accessibilityRole="button"
-            accessibilityLabel="Skip"
+            className="px-2 py-1 -mr-2 rounded-lg active:bg-surface-elevated"
+            hitSlop={8}
           >
-            <Text style={styles.skipText}>Skip</Text>
+            <Text className="font-geist-semibold text-xs text-brand-blue">
+              Skip
+            </Text>
           </Pressable>
         </View>
       </View>
 
-      <View style={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.heading}>Never miss a live deal</Text>
-          <Text style={styles.subtext}>
-            In WhatsApp groups, the first merchant to answer an RFQ closes the deal 70% of the time.
-          </Text>
+      {/* ── 2. Focused Permissions Body (Centered & Direct) ──────────────────── */}
+      <View className="flex-1 items-center justify-center px-8">
+        <View className="w-20 h-20 rounded-full bg-brand-blue-tint border border-brand-blue-border items-center justify-center mb-6 shadow-xs">
+          <BellRing size={36} color="#1E56A0" strokeWidth={2} />
         </View>
 
-        {/* Realistic Push Notification Mockup Card */}
-        <View style={styles.mockCard}>
-          <View style={styles.mockHeader}>
-            <View style={styles.mockAppBadge}>
-              <Text style={styles.mockAppBadgeText}>M</Text>
-            </View>
-            <Text style={styles.mockAppName}>MIKANA RADAR</Text>
-            <Text style={styles.mockTime}>Just now</Text>
-          </View>
-          <Text style={styles.mockTitle}>High-Value Buyer RFQ (98% Match)</Text>
-          <Text style={styles.mockBody}>
-            "Looking for 50 bags white maize or sugar beans in Msasa. Urgent delivery needed today."
-          </Text>
-          <View style={styles.mockPillRow}>
-            <View style={styles.mockPill}>
-              <Sparkles size={11} color={colors.accentBlue} strokeWidth={2} />
-              <Text style={styles.mockPillText}>AI Quote Draft Ready</Text>
-            </View>
-          </View>
-        </View>
+        <Text className="font-geist-bold text-2xl text-content-heading text-center mb-2 tracking-tight">
+          Never miss a live buyer inquiry
+        </Text>
 
-        {/* Feature Highlights */}
-        <View style={styles.featuresList}>
-          <View style={styles.featureItem}>
-            <View style={styles.featureIconBox}>
-              <BellRing size={16} color={colors.accentBlue} strokeWidth={2} />
-            </View>
-            <View style={styles.featureTextBox}>
-              <Text style={styles.featureTitle}>Sub-Second Lead Interception</Text>
-              <Text style={styles.featureDesc}>
-                Get alerted the second a buyer posts in your groups, before competitors see it.
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.featureItem}>
-            <View style={styles.featureIconBox}>
-              <ShieldCheck size={16} color={colors.accentBlue} strokeWidth={2} />
-            </View>
-            <View style={styles.featureTextBox}>
-              <Text style={styles.featureTitle}>Zero Spam Guarantee</Text>
-              <Text style={styles.featureDesc}>
-                Layer 0 filters out 95% of chatter, memes, and stickers. You only get alerted for real buyer demand.
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.featureItem}>
-            <View style={styles.featureIconBox}>
-              <Zap size={16} color={colors.accentBlue} strokeWidth={2} />
-            </View>
-            <View style={styles.featureTextBox}>
-              <Text style={styles.featureTitle}>One-Tap Direct Quote Dispatch</Text>
-              <Text style={styles.featureDesc}>
-                Tapping the notification opens a calibrated quote ready to send to the buyer's DM.
-              </Text>
-            </View>
-          </View>
-        </View>
+        <Text className="font-inter text-sm text-content-secondary text-center leading-6 max-w-[300px]">
+          Turn on push notifications to receive real-time alerts the second a buyer posts in your monitored WhatsApp trade groups.
+        </Text>
       </View>
 
-      {/* Docked CTA Footer */}
-      <View style={styles.ctaContainer}>
+      {/* ── 3. Docked Sticky Action Buttons ──────────────────────────────────── */}
+      <View className="px-6 pt-3 pb-8 border-t border-border bg-canvas">
         <Pressable
-          style={({ pressed }) => [
-            styles.ctaButton,
-            requesting && styles.ctaButtonDisabled,
-            pressed && styles.ctaButtonPressed,
-          ]}
           onPress={handleEnable}
           disabled={requesting}
-          accessibilityRole="button"
-          accessibilityLabel="Enable Notifications"
+          className={`w-full bg-brand-navy py-4 rounded-xl flex-row items-center justify-center gap-2 border border-brand-navy-dark shadow-xs ${
+            requesting ? 'opacity-60' : 'active:opacity-95'
+          }`}
         >
-          <Text style={styles.ctaButtonText}>
-            {requesting ? 'Enabling...' : 'Enable Real-Time Alerts'}
-          </Text>
-          <ArrowRight size={18} color={colors.textInverse} strokeWidth={2} />
+          {requesting ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <>
+              <Text className="font-geist-semibold text-sm text-white">
+                Enable Notifications
+              </Text>
+              <ArrowRight size={16} color="#FFFFFF" strokeWidth={2} />
+            </>
+          )}
         </Pressable>
 
         <Pressable
-          style={styles.maybeLaterButton}
           onPress={handleSkip}
-          accessibilityRole="button"
-          accessibilityLabel="Maybe Later"
+          className="py-3 items-center justify-center mt-1 active:opacity-70"
         >
-          <Text style={styles.maybeLaterText}>Maybe Later</Text>
+          <Text className="font-geist-medium text-xs text-content-secondary">
+            Maybe Later
+          </Text>
         </Pressable>
       </View>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.canvas },
-  topProgress: {
-    paddingHorizontal: spacing.xxl,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  segmentedBar: { flexDirection: 'row', gap: 6, marginBottom: spacing.md },
-  segment: { flex: 1, height: 4, borderRadius: 2, backgroundColor: colors.border },
-  segmentFilled: { backgroundColor: colors.brandNavy },
-  navRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  backButton: { padding: spacing.xs, marginLeft: -spacing.xs },
-  stepIndicator: { fontFamily: 'Geist_500Medium', fontSize: 12, color: colors.textMuted },
-  skipButton: { padding: spacing.xs, marginRight: -spacing.xs },
-  skipText: { fontFamily: 'Geist_600SemiBold', fontSize: 13, color: colors.accentBlue },
-  content: { flex: 1, paddingHorizontal: spacing.xxl, paddingTop: spacing.lg },
-  header: { marginBottom: spacing.lg },
-  heading: {
-    fontFamily: 'Geist_700Bold',
-    fontSize: 22,
-    color: colors.textHeading,
-    letterSpacing: -0.4,
-    marginBottom: 4,
-  },
-  subtext: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 13,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
-  mockCard: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.xl,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  mockHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginBottom: 6,
-  },
-  mockAppBadge: {
-    width: 18,
-    height: 18,
-    borderRadius: 4,
-    backgroundColor: colors.brandNavy,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  mockAppBadgeText: {
-    fontFamily: 'Geist_700Bold',
-    fontSize: 10,
-    color: colors.textInverse,
-  },
-  mockAppName: {
-    fontFamily: 'Geist_600SemiBold',
-    fontSize: 11,
-    color: colors.textMuted,
-    letterSpacing: 0.5,
-  },
-  mockTime: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 11,
-    color: colors.textMuted,
-    marginLeft: 'auto',
-  },
-  mockTitle: {
-    fontFamily: 'Geist_600SemiBold',
-    fontSize: 13,
-    color: colors.textPrimary,
-    marginBottom: 2,
-  },
-  mockBody: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 12,
-    color: colors.textSecondary,
-    lineHeight: 16,
-    marginBottom: 8,
-  },
-  mockPillRow: { flexDirection: 'row' },
-  mockPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.accentBlueTint,
-    borderRadius: radius.full,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderWidth: 1,
-    borderColor: colors.accentBlueBorder,
-  },
-  mockPillText: {
-    fontFamily: 'Geist_500Medium',
-    fontSize: 11,
-    color: colors.accentBlue,
-  },
-  featuresList: { gap: spacing.md },
-  featureItem: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
-  featureIconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.md,
-    backgroundColor: colors.accentBlueTint,
-    borderWidth: 1,
-    borderColor: colors.accentBlueBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  featureTextBox: { flex: 1 },
-  featureTitle: {
-    fontFamily: 'Geist_600SemiBold',
-    fontSize: 13,
-    color: colors.textPrimary,
-    marginBottom: 1,
-  },
-  featureDesc: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 12,
-    color: colors.textSecondary,
-    lineHeight: 16,
-  },
-  ctaContainer: {
-    paddingHorizontal: spacing.xxl,
-    paddingBottom: spacing.xxxl,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.canvas,
-    gap: spacing.xs,
-  },
-  ctaButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.brandNavy,
-    paddingVertical: 15,
-    borderRadius: radius.md,
-  },
-  ctaButtonDisabled: { opacity: 0.5 },
-  ctaButtonPressed: { opacity: 0.88 },
-  ctaButtonText: { fontFamily: 'Geist_600SemiBold', fontSize: 15, color: colors.textInverse },
-  maybeLaterButton: { paddingVertical: spacing.xs, alignItems: 'center' },
-  maybeLaterText: { fontFamily: 'Inter_400Regular', fontSize: 13, color: colors.textMuted },
-});
