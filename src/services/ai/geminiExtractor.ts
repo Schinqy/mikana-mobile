@@ -232,7 +232,7 @@ function localHeuristicAnalysis(rawText: string, services: ServiceItem[]): AIAna
     category,
     urgency,
     budgetEstimate,
-    location: lower.includes('remote') ? 'Remote' : 'Regional / On-Site',
+    location: lower.includes('remote') ? 'Remote' : '',
     matchScore,
     aiSummary: rawText.length > 90 ? `${rawText.slice(0, 90)}...` : rawText,
     extractedNeeds,

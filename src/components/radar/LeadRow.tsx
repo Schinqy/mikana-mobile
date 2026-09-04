@@ -5,8 +5,14 @@ import { Image } from 'expo-image';
 import { Lead } from '../../types/lead';
 import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/fonts';
-import { ChevronRight, Check, Send, Archive, MessageSquare } from 'lucide-react-native';
+import { ChevronRight, Check, Send, Archive, MessageSquare, Users, MapPin } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+
+function isSpecificLocation(loc?: string): boolean {
+  if (!loc) return false;
+  const clean = loc.trim().toLowerCase();
+  return !['regional', 'regional / on-site', 'regional/on-site', 'remote/unspecified', 'unspecified', 'n/a', 'none', ''].includes(clean);
+}
 
 interface LeadRowProps {
   lead: Lead;
@@ -164,14 +170,10 @@ export const LeadRow: React.FC<LeadRowProps> = ({ lead, onPress, onArchive }) =>
 
         {/* Center Column: Sender, Metadata & Inquiry */}
         <View style={styles.contentColumn}>
-          {/* Top Row: Sender & Timestamp */}
+          {/* Top Row: Sender Name on left & Timestamp on right */}
           <View style={styles.metaRow}>
             <Text style={styles.senderName} numberOfLines={1}>
               {lead.senderName}
-            </Text>
-            <Text style={styles.bullet}>•</Text>
-            <Text style={styles.channelText} numberOfLines={1}>
-              {lead.channelName.split(' ')[0]}
             </Text>
             <Text style={styles.timeAgoText}>{timeAgo(lead.createdAt)}</Text>
           </View>
@@ -181,34 +183,37 @@ export const LeadRow: React.FC<LeadRowProps> = ({ lead, onPress, onArchive }) =>
             {lead.aiSummary || lead.rawText}
           </Text>
 
-          {/* Bottom Supporting Row: Budget, Location, Status */}
+          {/* Bottom Supporting Row: Distinct Channel Badge, Budget, Location, Status */}
           <View style={styles.footerRow}>
-            {lead.budgetEstimate ? (
+            {lead.channelName ? (
+              <View style={styles.channelPill}>
+                <Users size={10} color={colors.accentBlue} strokeWidth={2} />
+                <Text style={styles.channelPillText} numberOfLines={1}>
+                  {lead.channelName}
+                </Text>
+              </View>
+            ) : null}
+
+            {lead.budgetEstimate && lead.budgetEstimate !== 'Quote Required' ? (
               <Text style={styles.budgetText}>{lead.budgetEstimate}</Text>
             ) : null}
 
-            {lead.location ? (
-              <>
-                <Text style={styles.bullet}>•</Text>
-                <Text style={styles.locationText}>{lead.location}</Text>
-              </>
+            {isSpecificLocation(lead.location) ? (
+              <View style={styles.locationPill}>
+                <MapPin size={10} color={colors.textSecondary} strokeWidth={2} />
+                <Text style={styles.locationText} numberOfLines={1}>{lead.location}</Text>
+              </View>
             ) : null}
 
             {lead.urgency === 'urgent' && !isQuoted && (
-              <>
-                <Text style={styles.bullet}>•</Text>
-                <Text style={styles.urgentText}>Urgent</Text>
-              </>
+              <Text style={styles.urgentText}>Urgent</Text>
             )}
 
             {isQuoted && (
-              <>
-                <Text style={styles.bullet}>•</Text>
-                <View style={styles.quotedInline}>
-                  <Check size={11} color={colors.emerald} style={{ marginRight: 2 }} />
-                  <Text style={styles.quotedText}>Quoted</Text>
-                </View>
-              </>
+              <View style={styles.quotedInline}>
+                <Check size={11} color={colors.emerald} style={{ marginRight: 2 }} />
+                <Text style={styles.quotedText}>Quoted</Text>
+              </View>
             )}
           </View>
         </View>
@@ -301,15 +306,39 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     color: colors.textPrimary,
     lineHeight: 19,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   footerRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  channelPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F0F7FF',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    maxWidth: 160,
+  },
+  channelPillText: {
+    fontFamily: fonts.inter.medium,
+    fontSize: 10.5,
+    color: colors.accentBlue,
+  },
+  locationPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
   budgetText: {
     fontFamily: fonts.geist.bold,
-    fontSize: 12,
+    fontSize: 11.5,
     color: colors.emerald,
   },
   locationText: {

@@ -99,7 +99,7 @@ export const DealCard: React.FC<DealCardProps> = ({
           {lead.senderName}
         </Text>
         <Text style={styles.channelText} numberOfLines={1}>
-          {lead.channelName.split(' ')[0]}
+          {lead.channelName}
         </Text>
       </View>
 

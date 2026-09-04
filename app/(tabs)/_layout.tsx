@@ -2,6 +2,7 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
 import { Home, TrendingUp, Building2 } from 'lucide-react-native';
 import { colors } from '../../src/theme/colors';
 import { fonts } from '../../src/theme/fonts';
@@ -30,7 +31,11 @@ function FloatingGlassTabBar({ state, navigation }: TabBarProps) {
 
   return (
     <View style={[styles.floatingWrapper, { bottom: bottomPosition }]} pointerEvents="box-none">
-      <View style={styles.glassPill}>
+      <BlurView
+        intensity={Platform.OS === 'ios' ? 70 : 85}
+        tint="dark"
+        style={styles.glassPill}
+      >
         {visibleRoutes.map((route: any) => {
           const tabDef = TABS.find((t) => t.name === route.name);
           if (!tabDef) return null;
@@ -70,7 +75,7 @@ function FloatingGlassTabBar({ state, navigation }: TabBarProps) {
             </TouchableOpacity>
           );
         })}
-      </View>
+      </BlurView>
     </View>
   );
 }
@@ -106,17 +111,18 @@ const styles = StyleSheet.create({
   glassPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.brandNavyDark, // Deep solid Midnight Navy
+    overflow: 'hidden',
+    backgroundColor: 'rgba(11, 37, 69, 0.85)', // Translucent Midnight Navy with blur
     paddingVertical: 6,
     paddingHorizontal: 8,
-    borderRadius: 32,
+    borderRadius: 36,
     borderWidth: 1,
-    borderColor: '#1E3A5F', // Subtle hairline border
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 12,
+    borderColor: 'rgba(255, 255, 255, 0.16)', // Subtle hairline glass border
+    shadowColor: '#07182E',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 14,
     gap: 4,
   },
   pillItem: {

@@ -86,5 +86,9 @@
   1. Add an `onRehydrateStorage` hook in the store definition to filter out legacy dummy IDs (`lead-001..004`) during state hydration.
   2. Add a mount-time `useEffect` in the consuming screen (`HomeScreen`) to actively purge legacy mock records from memory and storage immediately upon render.
 
+### [2026-09-04] Sender Name / Group Token Truncation Anti-Pattern
+- **The Sender • Channel Token Concatenation Anti-Pattern:** Never truncate a channel or group name using arbitrary string splits (`channelName.split(' ')[0]`) and place it directly beside the sender name with a simple dot (`{senderName} • {channelName.split(' ')[0]}`). If a group begins with the product name (e.g. "Mikana Trade Hub"), the UI renders `"Dr. Sithole • Mikana"`, confusing users into thinking "Mikana" is appended to the contact's name. Always isolate the channel source into an explicit pill with a vector group icon (`Users`) on the supporting row.
+- **The Meaningless Generic Fallback Anti-Pattern:** Avoid placeholder location strings like `'Regional / On-Site'`. If a lead does not specify a location, omit the location tag completely rather than displaying vague jargon that causes confusion.
+
 
 
