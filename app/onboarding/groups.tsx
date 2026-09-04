@@ -39,10 +39,12 @@ interface GroupItem {
 export default function GroupsScreen() {
   const router = useRouter();
   const { setOnboardingStage } = useAuthStore();
-  const { whatsappRelayUrl, setRadarChannels } = useSettingsStore();
+  const { whatsappRelayUrl, radarChannels, setRadarChannels } = useSettingsStore();
 
   const [groups, setGroups] = useState<GroupItem[]>([]);
-  const [selectedGroupIds, setSelectedGroupIds] = useState<Set<string>>(new Set());
+  const [selectedGroupIds, setSelectedGroupIds] = useState<Set<string>>(
+    () => new Set(radarChannels || [])
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -50,6 +52,30 @@ export default function GroupsScreen() {
   const [sessionId] = useState('session_user_default');
 
   const abortControllerRef = useRef<AbortController | null>(null);
+  const groupsRef = useRef<GroupItem[]>([]);
+
+  // Synchronize incoming rehydrated radarChannels with selectedGroupIds
+  useEffect(() => {
+    if (radarChannels && radarChannels.length > 0) {
+      setSelectedGroupIds(prev => {
+        const next = new Set(prev);
+        if (groups.length > 0) {
+          groups.forEach(g => {
+            if (
+              radarChannels.includes(g.id) ||
+              radarChannels.includes(g.jid) ||
+              radarChannels.includes(g.name)
+            ) {
+              next.add(g.id);
+            }
+          });
+        } else {
+          radarChannels.forEach(ch => next.add(ch));
+        }
+        return next;
+      });
+    }
+  }, [radarChannels, groups]);
 
   const loadGroups = useCallback(async (retryCount = 0) => {
     setLoading(true);
@@ -73,14 +99,33 @@ export default function GroupsScreen() {
       clearTimeout(timeoutId);
 
       if (Array.isArray(raw) && raw.length > 0) {
-        setGroups(
-          raw.map((g: any) => ({
-            id: g.id,
-            jid: g.id,
-            name: g.subject || g.name || g.id,
-            participantCount: g.participants || g.participantCount || 0,
-          }))
-        );
+        const mapped: GroupItem[] = raw.map((g: any) => ({
+          id: g.id,
+          jid: g.id,
+          name: g.subject || g.name || g.id,
+          participantCount: g.participants || g.participantCount || 0,
+        }));
+        setGroups(mapped);
+        groupsRef.current = mapped;
+
+        // Auto-match and pre-select any groups that match existing radarChannels
+        const currentChannels = useSettingsStore.getState().radarChannels || [];
+        if (currentChannels.length > 0) {
+          setSelectedGroupIds(prev => {
+            const next = new Set(prev);
+            mapped.forEach(g => {
+              if (
+                currentChannels.includes(g.id) ||
+                currentChannels.includes(g.jid) ||
+                currentChannels.includes(g.name)
+              ) {
+                next.add(g.id);
+              }
+            });
+            return next;
+          });
+        }
+
         setLoading(false);
       } else if (retryCount < 2) {
         setTimeout(() => {
@@ -126,16 +171,30 @@ export default function GroupsScreen() {
         }
         next.add(jid);
       }
+
+      // Real-time persistence: immediately save updated group selections to useSettingsStore
+      const currentList = groupsRef.current;
+      const channelsToPersist: string[] = [];
+      next.forEach(id => {
+        const found = currentList.find(g => g.id === id);
+        channelsToPersist.push(found ? (found.name || found.id) : id);
+      });
+      setRadarChannels(channelsToPersist);
+
       return next;
     });
-  }, [router]);
+  }, [router, setRadarChannels]);
 
   const handleActivate = useCallback(async () => {
     setSaving(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     const selectedJids = Array.from(selectedGroupIds);
-    setRadarChannels(selectedJids);
+    const channelsToPersist = selectedJids.map(id => {
+      const found = groups.find(g => g.id === id);
+      return found ? (found.name || found.id) : id;
+    });
+    setRadarChannels(channelsToPersist);
 
     try {
       const url = resolveRelayUrl(whatsappRelayUrl);
@@ -146,14 +205,14 @@ export default function GroupsScreen() {
 
     setOnboardingStage('groups');
     router.push('/onboarding/notifications');
-  }, [selectedGroupIds, setRadarChannels, whatsappRelayUrl, sessionId, setOnboardingStage, router]);
+  }, [selectedGroupIds, groups, setRadarChannels, whatsappRelayUrl, sessionId, setOnboardingStage, router]);
 
   const handleSkip = useCallback(() => {
     Haptics.selectionAsync();
-    setRadarChannels([]);
+    // Do not wipe out radarChannels; preserve user's selections
     setOnboardingStage('groups');
     router.push('/onboarding/notifications');
-  }, [setRadarChannels, setOnboardingStage, router]);
+  }, [setOnboardingStage, router]);
 
   const filteredGroups = useMemo(() => {
     if (!searchQuery.trim()) return groups;

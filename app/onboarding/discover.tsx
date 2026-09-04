@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -30,6 +30,7 @@ import {
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../src/store/useAuthStore';
+import { useCatalogStore } from '../../src/store/useCatalogStore';
 
 // ── Comprehensive Global Language Catalog ──────────────────────────────────────
 
@@ -365,6 +366,38 @@ export default function DiscoverScreen() {
   // Personalized Entity Label
   const entityName = businessName.trim() || 'your business';
 
+  // Rehydration synchronization: sync stored capability profile whenever AsyncStorage rehydrates
+  useEffect(() => {
+    if (capabilityProfile) {
+      if (capabilityProfile.displayName && !businessName) {
+        setBusinessName(capabilityProfile.displayName);
+      }
+      if (capabilityProfile.languages?.length && (selectedLanguages.length === 0 || (selectedLanguages.length === 1 && selectedLanguages[0] === 'English'))) {
+        setSelectedLanguages(capabilityProfile.languages);
+      }
+      if (capabilityProfile.serviceAreas?.length && (selectedLocations.length === 0 || (selectedLocations.length === 1 && selectedLocations[0] === 'Worldwide / Remote'))) {
+        setSelectedLocations(capabilityProfile.serviceAreas);
+      }
+      if (capabilityProfile.description && !tradeDescription) {
+        setTradeDescription(capabilityProfile.description);
+      }
+      if (capabilityProfile.capabilities?.length && activeCapabilities.length === 0) {
+        setActiveCapabilities(capabilityProfile.capabilities);
+      }
+      if (capabilityProfile.keywords?.length && activeKeywords.length === 0) {
+        setActiveKeywords(capabilityProfile.keywords);
+      }
+      if (capabilityProfile.categories?.length && !extracted) {
+        setExtracted({
+          categories: capabilityProfile.categories,
+          capabilities: capabilityProfile.capabilities || [],
+          products: capabilityProfile.products || [],
+          keywords: capabilityProfile.keywords || [],
+        });
+      }
+    }
+  }, [capabilityProfile]);
+
   // ── Sync State To Store Helper ────────────────────────────────────────────
 
   const syncStateToStore = useCallback(() => {
@@ -377,8 +410,9 @@ export default function DiscoverScreen() {
       locations = ['Worldwide / Remote'];
     }
 
+    const trimmedName = businessName.trim() || 'My Business';
     setCapabilityProfile({
-      displayName: businessName.trim() || 'My Business',
+      displayName: trimmedName,
       description: tradeDescription.trim(),
       languages: selectedLanguages.length > 0 ? selectedLanguages : ['English'],
       location: locations[0],
@@ -387,6 +421,12 @@ export default function DiscoverScreen() {
       capabilities: activeCapabilities.length > 0 ? activeCapabilities : [tradeDescription.slice(0, 40) || 'General Trade'],
       products: extracted?.products || [],
       keywords: activeKeywords.length > 0 ? activeKeywords : ['trade', 'sales', 'quotes'],
+    });
+
+    // Also persist business profile into useCatalogStore so Business and Settings tabs remember it
+    useCatalogStore.getState().updateProfile({
+      businessName: trimmedName,
+      industry: extracted?.categories?.[0] || 'Commercial Trade',
     });
   }, [
     businessName,
@@ -1067,7 +1107,7 @@ export default function DiscoverScreen() {
 
                 {/* 1. Buyer Demand Signals */}
                 {categorizedKeywords.demand.length > 0 && (
-                  <View className="mb-3 bg-brand-blue-tint/60 border border-brand-blue-border/60 rounded-xl p-3">
+                  <View className="mb-3 bg-brand-blue-tint border border-brand-blue-border rounded-xl p-3">
                     <Text className="font-geist-semibold text-[11px] text-brand-blue uppercase tracking-wider mb-2">
                       Buyer Intent Signals ({categorizedKeywords.demand.length})
                     </Text>

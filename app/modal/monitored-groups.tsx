@@ -51,14 +51,18 @@ export default function MonitoredGroupsModal() {
 
       // Pre-select groups that match existing radar channels
       const matchingIds = new Set<string>();
-      liveGroups.forEach((g: WhatsAppGroup) => {
-        if (radarChannels.includes(g.subject) || radarChannels.includes(g.id)) {
+      liveGroups.forEach((g: any) => {
+        if (
+          radarChannels.includes(g.subject) ||
+          radarChannels.includes(g.id) ||
+          radarChannels.includes(g.name)
+        ) {
           matchingIds.add(g.id);
         }
       });
 
-      // If none explicitly matched, select all by default so user monitors all
-      if (matchingIds.size === 0) {
+      // If user has never configured channels (radarChannels is empty), default to all
+      if (radarChannels.length === 0 && matchingIds.size === 0) {
         liveGroups.forEach((g: WhatsAppGroup) => matchingIds.add(g.id));
       }
 

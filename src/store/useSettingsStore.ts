@@ -16,6 +16,7 @@ interface SettingsState {
   radarChannels: string[];
   enableSoundHaptics: boolean;
   enablePushNotifications: boolean;
+  _hasHydrated: boolean;
 
   // Actions
   setGeminiApiKey: (key: string) => void;
@@ -28,6 +29,8 @@ interface SettingsState {
   setRadarChannels: (channels: string[]) => void;
   toggleHaptics: () => void;
   togglePushNotifications: () => void;
+  setPushNotifications: (enabled: boolean) => void;
+  setHasHydrated: (state: boolean) => void;
 }
 
 const DEFAULT_RADAR_CHANNELS: string[] = [];
@@ -44,6 +47,7 @@ export const useSettingsStore = create<SettingsState>()(
       radarChannels: DEFAULT_RADAR_CHANNELS,
       enableSoundHaptics: true,
       enablePushNotifications: true,
+      _hasHydrated: false,
 
       setGeminiApiKey: (geminiApiKey) => set({ geminiApiKey }),
       setGeminiModel: (geminiModel) => set({ geminiModel }),
@@ -64,10 +68,15 @@ export const useSettingsStore = create<SettingsState>()(
         set((state) => ({ enableSoundHaptics: !state.enableSoundHaptics })),
       togglePushNotifications: () =>
         set((state) => ({ enablePushNotifications: !state.enablePushNotifications })),
+      setPushNotifications: (enablePushNotifications) => set({ enablePushNotifications }),
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
     }),
     {
       name: 'mikana-settings-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

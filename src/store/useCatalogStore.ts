@@ -6,6 +6,7 @@ import { ServiceItem, BusinessProfile } from '../types/catalog';
 interface CatalogState {
   profile: BusinessProfile;
   services: ServiceItem[];
+  _hasHydrated: boolean;
 
   // Actions
   updateProfile: (updates: Partial<BusinessProfile>) => void;
@@ -13,6 +14,7 @@ interface CatalogState {
   updateService: (id: string, updates: Partial<ServiceItem>) => void;
   deleteService: (id: string) => void;
   toggleServiceActive: (id: string) => void;
+  setHasHydrated: (state: boolean) => void;
 }
 
 const DEFAULT_PROFILE: BusinessProfile = {
@@ -35,6 +37,9 @@ export const useCatalogStore = create<CatalogState>()(
     (set) => ({
       profile: DEFAULT_PROFILE,
       services: DEFAULT_SERVICES,
+      _hasHydrated: false,
+
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
 
       updateProfile: (updates) => {
         set((state) => ({
@@ -80,6 +85,9 @@ export const useCatalogStore = create<CatalogState>()(
     {
       name: 'mikana-catalog-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

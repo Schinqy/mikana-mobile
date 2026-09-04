@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -58,6 +58,12 @@ export default function SettingsScreen() {
 
   const [tempApiKey, setTempApiKey] = useState(geminiApiKey);
   const [newChannelInput, setNewChannelInput] = useState('');
+
+  useEffect(() => {
+    if (geminiApiKey) {
+      setTempApiKey(geminiApiKey);
+    }
+  }, [geminiApiKey]);
 
   const handleSaveGeminiKey = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

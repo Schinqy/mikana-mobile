@@ -16,10 +16,12 @@ import {
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
 import { useAuthStore } from '../../src/store/useAuthStore';
+import { useSettingsStore } from '../../src/store/useSettingsStore';
 
 export default function NotificationsScreen() {
   const router = useRouter();
   const { setOnboardingStage } = useAuthStore();
+  const { setPushNotifications } = useSettingsStore();
   const [requesting, setRequesting] = useState(false);
 
   const proceedToPaywall = useCallback(() => {
@@ -30,6 +32,7 @@ export default function NotificationsScreen() {
   const handleEnable = async () => {
     setRequesting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setPushNotifications(true);
 
     try {
       if (Platform.OS !== 'web') {
@@ -51,6 +54,7 @@ export default function NotificationsScreen() {
 
   const handleSkip = () => {
     Haptics.selectionAsync();
+    setPushNotifications(false);
     proceedToPaywall();
   };
 
